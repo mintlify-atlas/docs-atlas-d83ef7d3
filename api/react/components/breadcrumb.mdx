@@ -1,0 +1,121 @@
+---
+title: '<Breadcrumb>'
+description: 'Display hierarchical navigation breadcrumbs'
+---
+
+The `<Breadcrumb>` component displays a navigation breadcrumb trail for hierarchical menu refinements.
+
+## Import
+
+```jsx
+import { Breadcrumb } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="attributes" type="string[]" required>
+  The hierarchical attributes to display in order.
+
+  ```jsx
+  <Breadcrumb
+    attributes={[
+      'hierarchicalCategories.lvl0',
+      'hierarchicalCategories.lvl1',
+      'hierarchicalCategories.lvl2',
+    ]}
+  />
+  ```
+</ParamField>
+
+<ParamField path="rootPath" type="string">
+  The path to use as the root element.
+
+  ```jsx
+  <Breadcrumb
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    rootPath="Home > Products"
+  />
+  ```
+</ParamField>
+
+<ParamField path="separator" type="string | ReactNode" default=">">
+  The separator to display between breadcrumb items.
+
+  ```jsx
+  <Breadcrumb
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    separator=" / "
+  />
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the breadcrumb items before displaying them.
+
+  ```jsx
+  <Breadcrumb
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    transformItems={(items) =>
+      items.map((item) => ({
+        ...item,
+        label: item.label.toUpperCase(),
+      }))
+    }
+  />
+  ```
+</ParamField>
+
+<ParamField path="translations" type="object">
+  Customize the text strings.
+
+  ```jsx
+  <Breadcrumb
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    translations={{
+      rootElementText: 'Home',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, Breadcrumb, HierarchicalMenu } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <Breadcrumb
+        attributes={[
+          'hierarchicalCategories.lvl0',
+          'hierarchicalCategories.lvl1',
+          'hierarchicalCategories.lvl2',
+        ]}
+      />
+      <HierarchicalMenu
+        attributes={[
+          'hierarchicalCategories.lvl0',
+          'hierarchicalCategories.lvl1',
+          'hierarchicalCategories.lvl2',
+        ]}
+      />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [HierarchicalMenu Component](/api/react/components/hierarchicalmenu)
+- [useBreadcrumb Hook](/api/react/hooks/use-breadcrumb)

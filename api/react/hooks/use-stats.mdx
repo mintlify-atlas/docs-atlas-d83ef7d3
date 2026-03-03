@@ -1,0 +1,301 @@
+---
+title: 'useStats'
+description: 'Display search statistics'
+---
+
+The `useStats` hook provides the logic to build a custom widget that displays search statistics such as the number of hits and processing time.
+
+## Import
+
+```jsx
+import { useStats } from 'react-instantsearch';
+```
+
+## Parameters
+
+This hook does not accept any parameters.
+
+## Returns
+
+<ResponseField name="nbHits" type="number">
+  The number of hits in the result set.
+
+  ```jsx
+  const { nbHits } = useStats();
+  console.log(nbHits); // 1234
+  ```
+</ResponseField>
+
+<ResponseField name="nbSortedHits" type="number | undefined">
+  The number of sorted hits in the result set (when using Relevant sort).
+
+  ```jsx
+  const { nbSortedHits } = useStats();
+  if (nbSortedHits) {
+    console.log(`Showing ${nbSortedHits} relevant results`);
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="areHitsSorted" type="boolean">
+  Whether the index is currently using Relevant sort and displaying only sorted hits.
+
+  ```jsx
+  const { areHitsSorted } = useStats();
+  if (areHitsSorted) {
+    console.log('Results are sorted by relevance');
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="nbPages" type="number">
+  The number of pages computed for the result set.
+
+  ```jsx
+  const { nbPages } = useStats();
+  console.log(`Total pages: ${nbPages}`);
+  ```
+</ResponseField>
+
+<ResponseField name="page" type="number">
+  The current page (zero-indexed).
+
+  ```jsx
+  const { page } = useStats();
+  console.log(`Current page: ${page + 1}`);
+  ```
+</ResponseField>
+
+<ResponseField name="processingTimeMS" type="number">
+  The time taken to compute the results inside the Algolia engine (in milliseconds).
+
+  ```jsx
+  const { processingTimeMS } = useStats();
+  console.log(`Search took ${processingTimeMS}ms`);
+  ```
+</ResponseField>
+
+<ResponseField name="hitsPerPage" type="number | undefined">
+  The maximum number of hits per page returned by Algolia.
+
+  ```jsx
+  const { hitsPerPage } = useStats();
+  console.log(`Showing ${hitsPerPage} items per page`);
+  ```
+</ResponseField>
+
+<ResponseField name="query" type="string">
+  The query used for the current search.
+
+  ```jsx
+  const { query } = useStats();
+  console.log(`Search query: "${query}"`);
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Stats Display
+
+```jsx
+import { useStats } from 'react-instantsearch';
+
+function SearchStats() {
+  const { nbHits, processingTimeMS } = useStats();
+
+  return (
+    <div>
+      <strong>{nbHits.toLocaleString()}</strong> results found in{' '}
+      <strong>{processingTimeMS}ms</strong>
+    </div>
+  );
+}
+```
+
+### With Query Display
+
+```jsx
+import { useStats } from 'react-instantsearch';
+
+function StatsWithQuery() {
+  const { nbHits, query, processingTimeMS } = useStats();
+
+  return (
+    <div className="search-stats">
+      {query ? (
+        <p>
+          <strong>{nbHits.toLocaleString()}</strong> results for{' '}
+          <em>"{query}"</em> in {processingTimeMS}ms
+        </p>
+      ) : (
+        <p>
+          <strong>{nbHits.toLocaleString()}</strong> results in{' '}
+          {processingTimeMS}ms
+        </p>
+      )}
+    </div>
+  );
+}
+```
+
+### Pagination Stats
+
+```jsx
+import { useStats } from 'react-instantsearch';
+
+function PaginationStats() {
+  const { page, nbPages, hitsPerPage, nbHits } = useStats();
+
+  const startResult = page * (hitsPerPage || 0) + 1;
+  const endResult = Math.min((page + 1) * (hitsPerPage || 0), nbHits);
+
+  return (
+    <div>
+      Showing {startResult}-{endResult} of {nbHits.toLocaleString()} results
+      (page {page + 1} of {nbPages})
+    </div>
+  );
+}
+```
+
+### Detailed Stats Panel
+
+```jsx
+import { useStats } from 'react-instantsearch';
+
+function DetailedStats() {
+  const {
+    nbHits,
+    nbSortedHits,
+    areHitsSorted,
+    nbPages,
+    page,
+    hitsPerPage,
+    processingTimeMS,
+    query,
+  } = useStats();
+
+  return (
+    <div className="detailed-stats">
+      <h3>Search Statistics</h3>
+      <dl>
+        <dt>Query:</dt>
+        <dd>{query || '(empty)'}</dd>
+
+        <dt>Total Results:</dt>
+        <dd>{nbHits.toLocaleString()}</dd>
+
+        {areHitsSorted && nbSortedHits && (
+          <>
+            <dt>Relevant Results:</dt>
+            <dd>{nbSortedHits.toLocaleString()}</dd>
+          </>
+        )}
+
+        <dt>Processing Time:</dt>
+        <dd>{processingTimeMS}ms</dd>
+
+        <dt>Current Page:</dt>
+        <dd>
+          {page + 1} of {nbPages}
+        </dd>
+
+        <dt>Results per Page:</dt>
+        <dd>{hitsPerPage}</dd>
+      </dl>
+    </div>
+  );
+}
+```
+
+### Compact Stats
+
+```jsx
+import { useStats } from 'react-instantsearch';
+
+function CompactStats() {
+  const { nbHits } = useStats();
+
+  return (
+    <span className="compact-stats">
+      {nbHits.toLocaleString()} {nbHits === 1 ? 'result' : 'results'}
+    </span>
+  );
+}
+```
+
+### No Results Message
+
+```jsx
+import { useStats } from 'react-instantsearch';
+
+function NoResultsMessage() {
+  const { nbHits, query } = useStats();
+
+  if (nbHits > 0) {
+    return null;
+  }
+
+  return (
+    <div className="no-results">
+      <h3>No results found</h3>
+      {query && (
+        <p>
+          Your search for <strong>"{query}"</strong> did not match any
+          products.
+        </p>
+      )}
+      <p>Try different or more general keywords.</p>
+    </div>
+  );
+}
+```
+
+### Performance Indicator
+
+```jsx
+import { useStats } from 'react-instantsearch';
+
+function PerformanceIndicator() {
+  const { processingTimeMS, nbHits } = useStats();
+
+  const getPerformanceLevel = (ms) => {
+    if (ms < 100) return { label: 'Fast', color: 'green' };
+    if (ms < 500) return { label: 'Normal', color: 'orange' };
+    return { label: 'Slow', color: 'red' };
+  };
+
+  const performance = getPerformanceLevel(processingTimeMS);
+
+  return (
+    <div className="performance">
+      <span>{nbHits.toLocaleString()} results</span>
+      <span style={{ color: performance.color }}>
+        {processingTimeMS}ms ({performance.label})
+      </span>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useStats } from 'react-instantsearch';
+
+function SearchStats() {
+  const { nbHits, processingTimeMS, query } = useStats();
+
+  return (
+    <div>
+      {nbHits} results for "{query}" in {processingTimeMS}ms
+    </div>
+  );
+}
+```
+
+## Related
+
+- [useHits Hook](/api/react/hooks/use-hits)
+- [usePagination Hook](/api/react/hooks/use-pagination)
+- [useInstantSearch Hook](/api/react/hooks/use-instant-search)

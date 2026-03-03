@@ -1,0 +1,227 @@
+---
+title: 'useTrendingItems'
+description: 'Display trending items recommendations'
+---
+
+The `useTrendingItems` hook provides the logic to build a custom component that displays trending items based on Algolia's Recommend API.
+
+## Import
+
+```jsx
+import { useTrendingItems } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="maxRecommendations" type="number">
+  Maximum number of trending items to display.
+
+  ```jsx
+  const { items } = useTrendingItems({
+    maxRecommendations: 10,
+  });
+  ```
+</ParamField>
+
+<ParamField path="facetName" type="string">
+  Filter trending items by a specific facet.
+
+  ```jsx
+  const { items } = useTrendingItems({
+    facetName: 'category',
+  });
+  ```
+</ParamField>
+
+<ParamField path="facetValue" type="string">
+  The value of the facet to filter by.
+
+  ```jsx
+  const { items } = useTrendingItems({
+    facetName: 'category',
+    facetValue: 'electronics',
+  });
+  ```
+</ParamField>
+
+<ParamField path="queryParameters" type="SearchParameters">
+  Additional search parameters to apply.
+</ParamField>
+
+<ParamField path="threshold" type="number">
+  Minimum score for an item to be included.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: Hit[]) => Hit[]">
+  Function to transform the items.
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="Hit[]">
+  The list of trending items.
+
+  ```jsx
+  const { items } = useTrendingItems();
+  ```
+</ResponseField>
+
+<ResponseField name="results" type="SearchResults | undefined">
+  The complete recommendation results from Algolia.
+</ResponseField>
+
+## Examples
+
+### Basic Trending Items
+
+```jsx
+import { useTrendingItems } from 'react-instantsearch';
+
+function TrendingProducts() {
+  const { items } = useTrendingItems({
+    maxRecommendations: 8,
+  });
+
+  return (
+    <div className="trending">
+      <h2>Trending Now</h2>
+      <div className="product-grid">
+        {items.map((item) => (
+          <div key={item.objectID} className="product-card">
+            <span className="badge">🔥 Trending</span>
+            <img src={item.image} alt={item.name} />
+            <h3>{item.name}</h3>
+            <p>${item.price}</p>
+            <button>View Product</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Trending by Category
+
+```jsx
+import { useTrendingItems } from 'react-instantsearch';
+
+function TrendingInCategory({ category }) {
+  const { items } = useTrendingItems({
+    facetName: 'category',
+    facetValue: category,
+    maxRecommendations: 6,
+  });
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div>
+      <h3>Trending in {category}</h3>
+      <div className="items">
+        {items.map((item) => (
+          <div key={item.objectID}>
+            <img src={item.image} alt={item.name} />
+            <p>{item.name}</p>
+            <p>${item.price}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Homepage Hero Section
+
+```jsx
+import { useTrendingItems } from 'react-instantsearch';
+
+function TrendingHero() {
+  const { items } = useTrendingItems({
+    maxRecommendations: 4,
+  });
+
+  return (
+    <section className="hero">
+      <h1>What's Hot Right Now</h1>
+      <div className="hero-grid">
+        {items.map((item, index) => (
+          <div
+            key={item.objectID}
+            className={`hero-item ${index === 0 ? 'featured' : ''}`}
+          >
+            <img src={item.image} alt={item.name} />
+            <div className="overlay">
+              <h3>{item.name}</h3>
+              <p>{item.description}</p>
+              <button>Shop Now</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+```
+
+### With Horizontal Scroll
+
+```jsx
+import { useTrendingItems } from 'react-instantsearch';
+
+function TrendingScroll() {
+  const { items } = useTrendingItems({
+    maxRecommendations: 15,
+  });
+
+  return (
+    <div className="trending-section">
+      <h2>Trending Products</h2>
+      <div className="horizontal-scroll">
+        {items.map((item) => (
+          <div key={item.objectID} className="scroll-item">
+            <img src={item.image} alt={item.name} />
+            <h4>{item.name}</h4>
+            <p>${item.price}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useTrendingItems } from 'react-instantsearch';
+import type { UseTrendingItemsProps } from 'react-instantsearch';
+
+interface Product {
+  objectID: string;
+  name: string;
+  price: number;
+  image: string;
+}
+
+function TrendingProducts(props?: UseTrendingItemsProps) {
+  const { items } = useTrendingItems<Product>(props);
+
+  return (
+    <div>
+      {items.map((item) => (
+        <div key={item.objectID}>{item.name}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Related
+
+- [useRelatedProducts Hook](/api/react/hooks/use-related-products)
+- [useFrequentlyBoughtTogether Hook](/api/react/hooks/use-frequently-bought-together)
+- [Recommend API](https://www.algolia.com/doc/rest-api/recommend/)

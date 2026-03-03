@@ -1,0 +1,297 @@
+---
+title: 'useHitsPerPage'
+description: 'Build custom hits per page selector components'
+---
+
+The `useHitsPerPage` hook provides the logic to build a custom component that allows users to change the number of results displayed per page.
+
+## Import
+
+```jsx
+import { useHitsPerPage } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="items" type="HitsPerPageItem[]" required>
+  Array of objects defining the different values and labels.
+
+  ```jsx
+  const { refine } = useHitsPerPage({
+    items: [
+      { label: '12 hits per page', value: 12 },
+      { label: '24 hits per page', value: 24, default: true },
+      { label: '48 hits per page', value: 48 },
+    ],
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: HitsPerPageItem[]) => HitsPerPageItem[]">
+  Function to transform the items passed to the templates.
+
+  ```jsx
+  const { items } = useHitsPerPage({
+    items: [{ label: '12', value: 12 }],
+    transformItems: (items) =>
+      items.map((item) => ({
+        ...item,
+        label: `${item.value} results`,
+      })),
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="HitsPerPageItem[]">
+  Array of objects defining the different values and labels.
+
+  ```jsx
+  const { items } = useHitsPerPage({
+    items: [{ label: '12', value: 12 }],
+  });
+  items.forEach((item) => {
+    console.log(item.label);      // "12 hits per page"
+    console.log(item.value);      // 12
+    console.log(item.isRefined);  // true/false
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(value: number) => void">
+  Function to set the number of hits per page and trigger a search.
+
+  ```jsx
+  const { refine } = useHitsPerPage({
+    items: [{ label: '12', value: 12 }],
+  });
+  refine(24);
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether the search state can be refined.
+
+  ```jsx
+  const { canRefine } = useHitsPerPage({
+    items: [{ label: '12', value: 12 }],
+  });
+  if (!canRefine) {
+    return <p>No options available</p>;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="createURL" type="(value: number) => string">
+  Function to create a URL for a single item.
+
+  ```jsx
+  const { createURL } = useHitsPerPage({
+    items: [{ label: '12', value: 12 }],
+  });
+  const url = createURL(24);
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Dropdown
+
+```jsx
+import { useHitsPerPage } from 'react-instantsearch';
+
+function HitsPerPageSelector() {
+  const { items, refine } = useHitsPerPage({
+    items: [
+      { label: '12 per page', value: 12 },
+      { label: '24 per page', value: 24, default: true },
+      { label: '48 per page', value: 48 },
+    ],
+  });
+
+  const currentValue = items.find((item) => item.isRefined)?.value;
+
+  return (
+    <div>
+      <label htmlFor="hits-per-page">Results per page:</label>
+      <select
+        id="hits-per-page"
+        value={currentValue}
+        onChange={(e) => refine(Number(e.target.value))}
+      >
+        {items.map((item) => (
+          <option key={item.value} value={item.value}>
+            {item.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+```
+
+### Radio Button Style
+
+```jsx
+import { useHitsPerPage } from 'react-instantsearch';
+
+function RadioHitsPerPage() {
+  const { items, refine } = useHitsPerPage({
+    items: [
+      { label: '12', value: 12 },
+      { label: '24', value: 24, default: true },
+      { label: '48', value: 48 },
+      { label: '96', value: 96 },
+    ],
+  });
+
+  return (
+    <div>
+      <h4>Show:</h4>
+      {items.map((item) => (
+        <label key={item.value} style={{ display: 'block' }}>
+          <input
+            type="radio"
+            name="hits-per-page"
+            checked={item.isRefined}
+            onChange={() => refine(item.value)}
+          />
+          {item.label} results
+        </label>
+      ))}
+    </div>
+  );
+}
+```
+
+### Button Group
+
+```jsx
+import { useHitsPerPage } from 'react-instantsearch';
+
+function HitsPerPageButtons() {
+  const { items, refine } = useHitsPerPage({
+    items: [
+      { label: '12', value: 12 },
+      { label: '24', value: 24, default: true },
+      { label: '48', value: 48 },
+    ],
+  });
+
+  return (
+    <div className="button-group">
+      <span>Show: </span>
+      {items.map((item) => (
+        <button
+          key={item.value}
+          onClick={() => refine(item.value)}
+          className={item.isRefined ? 'active' : ''}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+### Compact Selector
+
+```jsx
+import { useHitsPerPage } from 'react-instantsearch';
+
+function CompactHitsPerPage() {
+  const { items, refine } = useHitsPerPage({
+    items: [
+      { label: '12', value: 12 },
+      { label: '24', value: 24, default: true },
+      { label: '48', value: 48 },
+    ],
+  });
+
+  const currentItem = items.find((item) => item.isRefined);
+
+  return (
+    <select
+      value={currentItem?.value}
+      onChange={(e) => refine(Number(e.target.value))}
+      style={{ display: 'inline', width: 'auto' }}
+    >
+      {items.map((item) => (
+        <option key={item.value} value={item.value}>
+          {item.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+### With Link Navigation
+
+```jsx
+import { useHitsPerPage } from 'react-instantsearch';
+import Link from 'next/link';
+
+function HitsPerPageLinks() {
+  const { items, refine, createURL } = useHitsPerPage({
+    items: [
+      { label: '12', value: 12 },
+      { label: '24', value: 24, default: true },
+      { label: '48', value: 48 },
+    ],
+  });
+
+  return (
+    <div>
+      <span>Show: </span>
+      {items.map((item) => (
+        <Link
+          key={item.value}
+          href={createURL(item.value)}
+          onClick={(e) => {
+            e.preventDefault();
+            refine(item.value);
+          }}
+          style={{ fontWeight: item.isRefined ? 'bold' : 'normal' }}
+        >
+          {item.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useHitsPerPage } from 'react-instantsearch';
+import type { UseHitsPerPageProps } from 'react-instantsearch';
+
+function HitsPerPageSelector(props: UseHitsPerPageProps) {
+  const { items, refine } = useHitsPerPage(props);
+
+  const currentValue = items.find((item) => item.isRefined)?.value;
+
+  return (
+    <select
+      value={currentValue}
+      onChange={(e) => refine(Number(e.target.value))}
+    >
+      {items.map((item) => (
+        <option key={item.value} value={item.value}>
+          {item.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+## Related
+
+- [usePagination Hook](/api/react/hooks/use-pagination)
+- [useInfiniteHits Hook](/api/react/hooks/use-infinite-hits)
+- [useConfigure Hook](/api/react/hooks/use-configure)

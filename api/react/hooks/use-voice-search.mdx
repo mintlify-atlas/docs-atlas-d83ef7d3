@@ -1,0 +1,284 @@
+---
+title: 'useVoiceSearch'
+description: 'Build custom voice search components'
+---
+
+The `useVoiceSearch` hook provides the logic to build a custom voice search component using the Web Speech API.
+
+## Import
+
+```jsx
+import { useVoiceSearch } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="searchAsYouSpeak" type="boolean" default="false">
+  Whether to trigger a search on every interim result (partial results during speech).
+
+  ```jsx
+  const hook = useVoiceSearch({
+    searchAsYouSpeak: true,
+  });
+  ```
+</ParamField>
+
+<ParamField path="language" type="string">
+  The language for speech recognition (e.g., 'en-US', 'fr-FR').
+
+  ```jsx
+  const hook = useVoiceSearch({
+    language: 'en-US',
+  });
+  ```
+</ParamField>
+
+<ParamField path="additionalQueryParameters" type="(params: { query: string }) => PlainSearchParameters | void">
+  Function to add additional query parameters based on the voice input.
+
+  ```jsx
+  const hook = useVoiceSearch({
+    additionalQueryParameters: ({ query }) => ({
+      filters: `category:${query}`,
+    }),
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="isBrowserSupported" type="boolean">
+  Whether the browser supports the Web Speech API.
+
+  ```jsx
+  const { isBrowserSupported } = useVoiceSearch();
+  if (!isBrowserSupported) {
+    return <p>Voice search is not supported in your browser</p>;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="isListening" type="boolean">
+  Whether the voice search is currently listening.
+
+  ```jsx
+  const { isListening } = useVoiceSearch();
+  console.log(isListening); // true/false
+  ```
+</ResponseField>
+
+<ResponseField name="toggleListening" type="() => void">
+  Function to start or stop listening for voice input.
+
+  ```jsx
+  const { toggleListening } = useVoiceSearch();
+  toggleListening(); // Start or stop listening
+  ```
+</ResponseField>
+
+<ResponseField name="voiceListeningState" type="VoiceListeningState">
+  The current state of the voice recognition.
+
+  ```jsx
+  const { voiceListeningState } = useVoiceSearch();
+  console.log(voiceListeningState); // 'idle' | 'waiting' | 'recognizing' | 'finished' | 'error'
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Voice Search Button
+
+```jsx
+import { useVoiceSearch } from 'react-instantsearch';
+
+function VoiceSearchButton() {
+  const { isBrowserSupported, isListening, toggleListening } = useVoiceSearch();
+
+  if (!isBrowserSupported) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={toggleListening}
+      disabled={!isBrowserSupported}
+      className={isListening ? 'listening' : ''}
+    >
+      {isListening ? '🎤 Listening...' : '🎤 Voice Search'}
+    </button>
+  );
+}
+```
+
+### Voice Search with Status
+
+```jsx
+import { useVoiceSearch } from 'react-instantsearch';
+
+function VoiceSearchWithStatus() {
+  const {
+    isBrowserSupported,
+    isListening,
+    toggleListening,
+    voiceListeningState,
+  } = useVoiceSearch();
+
+  if (!isBrowserSupported) {
+    return <p>Voice search is not supported in your browser</p>;
+  }
+
+  const getStatusMessage = () => {
+    switch (voiceListeningState) {
+      case 'idle':
+        return 'Click to start voice search';
+      case 'waiting':
+        return 'Initializing...';
+      case 'recognizing':
+        return 'Listening...';
+      case 'finished':
+        return 'Processing...';
+      case 'error':
+        return 'Error occurred';
+      default:
+        return '';
+    }
+  };
+
+  return (
+    <div className="voice-search">
+      <button onClick={toggleListening}>
+        {isListening ? 'Stop' : 'Start'} Voice Search
+      </button>
+      <p className="status">{getStatusMessage()}</p>
+    </div>
+  );
+}
+```
+
+### Voice Search with Animation
+
+```jsx
+import { useVoiceSearch } from 'react-instantsearch';
+
+function AnimatedVoiceSearch() {
+  const { isBrowserSupported, isListening, toggleListening } = useVoiceSearch();
+
+  if (!isBrowserSupported) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={toggleListening}
+      className="voice-button"
+      style={{
+        position: 'relative',
+        width: '60px',
+        height: '60px',
+        borderRadius: '50%',
+        backgroundColor: isListening ? '#e74c3c' : '#3498db',
+        border: 'none',
+        color: 'white',
+        fontSize: '24px',
+        cursor: 'pointer',
+        animation: isListening ? 'pulse 1s infinite' : 'none',
+      }}
+    >
+      🎤
+    </button>
+  );
+}
+```
+
+### Search As You Speak
+
+```jsx
+import { useVoiceSearch } from 'react-instantsearch';
+
+function LiveVoiceSearch() {
+  const { isBrowserSupported, isListening, toggleListening } = useVoiceSearch({
+    searchAsYouSpeak: true,
+  });
+
+  if (!isBrowserSupported) {
+    return <p>Voice search not supported</p>;
+  }
+
+  return (
+    <div>
+      <button onClick={toggleListening}>
+        {isListening ? '🔴 Recording' : '🎤 Start Voice Search'}
+      </button>
+      {isListening && (
+        <p className="live-indicator">
+          Search results update as you speak...
+        </p>
+      )}
+    </div>
+  );
+}
+```
+
+### Voice Search with Language Selector
+
+```jsx
+import { useVoiceSearch } from 'react-instantsearch';
+import { useState } from 'react';
+
+function MultilingualVoiceSearch() {
+  const [language, setLanguage] = useState('en-US');
+  const { isBrowserSupported, isListening, toggleListening } = useVoiceSearch({
+    language,
+  });
+
+  if (!isBrowserSupported) {
+    return null;
+  }
+
+  return (
+    <div>
+      <select
+        value={language}
+        onChange={(e) => setLanguage(e.target.value)}
+        disabled={isListening}
+      >
+        <option value="en-US">English (US)</option>
+        <option value="en-GB">English (UK)</option>
+        <option value="fr-FR">French</option>
+        <option value="es-ES">Spanish</option>
+        <option value="de-DE">German</option>
+      </select>
+      <button onClick={toggleListening}>
+        {isListening ? 'Stop' : 'Start'}
+      </button>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useVoiceSearch } from 'react-instantsearch';
+import type { UseVoiceSearchProps } from 'react-instantsearch';
+
+function VoiceSearchButton(props?: UseVoiceSearchProps) {
+  const { isBrowserSupported, isListening, toggleListening } = useVoiceSearch(props);
+
+  if (!isBrowserSupported) {
+    return null;
+  }
+
+  return (
+    <button onClick={toggleListening}>
+      {isListening ? 'Stop' : 'Start'} Voice Search
+    </button>
+  );
+}
+```
+
+## Related
+
+- [useSearchBox Hook](/api/react/hooks/use-search-box)
+- [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)

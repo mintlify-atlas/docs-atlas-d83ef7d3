@@ -1,0 +1,313 @@
+---
+title: 'useCurrentRefinements'
+description: 'Display and manage active refinements'
+---
+
+The `useCurrentRefinements` hook provides the logic to build a custom component that displays all currently active refinements and allows users to remove them.
+
+## Import
+
+```jsx
+import { useCurrentRefinements } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="includedAttributes" type="string[]">
+  The attributes to include in the refinements list. Cannot be used with `excludedAttributes`.
+
+  ```jsx
+  const { items } = useCurrentRefinements({
+    includedAttributes: ['brand', 'category'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="excludedAttributes" type="string[]">
+  The attributes to exclude from the refinements list. Cannot be used with `includedAttributes`.
+
+  ```jsx
+  const { items } = useCurrentRefinements({
+    excludedAttributes: ['query'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: RefinementItem[]) => RefinementItem[]">
+  Function to transform the items.
+
+  ```jsx
+  const { items } = useCurrentRefinements({
+    transformItems: (items) =>
+      items.map((item) => ({
+        ...item,
+        label: item.label.toUpperCase(),
+      })),
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="RefinementItem[]">
+  The list of current refinements grouped by attribute.
+
+  ```jsx
+  const { items } = useCurrentRefinements();
+  items.forEach((item) => {
+    console.log(item.attribute);    // "brand"
+    console.log(item.label);        // "Brand"
+    console.log(item.refinements);  // Array of refinements
+    console.log(item.indexName);    // "products"
+    console.log(item.indexId);      // "products"
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(refinement: Refinement) => void">
+  Function to remove a specific refinement.
+
+  ```jsx
+  const { items, refine } = useCurrentRefinements();
+  const refinement = items[0].refinements[0];
+  refine(refinement);
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether there are any refinements that can be removed.
+
+  ```jsx
+  const { canRefine } = useCurrentRefinements();
+  if (!canRefine) {
+    return <p>No active filters</p>;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="createURL" type="(refinement: Refinement) => string">
+  Function to create a URL for removing a refinement.
+
+  ```jsx
+  const { createURL } = useCurrentRefinements();
+  const url = createURL(refinement);
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Refinement Display
+
+```jsx
+import { useCurrentRefinements } from 'react-instantsearch';
+
+function CurrentFilters() {
+  const { items, refine } = useCurrentRefinements();
+
+  return (
+    <div>
+      <h3>Active Filters</h3>
+      {items.map((item) => (
+        <div key={item.attribute}>
+          <strong>{item.label}:</strong>
+          {item.refinements.map((refinement) => (
+            <button
+              key={refinement.label}
+              onClick={() => refine(refinement)}
+            >
+              {refinement.label} ✕
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Tag-Style Filters
+
+```jsx
+import { useCurrentRefinements } from 'react-instantsearch';
+
+function FilterTags() {
+  const { items, refine } = useCurrentRefinements();
+
+  return (
+    <div className="filter-tags">
+      {items.map((item) =>
+        item.refinements.map((refinement) => (
+          <span key={`${item.attribute}-${refinement.label}`} className="tag">
+            <span className="tag-label">
+              {item.label}: {refinement.label}
+            </span>
+            <button
+              className="tag-remove"
+              onClick={() => refine(refinement)}
+              aria-label={`Remove ${refinement.label} filter`}
+            >
+              ✕
+            </button>
+          </span>
+        ))
+      )}
+    </div>
+  );
+}
+```
+
+### With Empty State
+
+```jsx
+import { useCurrentRefinements } from 'react-instantsearch';
+
+function FiltersWithEmpty() {
+  const { items, refine, canRefine } = useCurrentRefinements();
+
+  if (!canRefine) {
+    return <p>No filters applied</p>;
+  }
+
+  return (
+    <div>
+      {items.map((item) => (
+        <div key={item.attribute}>
+          <h4>{item.label}</h4>
+          <ul>
+            {item.refinements.map((refinement) => (
+              <li key={refinement.label}>
+                {refinement.label}
+                <button onClick={() => refine(refinement)}>
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Grouped by Attribute
+
+```jsx
+import { useCurrentRefinements } from 'react-instantsearch';
+
+function GroupedFilters() {
+  const { items, refine } = useCurrentRefinements();
+
+  return (
+    <div className="grouped-filters">
+      {items.map((item) => (
+        <div key={item.attribute} className="filter-group">
+          <div className="filter-header">
+            <strong>{item.label}</strong>
+            <span className="count">({item.refinements.length})</span>
+          </div>
+          <div className="filter-values">
+            {item.refinements.map((refinement) => (
+              <div key={refinement.label} className="filter-value">
+                <span>{refinement.label}</span>
+                {refinement.count && <span>({refinement.count})</span>}
+                <button onClick={() => refine(refinement)}>Remove</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Exclude Query Parameter
+
+```jsx
+import { useCurrentRefinements } from 'react-instantsearch';
+
+function FiltersWithoutQuery() {
+  const { items, refine } = useCurrentRefinements({
+    excludedAttributes: ['query'],
+  });
+
+  return (
+    <div>
+      {items.map((item) =>
+        item.refinements.map((refinement) => (
+          <button
+            key={`${item.attribute}-${refinement.label}`}
+            onClick={() => refine(refinement)}
+          >
+            {refinement.label} ✕
+          </button>
+        ))
+      )}
+    </div>
+  );
+}
+```
+
+### With Refinement Details
+
+```jsx
+import { useCurrentRefinements } from 'react-instantsearch';
+
+function DetailedFilters() {
+  const { items, refine } = useCurrentRefinements();
+
+  return (
+    <div>
+      {items.map((item) => (
+        <div key={item.attribute}>
+          <h4>{item.label}</h4>
+          {item.refinements.map((refinement) => (
+            <div key={refinement.label} className="refinement">
+              <div>
+                <strong>{refinement.label}</strong>
+                {refinement.type && (
+                  <span className="type">({refinement.type})</span>
+                )}
+              </div>
+              {refinement.operator && (
+                <span>Operator: {refinement.operator}</span>
+              )}
+              <button onClick={() => refine(refinement)}>Remove</button>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useCurrentRefinements } from 'react-instantsearch';
+import type { UseCurrentRefinementsProps } from 'react-instantsearch';
+
+function CurrentFilters(props?: UseCurrentRefinementsProps) {
+  const { items, refine } = useCurrentRefinements(props);
+
+  return (
+    <div>
+      {items.map((item) =>
+        item.refinements.map((refinement) => (
+          <button key={refinement.label} onClick={() => refine(refinement)}>
+            {refinement.label}
+          </button>
+        ))
+      )}
+    </div>
+  );
+}
+```
+
+## Related
+
+- [useClearRefinements Hook](/api/react/hooks/use-clear-refinements)
+- [useRefinementList Hook](/api/react/hooks/use-refinement-list)
+- [useMenu Hook](/api/react/hooks/use-menu)

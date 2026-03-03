@@ -1,0 +1,84 @@
+---
+title: '<CurrentRefinements>'
+description: 'Display all active refinements'
+---
+
+The `<CurrentRefinements>` component displays a list of all currently active refinements with the ability to remove them.
+
+## Import
+
+```jsx
+import { CurrentRefinements } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="includedAttributes" type="string[]">
+  Attributes to include in the list. By default, all refineable attributes are included.
+
+  ```jsx
+  <CurrentRefinements includedAttributes={['brand', 'category']} />
+  ```
+</ParamField>
+
+<ParamField path="excludedAttributes" type="string[]">
+  Attributes to exclude from the list.
+
+  ```jsx
+  <CurrentRefinements excludedAttributes={['query']} />
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the refinement items before displaying them.
+
+  ```jsx
+  <CurrentRefinements
+    transformItems={(items) =>
+      items.map((item) => ({
+        ...item,
+        label: item.label.toUpperCase(),
+      }))
+    }
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import {
+  InstantSearch,
+  CurrentRefinements,
+  RefinementList,
+  SearchBox,
+} from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      <CurrentRefinements />
+      <div className="filters">
+        <RefinementList attribute="brand" />
+        <RefinementList attribute="category" />
+      </div>
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [ClearRefinements Component](/api/react/components/clearrefinements)
+- [useCurrentRefinements Hook](/api/react/hooks/use-current-refinements)

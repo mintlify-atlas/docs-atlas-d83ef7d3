@@ -1,0 +1,288 @@
+---
+title: index
+description: Search multiple indices within a single InstantSearch instance
+---
+
+The index widget allows you to target multiple Algolia indices within a single InstantSearch instance. This is useful for federated search, where you want to display results from different indices simultaneously, or for creating complex search interfaces with different search configurations.
+
+## Usage
+
+```javascript
+const productsIndex = instantsearch.widgets.index({
+  indexName: 'products',
+});
+
+const articlesIndex = instantsearch.widgets.index({
+  indexName: 'articles',
+});
+
+search.addWidgets([
+  productsIndex,
+  articlesIndex,
+]);
+```
+
+## Examples
+
+### Basic Federated Search
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+// Main index widgets
+search.addWidgets([
+  instantsearch.widgets.searchBox({ container: '#searchbox' }),
+  instantsearch.widgets.hits({ container: '#products-hits' }),
+]);
+
+// Secondary index
+const articlesIndex = instantsearch.widgets.index({
+  indexName: 'articles',
+});
+
+articlesIndex.addWidgets([
+  instantsearch.widgets.hits({ container: '#articles-hits' }),
+  instantsearch.widgets.configure({ hitsPerPage: 3 }),
+]);
+
+search.addWidget(articlesIndex);
+```
+
+### Multiple Indices with Different Refinements
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+// Products index with category filter
+const electronicsIndex = instantsearch.widgets.index({
+  indexName: 'products',
+  indexId: 'electronics',
+});
+
+electronicsIndex.addWidgets([
+  instantsearch.widgets.configure({ filters: 'category:electronics' }),
+  instantsearch.widgets.hits({ container: '#electronics-hits' }),
+]);
+
+// Products index with different category filter
+const clothingIndex = instantsearch.widgets.index({
+  indexName: 'products',
+  indexId: 'clothing',
+});
+
+clothingIndex.addWidgets([
+  instantsearch.widgets.configure({ filters: 'category:clothing' }),
+  instantsearch.widgets.hits({ container: '#clothing-hits' }),
+]);
+
+search.addWidgets([electronicsIndex, clothingIndex]);
+```
+
+### Isolated Index (Experimental)
+
+```javascript
+const isolatedIndex = instantsearch.widgets.index({
+  indexName: 'suggestions',
+  EXPERIMENTAL_isolated: true,
+});
+
+isolatedIndex.addWidgets([
+  instantsearch.widgets.searchBox({ container: '#suggestions-search' }),
+  instantsearch.widgets.hits({ container: '#suggestions-hits' }),
+]);
+
+search.addWidget(isolatedIndex);
+```
+
+## Options
+
+<ParamField path="indexName" type="string" required>
+  The index or composition ID to target. This is the name of your Algolia index.
+  
+  <Note>
+    When using `EXPERIMENTAL_isolated: true`, this parameter becomes optional.
+  </Note>
+</ParamField>
+
+<ParamField path="indexId" type="string">
+  ID to use for the index if there are multiple index widgets targeting the same index name. This is used to create unique URLs and render state.
+  
+  If not provided, defaults to the `indexName` value.
+</ParamField>
+
+<ParamField path="EXPERIMENTAL_isolated" type="boolean" default="false">
+  If `true`, the index will not be merged with the main helper's state. This means the index will have its own independent search state and won't be part of the main search request.
+  
+  <Warning>
+    This is an **experimental** feature. Implementation details may change:
+    - Which widgets render when a change happens
+    - Whether the index searches automatically
+    - Whether the index is included in the URL/UiState
+    - Whether the index is included in server-side rendering
+  </Warning>
+</ParamField>
+
+## Methods
+
+The index widget provides several methods for managing child widgets:
+
+### addWidgets
+
+```javascript
+indexWidget.addWidgets([
+  instantsearch.widgets.hits({ container: '#hits' }),
+  instantsearch.widgets.refinementList({ container: '#brand', attribute: 'brand' }),
+]);
+```
+
+Adds one or more widgets to this index.
+
+### removeWidgets
+
+```javascript
+indexWidget.removeWidgets([hitsWidget, refinementListWidget]);
+```
+
+Removes one or more widgets from this index.
+
+### getWidgets
+
+```javascript
+const widgets = indexWidget.getWidgets();
+```
+
+Returns an array of all widgets attached to this index.
+
+### getIndexName
+
+```javascript
+const name = indexWidget.getIndexName();
+```
+
+Returns the index name.
+
+### getIndexId
+
+```javascript
+const id = indexWidget.getIndexId();
+```
+
+Returns the index ID.
+
+### getHelper
+
+```javascript
+const helper = indexWidget.getHelper();
+```
+
+Returns the AlgoliaSearch Helper instance for this index.
+
+### setIndexUiState
+
+```javascript
+indexWidget.setIndexUiState({
+  query: 'laptop',
+  refinementList: {
+    brand: ['Apple', 'Dell'],
+  },
+});
+```
+
+Sets the UI state for this index and triggers a search.
+
+## Use Cases
+
+### Federated Search
+
+Display results from multiple indices (products, articles, help docs) in a single search interface:
+
+```javascript
+const search = instantsearch({ indexName: 'products', searchClient });
+
+search.addWidget(
+  instantsearch.widgets.searchBox({ container: '#search' })
+);
+
+const articlesIndex = instantsearch.widgets.index({ indexName: 'articles' });
+articlesIndex.addWidget(
+  instantsearch.widgets.hits({ container: '#articles' })
+);
+
+const docsIndex = instantsearch.widgets.index({ indexName: 'docs' });
+docsIndex.addWidget(
+  instantsearch.widgets.hits({ container: '#docs' })
+);
+
+search.addWidgets([articlesIndex, docsIndex]);
+```
+
+### Same Index, Different Filters
+
+Show different views of the same index with different filters:
+
+```javascript
+const newProducts = instantsearch.widgets.index({
+  indexName: 'products',
+  indexId: 'new-products',
+});
+newProducts.addWidgets([
+  instantsearch.widgets.configure({ filters: 'status:new' }),
+  instantsearch.widgets.hits({ container: '#new-products' }),
+]);
+
+const saleProducts = instantsearch.widgets.index({
+  indexName: 'products',
+  indexId: 'sale-products',
+});
+saleProducts.addWidgets([
+  instantsearch.widgets.configure({ filters: 'on_sale:true' }),
+  instantsearch.widgets.hits({ container: '#sale-products' }),
+]);
+```
+
+### Hierarchical Search
+
+Nest index widgets to create parent-child relationships:
+
+```javascript
+const categoriesIndex = instantsearch.widgets.index({
+  indexName: 'categories',
+});
+
+const productsIndex = instantsearch.widgets.index({
+  indexName: 'products',
+});
+
+categoriesIndex.addWidget(productsIndex);
+search.addWidget(categoriesIndex);
+```
+
+## Behavior
+
+### Search Parameters
+
+By default, child index widgets:
+- Share the same query as the parent
+- Can have independent refinements and configuration
+- Execute searches in parallel
+- Have their own UI state in the URL
+
+### Isolated Indices
+
+When `EXPERIMENTAL_isolated: true`:
+- The index has completely independent search state
+- Searches are triggered separately
+- May not be included in the URL or SSR (subject to change)
+- Useful for auxiliary searches (autocomplete, suggestions)
+
+## Requirements
+
+<Info>
+  The index widget requires that all specified index names exist in your Algolia application.
+</Info>

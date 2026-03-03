@@ -1,0 +1,134 @@
+---
+title: places
+description: Location search using Algolia Places (deprecated)
+---
+
+<Warning>
+  This widget is **deprecated** and will be removed in InstantSearch.js 5.0. The Algolia Places service is no longer offered.
+</Warning>
+
+The places widget sets the geolocation value for search based on a selected result from the Algolia Places autocomplete. It integrates location-based filtering into your search interface.
+
+## Usage
+
+```javascript
+import places from 'places.js';
+
+const placesWidget = instantsearch.widgets.places({
+  placesReference: places,
+  defaultPosition: ['48.8566', '2.3522'], // Paris coordinates
+});
+
+search.addWidget(placesWidget);
+```
+
+## Examples
+
+### Basic Places Widget
+
+```javascript
+import places from 'places.js';
+
+instantsearch.widgets.places({
+  placesReference: places,
+});
+```
+
+### With Default Position
+
+```javascript
+import places from 'places.js';
+
+instantsearch.widgets.places({
+  placesReference: places,
+  defaultPosition: ['40.7128', '-74.0060'], // New York coordinates
+});
+```
+
+### With Places Options
+
+```javascript
+import places from 'places.js';
+
+instantsearch.widgets.places({
+  placesReference: places,
+  container: '#places-input',
+  type: 'city',
+  countries: ['US', 'CA'],
+  language: 'en',
+});
+```
+
+## Options
+
+<ParamField path="placesReference" type="function" required>
+  The Algolia Places reference to use. This should be the `places` function imported from the `places.js` library.
+  
+  See the [Algolia Places documentation](https://github.com/algolia/places) for more details.
+</ParamField>
+
+<ParamField path="defaultPosition" type="string[]">
+  The default position when the input is empty. Expects an array with latitude and longitude as strings.
+  
+  ```javascript
+  ['48.8566', '2.3522'] // Paris
+  ```
+</ParamField>
+
+<ParamField path="container" type="string | HTMLElement">
+  CSS Selector or HTMLElement for the Places autocomplete input. This is passed to the Places.js library.
+</ParamField>
+
+<ParamField path="type" type="string">
+  Restricts the search to a specific type of location. Possible values:
+  - `'city'`
+  - `'country'`
+  - `'address'`
+  - `'busStop'`
+  - `'trainStation'`
+  - `'townhall'`
+  - `'airport'`
+</ParamField>
+
+<ParamField path="countries" type="string[]">
+  Restricts the search to specific countries. Expects an array of ISO 3166-1 alpha-2 country codes.
+  
+  ```javascript
+  ['US', 'CA', 'MX']
+  ```
+</ParamField>
+
+<ParamField path="language" type="string">
+  The language to use for the Places autocomplete. Uses ISO 639-1 language codes.
+</ParamField>
+
+<ParamField path="aroundLatLngViaIP" type="boolean">
+  Whether to bias results around the user's location based on their IP address.
+</ParamField>
+
+<ParamField path="aroundLatLng" type="string">
+  Force the search to be biased around a specific location. Format: `"lat,lng"`
+  
+  ```javascript
+  "48.8566,2.3522"
+  ```
+</ParamField>
+
+## Behavior
+
+When a user selects a location from the Places autocomplete:
+
+1. The widget sets the `aroundLatLng` search parameter to the selected location's coordinates
+2. It disables `aroundLatLngViaIP` to use the exact location
+3. It triggers a new search with the location-based filtering
+
+When the user clears the input:
+
+1. If a `defaultPosition` is set, the search uses those coordinates
+2. Otherwise, it reverts to the initial `aroundLatLngViaIP` setting
+
+## Migration
+
+<Info>
+  Since Algolia Places is deprecated, consider using alternative location search services or implementing a custom solution using the `configure` widget to set geolocation parameters.
+</Info>

@@ -1,0 +1,282 @@
+---
+title: 'useDynamicWidgets'
+description: 'Dynamically render widgets based on facet ordering'
+---
+
+The `useDynamicWidgets` hook provides the logic to dynamically render refinement widgets based on the facet ordering returned by Algolia.
+
+## Import
+
+```jsx
+import { useDynamicWidgets } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="transformItems" type="(items: string[]) => string[]">
+  Function to transform the attribute names to render.
+
+  ```jsx
+  const { attributesToRender } = useDynamicWidgets({
+    transformItems: (items) => items.filter((item) => item !== 'category'),
+  });
+  ```
+</ParamField>
+
+<ParamField path="facets" type="['*'] | string[]" default="['*']">
+  Attributes to request. Use `['*']` to request all facet values.
+
+  ```jsx
+  const hook = useDynamicWidgets({
+    facets: ['brand', 'category', 'price'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="maxValuesPerFacet" type="number" default="20">
+  Maximum number of facet values to request per facet.
+
+  ```jsx
+  const hook = useDynamicWidgets({
+    maxValuesPerFacet: 50,
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="attributesToRender" type="string[]">
+  The list of attribute names that should be rendered, ordered by the facetOrdering configuration.
+
+  ```jsx
+  const { attributesToRender } = useDynamicWidgets();
+  console.log(attributesToRender); // ['brand', 'category', 'color']
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Dynamic Widgets
+
+```jsx
+import {
+  useDynamicWidgets,
+  useRefinementList,
+} from 'react-instantsearch';
+
+function DynamicFacets() {
+  const { attributesToRender } = useDynamicWidgets();
+
+  return (
+    <div>
+      <h3>Filters</h3>
+      {attributesToRender.map((attribute) => (
+        <RefinementListWidget key={attribute} attribute={attribute} />
+      ))}
+    </div>
+  );
+}
+
+function RefinementListWidget({ attribute }) {
+  const { items, refine } = useRefinementList({ attribute });
+
+  return (
+    <div>
+      <h4>{attribute}</h4>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <label>
+              <input
+                type="checkbox"
+                checked={item.isRefined}
+                onChange={() => refine(item.value)}
+              />
+              {item.label} ({item.count})
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### With Fallback Widgets
+
+```jsx
+import {
+  useDynamicWidgets,
+  useRefinementList,
+  useMenu,
+  useNumericMenu,
+} from 'react-instantsearch';
+
+function DynamicFacetsWithFallback() {
+  const { attributesToRender } = useDynamicWidgets();
+
+  const getWidget = (attribute) => {
+    // Use specific widget types for certain attributes
+    if (attribute === 'category') {
+      return <MenuWidget key={attribute} attribute={attribute} />;
+    }
+    if (attribute === 'price') {
+      return <NumericMenuWidget key={attribute} attribute={attribute} />;
+    }
+    // Default to refinement list
+    return <RefinementListWidget key={attribute} attribute={attribute} />;
+  };
+
+  return (
+    <div className="dynamic-facets">
+      {attributesToRender.map((attribute) => getWidget(attribute))}
+    </div>
+  );
+}
+
+function MenuWidget({ attribute }) {
+  const { items, refine } = useMenu({ attribute });
+  // ... menu implementation
+}
+
+function NumericMenuWidget({ attribute }) {
+  const { items, refine } = useNumericMenu({
+    attribute,
+    items: [
+      { label: 'All' },
+      { label: 'Less than $10', end: 10 },
+      { label: '$10 - $100', start: 10, end: 100 },
+      { label: 'More than $100', start: 100 },
+    ],
+  });
+  // ... numeric menu implementation
+}
+
+function RefinementListWidget({ attribute }) {
+  const { items, refine } = useRefinementList({ attribute });
+  // ... refinement list implementation
+}
+```
+
+### With Collapsible Sections
+
+```jsx
+import { useDynamicWidgets, useRefinementList } from 'react-instantsearch';
+import { useState } from 'react';
+
+function CollapsibleDynamicFacets() {
+  const { attributesToRender } = useDynamicWidgets();
+  const [collapsed, setCollapsed] = useState({});
+
+  const toggleCollapse = (attribute) => {
+    setCollapsed((prev) => ({
+      ...prev,
+      [attribute]: !prev[attribute],
+    }));
+  };
+
+  return (
+    <div>
+      {attributesToRender.map((attribute) => (
+        <div key={attribute} className="facet-section">
+          <button
+            className="facet-header"
+            onClick={() => toggleCollapse(attribute)}
+          >
+            <h4>{attribute}</h4>
+            <span>{collapsed[attribute] ? '▶' : '▼'}</span>
+          </button>
+          {!collapsed[attribute] && (
+            <RefinementListWidget attribute={attribute} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RefinementListWidget({ attribute }) {
+  const { items, refine } = useRefinementList({ attribute, limit: 5 });
+  // ... implementation
+}
+```
+
+### With Specific Facets
+
+```jsx
+import { useDynamicWidgets, useRefinementList } from 'react-instantsearch';
+
+function SpecificDynamicFacets() {
+  const { attributesToRender } = useDynamicWidgets({
+    facets: ['brand', 'category', 'color', 'size'],
+    maxValuesPerFacet: 30,
+  });
+
+  return (
+    <div className="filters">
+      <h3>Refine by</h3>
+      {attributesToRender.map((attribute) => (
+        <FacetSection key={attribute} attribute={attribute} />
+      ))}
+    </div>
+  );
+}
+
+function FacetSection({ attribute }) {
+  const { items, refine, canRefine } = useRefinementList({ attribute });
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <div className="facet">
+      <h4>{attribute}</h4>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <label>
+              <input
+                type="checkbox"
+                checked={item.isRefined}
+                onChange={() => refine(item.value)}
+              />
+              {item.label} ({item.count})
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useDynamicWidgets, useRefinementList } from 'react-instantsearch';
+import type { UseDynamicWidgetsProps } from 'react-instantsearch';
+
+function DynamicFacets(props?: UseDynamicWidgetsProps) {
+  const { attributesToRender } = useDynamicWidgets(props);
+
+  return (
+    <div>
+      {attributesToRender.map((attribute) => (
+        <Facet key={attribute} attribute={attribute} />
+      ))}
+    </div>
+  );
+}
+
+function Facet({ attribute }: { attribute: string }) {
+  const { items, refine } = useRefinementList({ attribute });
+  // ... implementation
+}
+```
+
+## Related
+
+- [Dynamic Faceting Guide](https://www.algolia.com/doc/guides/building-search-ui/ui-and-ux-patterns/facet-display/react/)
+- [useRefinementList Hook](/api/react/hooks/use-refinement-list)
+- [Facet Ordering](https://www.algolia.com/doc/api-reference/api-parameters/facetOrdering/)

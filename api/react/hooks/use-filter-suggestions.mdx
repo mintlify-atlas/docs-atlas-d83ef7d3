@@ -1,0 +1,126 @@
+---
+title: 'useFilterSuggestions'
+description: 'Display filter suggestions'
+---
+
+The `useFilterSuggestions` hook provides the logic to build a custom component that suggests filters to users based on their search query.
+
+## Import
+
+```jsx
+import { useFilterSuggestions } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="transformItems" type="(items: FilterSuggestion[]) => FilterSuggestion[]">
+  Function to transform the filter suggestions.
+
+  ```jsx
+  const { items } = useFilterSuggestions({
+    transformItems: (items) => items.slice(0, 5),
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="FilterSuggestion[]">
+  The list of suggested filters.
+
+  ```jsx
+  const { items } = useFilterSuggestions();
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Filter Suggestions
+
+```jsx
+import { useFilterSuggestions } from 'react-instantsearch';
+
+function FilterSuggestions() {
+  const { items } = useFilterSuggestions();
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="filter-suggestions">
+      <h4>Suggested Filters</h4>
+      <div className="suggestions">
+        {items.map((item, index) => (
+          <button
+            key={index}
+            className="suggestion-chip"
+            onClick={() => {
+              // Apply the suggested filter
+              console.log('Applying filter:', item);
+            }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Inline Suggestions
+
+```jsx
+import { useFilterSuggestions, useSearchBox } from 'react-instantsearch';
+
+function SearchWithFilterSuggestions() {
+  const { query, refine } = useSearchBox();
+  const { items } = useFilterSuggestions();
+
+  return (
+    <div>
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => refine(e.target.value)}
+        placeholder="Search..."
+      />
+      {items.length > 0 && (
+        <div className="filter-suggestions">
+          <p>Try filtering by:</p>
+          {items.map((item, index) => (
+            <button key={index} className="chip">
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useFilterSuggestions } from 'react-instantsearch';
+import type { UseFilterSuggestionsProps } from 'react-instantsearch';
+
+function FilterSuggestions(props?: UseFilterSuggestionsProps) {
+  const { items } = useFilterSuggestions(props);
+
+  return (
+    <div>
+      {items.map((item, index) => (
+        <button key={index}>{item.label}</button>
+      ))}
+    </div>
+  );
+}
+```
+
+## Related
+
+- [useQueryRules Hook](/api/react/hooks/use-query-rules)
+- [useCurrentRefinements Hook](/api/react/hooks/use-current-refinements)

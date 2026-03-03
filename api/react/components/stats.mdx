@@ -1,0 +1,100 @@
+---
+title: '<Stats>'
+description: 'Display search statistics'
+---
+
+The `<Stats>` component displays statistics about the current search results, such as the number of hits and processing time.
+
+## Import
+
+```jsx
+import { Stats } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="translations" type="object">
+  Customize the text to display.
+
+  ```jsx
+  <Stats
+    translations={{
+      rootElementText({ nbHits, processingTimeMS, nbSortedHits, areHitsSorted }) {
+        return areHitsSorted && nbHits !== nbSortedHits
+          ? `${nbSortedHits.toLocaleString()} relevant results sorted out of ${nbHits.toLocaleString()} in ${processingTimeMS.toLocaleString()}ms`
+          : `${nbHits.toLocaleString()} results found in ${processingTimeMS.toLocaleString()}ms`;
+      },
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, SearchBox, Stats, Hits } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      <Stats />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## Custom Format
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <Stats
+        translations={{
+          rootElementText({ nbHits, processingTimeMS }) {
+            return `${nbHits} product${nbHits !== 1 ? 's' : ''} found (${processingTimeMS}ms)`;
+          },
+        }}
+      />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## With Sorted Results
+
+When using AI Re-Ranking or similar features that sort results, the Stats component will display both the number of sorted hits and total hits:
+
+```jsx
+// Example output with sorted results:
+// "42 relevant results sorted out of 1,234 found in 23ms"
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      <Stats />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [SearchBox Component](/api/react/components/searchbox)
+- [Hits Component](/api/react/components/hits)
+- [useStats Hook](/api/react/hooks/use-stats)

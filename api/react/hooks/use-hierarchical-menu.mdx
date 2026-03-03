@@ -1,0 +1,307 @@
+---
+title: 'useHierarchicalMenu'
+description: 'Build custom hierarchical menu components'
+---
+
+The `useHierarchicalMenu` hook provides the logic to build a custom hierarchical menu component for faceted navigation with hierarchical data.
+
+## Import
+
+```jsx
+import { useHierarchicalMenu } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="attributes" type="string[]" required>
+  Attributes to use to generate the hierarchy of the menu.
+
+  ```jsx
+  const { items } = useHierarchicalMenu({
+    attributes: [
+      'hierarchicalCategories.lvl0',
+      'hierarchicalCategories.lvl1',
+      'hierarchicalCategories.lvl2',
+    ],
+  });
+  ```
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Maximum number of values to display.
+
+  ```jsx
+  const { items } = useHierarchicalMenu({
+    attributes: ['category'],
+    limit: 5,
+  });
+  ```
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to display the "show more" button.
+
+  ```jsx
+  const { toggleShowMore } = useHierarchicalMenu({
+    attributes: ['category'],
+    showMore: true,
+    showMoreLimit: 20,
+  });
+  ```
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  Maximum number of values to display when showing more.
+</ParamField>
+
+<ParamField path="separator" type="string" default=">">
+  Separator used in the attributes to separate level values.
+
+  ```jsx
+  const { items } = useHierarchicalMenu({
+    attributes: ['category'],
+    separator: ' > ',
+  });
+  ```
+</ParamField>
+
+<ParamField path="rootPath" type="string | null">
+  Prefix path to use if the first level is not the root level.
+</ParamField>
+
+<ParamField path="showParentLevel" type="boolean" default="true">
+  Show the siblings of the selected parent levels of the current refined value.
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | (a, b) => number">
+  How to sort refinements. Possible values: `count|isRefined|name:asc|name:desc`.
+
+  ```jsx
+  const { items } = useHierarchicalMenu({
+    attributes: ['category'],
+    sortBy: ['name:asc'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: HierarchicalMenuItem[]) => HierarchicalMenuItem[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="HierarchicalMenuItem[]">
+  The list of hierarchical menu items.
+
+  ```jsx
+  const { items } = useHierarchicalMenu({
+    attributes: ['category'],
+  });
+  items.forEach((item) => {
+    console.log(item.value);      // "Electronics"
+    console.log(item.label);      // "Electronics"
+    console.log(item.count);      // 142
+    console.log(item.isRefined);  // true/false
+    console.log(item.data);       // Nested items or null
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(value: string) => void">
+  Function to select a menu item.
+
+  ```jsx
+  const { refine } = useHierarchicalMenu({
+    attributes: ['category'],
+  });
+  refine('Electronics > Phones');
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether refinements can be applied.
+</ResponseField>
+
+<ResponseField name="isShowingMore" type="boolean">
+  Whether "show more" is currently active.
+</ResponseField>
+
+<ResponseField name="toggleShowMore" type="() => void">
+  Function to toggle between showing more/less items.
+</ResponseField>
+
+<ResponseField name="canToggleShowMore" type="boolean">
+  Whether the "show more" toggle is available.
+</ResponseField>
+
+<ResponseField name="createURL" type="(value: string) => string">
+  Function to create a URL for a menu item.
+</ResponseField>
+
+<ResponseField name="sendEvent" type="SendEventForFacet">
+  Function to send Insights events.
+</ResponseField>
+
+## Examples
+
+### Basic Hierarchical Menu
+
+```jsx
+import { useHierarchicalMenu } from 'react-instantsearch';
+
+function CategoryMenu() {
+  const { items, refine } = useHierarchicalMenu({
+    attributes: [
+      'hierarchicalCategories.lvl0',
+      'hierarchicalCategories.lvl1',
+      'hierarchicalCategories.lvl2',
+    ],
+  });
+
+  function renderItems(items) {
+    return (
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <button
+              onClick={() => refine(item.value)}
+              style={{ fontWeight: item.isRefined ? 'bold' : 'normal' }}
+            >
+              {item.label} ({item.count})
+            </button>
+            {item.data && renderItems(item.data)}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <div>
+      <h3>Categories</h3>
+      {renderItems(items)}
+    </div>
+  );
+}
+```
+
+### With Show More
+
+```jsx
+import { useHierarchicalMenu } from 'react-instantsearch';
+
+function ExpandableHierarchicalMenu() {
+  const {
+    items,
+    refine,
+    toggleShowMore,
+    isShowingMore,
+    canToggleShowMore,
+  } = useHierarchicalMenu({
+    attributes: ['category.lvl0', 'category.lvl1'],
+    limit: 5,
+    showMore: true,
+    showMoreLimit: 15,
+  });
+
+  function renderItems(items) {
+    return (
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <button onClick={() => refine(item.value)}>
+              {item.label} ({item.count})
+            </button>
+            {item.data && renderItems(item.data)}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <div>
+      <h3>Categories</h3>
+      {renderItems(items)}
+      {canToggleShowMore && (
+        <button onClick={toggleShowMore}>
+          {isShowingMore ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### With Expansion Icons
+
+```jsx
+import { useHierarchicalMenu } from 'react-instantsearch';
+
+function HierarchicalMenuWithIcons() {
+  const { items, refine } = useHierarchicalMenu({
+    attributes: ['category.lvl0', 'category.lvl1', 'category.lvl2'],
+  });
+
+  function renderItems(items) {
+    return (
+      <ul className="hierarchical-menu">
+        {items.map((item) => (
+          <li key={item.value}>
+            <div className="menu-item">
+              {item.data && (
+                <span className="icon">
+                  {item.isRefined ? '▼' : '▶'}
+                </span>
+              )}
+              <button
+                onClick={() => refine(item.value)}
+                className={item.isRefined ? 'refined' : ''}
+              >
+                {item.label} ({item.count})
+              </button>
+            </div>
+            {item.isRefined && item.data && renderItems(item.data)}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return <div>{renderItems(items)}</div>;
+}
+```
+
+## TypeScript
+
+```tsx
+import { useHierarchicalMenu } from 'react-instantsearch';
+import type { UseHierarchicalMenuProps } from 'react-instantsearch';
+
+function CategoryMenu(props: UseHierarchicalMenuProps) {
+  const { items, refine } = useHierarchicalMenu(props);
+
+  function renderItems(items: typeof items): JSX.Element {
+    return (
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <button onClick={() => refine(item.value)}>
+              {item.label}
+            </button>
+            {item.data && renderItems(item.data)}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return renderItems(items);
+}
+```
+
+## Related
+
+- [useMenu Hook](/api/react/hooks/use-menu)
+- [useBreadcrumb Hook](/api/react/hooks/use-breadcrumb)
+- [useRefinementList Hook](/api/react/hooks/use-refinement-list)

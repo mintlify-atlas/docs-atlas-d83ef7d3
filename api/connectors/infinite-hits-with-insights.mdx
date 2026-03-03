@@ -1,0 +1,157 @@
+---
+title: "connectInfiniteHitsWithInsights"
+description: "Build a custom widget to display infinite scrolling search results with Insights support"
+---
+
+The **InfiniteHitsWithInsights** connector provides the logic to build a custom widget that displays search results with infinite scrolling and automatic Insights tracking.
+
+<Warning>
+  This connector is deprecated. Use the `insights` middleware with `connectInfiniteHits` instead. For more information, visit the [Algolia Insights documentation](https://www.algolia.com/doc/guides/getting-insights-and-analytics/search-analytics/click-through-and-conversions/how-to/send-click-and-conversion-events-with-instantsearch/js/).
+</Warning>
+
+## Usage
+
+```javascript
+import { connectInfiniteHitsWithInsights } from 'instantsearch.js/es/connectors';
+
+const customInfiniteHitsWithInsights = connectInfiniteHitsWithInsights(
+  (renderOptions, isFirstRender) => {
+    const { items, showMore, isLastPage, insights, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <div class="hits">
+        ${items.map(item => `
+          <div class="hit" data-id="${item.objectID}">
+            <h3>${item.name}</h3>
+            <button class="click-btn">Track Click</button>
+          </div>
+        `).join('')}
+      </div>
+      ${!isLastPage ? '<button id="load-more">Load more</button>' : ''}
+    `;
+    
+    // Track click events
+    container.querySelectorAll('.click-btn').forEach((btn, index) => {
+      btn.addEventListener('click', () => {
+        insights('clickedObjectIDsAfterSearch', {
+          eventName: 'Product Clicked',
+          objectIDs: [items[index].objectID],
+        });
+      });
+    });
+    
+    if (!isLastPage) {
+      container.querySelector('#load-more').addEventListener('click', showMore);
+    }
+  }
+);
+
+search.addWidgets([
+  customInfiniteHitsWithInsights({
+    container: document.querySelector('#infinite-hits'),
+  }),
+]);
+```
+
+## Connector Options
+
+This connector accepts the same options as `connectInfiniteHits`:
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags from hits string values.
+</ParamField>
+
+<ParamField path="showPrevious" type="boolean" default="false">
+  Enable the button to load previous results.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+<ParamField path="cache" type="object">
+  Reads and writes hits from/to cache. Helps restore InfiniteHits and scroll position when users navigate back from a product page.
+  
+  Must implement `read` and `write` methods:
+  - `read({ state }): object | null`
+  - `write({ state, hits }): void`
+</ParamField>
+
+## Render Options
+
+This connector provides the same render options as `connectInfiniteHits`, plus:
+
+<ParamField path="items" type="Array<Hit>">
+  The accumulated hits for current and cached pages.
+</ParamField>
+
+<ParamField path="hits" type="Array<Hit>">
+  The accumulated hits for current and cached pages.
+  
+  <Warning>
+    This parameter is deprecated. Use `items` instead.
+  </Warning>
+</ParamField>
+
+<ParamField path="currentPageHits" type="Array<Hit>">
+  The hits for the current page only.
+</ParamField>
+
+<ParamField path="results" type="SearchResults">
+  The complete response from the Algolia API.
+</ParamField>
+
+<ParamField path="banner" type="Banner">
+  The banner to display above the hits.
+</ParamField>
+
+<ParamField path="showMore" type="() => void">
+  Loads the next page of hits.
+</ParamField>
+
+<ParamField path="showPrevious" type="() => void">
+  Loads the previous results.
+</ParamField>
+
+<ParamField path="isFirstPage" type="boolean">
+  Indicates whether the first page of hits has been reached.
+</ParamField>
+
+<ParamField path="isLastPage" type="boolean">
+  Indicates whether the last page of hits has been reached.
+</ParamField>
+
+<ParamField path="insights" type="(method: string, payload: object) => void">
+  Helper function to send Insights events. This function automatically infers query parameters from the search results.
+  
+  Supported methods:
+  - `clickedObjectIDsAfterSearch`: Track clicks on search results
+  - `convertedObjectIDsAfterSearch`: Track conversions from search results
+  
+  ```javascript
+  // Track a click event
+  insights('clickedObjectIDsAfterSearch', {
+    eventName: 'Product Clicked',
+    objectIDs: ['object1'],
+  });
+  
+  // Track a conversion event
+  insights('convertedObjectIDsAfterSearch', {
+    eventName: 'Product Purchased',
+    objectIDs: ['object1', 'object2'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="sendEvent" type="(eventType: string, hits: object | object[], eventName?: string) => void">
+  Sends an event to the Insights middleware.
+</ParamField>
+
+<ParamField path="bindEvent" type="(eventType: string, hits: object | object[], eventName?: string) => string">
+  Returns a string for the `data-insights-event` attribute.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

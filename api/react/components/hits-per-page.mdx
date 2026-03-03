@@ -1,0 +1,85 @@
+---
+title: '<HitsPerPage>'
+description: 'Select the number of results per page'
+---
+
+The `<HitsPerPage>` component displays a dropdown to change the number of results displayed per page.
+
+## Import
+
+```jsx
+import { HitsPerPage } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="items" type="Array<{ label: string; value: number; default?: boolean }>" required>
+  The items to display in the dropdown.
+
+  ```jsx
+  <HitsPerPage
+    items={[
+      { label: '10 hits per page', value: 10 },
+      { label: '20 hits per page', value: 20, default: true },
+      { label: '50 hits per page', value: 50 },
+    ]}
+  />
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the items before displaying them.
+
+  ```jsx
+  <HitsPerPage
+    items={[
+      { label: '10', value: 10 },
+      { label: '20', value: 20, default: true },
+    ]}
+    transformItems={(items) =>
+      items.map((item) => ({
+        ...item,
+        label: `${item.value} results`,
+      }))
+    }
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, HitsPerPage, Hits } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <HitsPerPage
+        items={[
+          { label: '10 hits per page', value: 10 },
+          { label: '20 hits per page', value: 20, default: true },
+          { label: '50 hits per page', value: 50 },
+          { label: '100 hits per page', value: 100 },
+        ]}
+      />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [Pagination Component](/api/react/components/pagination)
+- [Configure Component](/api/react/configure)
+- [useHitsPerPage Hook](/api/react/hooks/use-hits-per-page)

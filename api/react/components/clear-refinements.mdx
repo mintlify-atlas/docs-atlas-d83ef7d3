@@ -1,0 +1,91 @@
+---
+title: '<ClearRefinements>'
+description: 'Clear all active refinements'
+---
+
+The `<ClearRefinements>` component displays a button that clears all active refinements.
+
+## Import
+
+```jsx
+import { ClearRefinements } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="includedAttributes" type="string[]">
+  Attributes to include when clearing refinements. By default, all refineable attributes are included.
+
+  ```jsx
+  <ClearRefinements includedAttributes={['brand', 'category']} />
+  ```
+</ParamField>
+
+<ParamField path="excludedAttributes" type="string[]">
+  Attributes to exclude from being cleared.
+
+  ```jsx
+  <ClearRefinements excludedAttributes={['query']} />
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the refinement items before clearing them.
+
+  ```jsx
+  <ClearRefinements
+    transformItems={(items) =>
+      items.filter((item) => item.attribute !== 'query')
+    }
+  />
+  ```
+</ParamField>
+
+<ParamField path="translations" type="object">
+  Customize the text strings.
+
+  ```jsx
+  <ClearRefinements
+    translations={{
+      resetButtonText: 'Clear all filters',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import {
+  InstantSearch,
+  ClearRefinements,
+  RefinementList,
+  SearchBox,
+} from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      <ClearRefinements />
+      <RefinementList attribute="brand" />
+      <RefinementList attribute="category" />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [CurrentRefinements Component](/api/react/components/currentrefinements)
+- [useClearRefinements Hook](/api/react/hooks/use-clear-refinements)

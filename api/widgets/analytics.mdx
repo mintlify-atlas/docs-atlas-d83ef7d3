@@ -1,0 +1,158 @@
+---
+title: analytics
+description: Send search analytics to external platforms (deprecated)
+---
+
+<Warning>
+  This widget is **deprecated** and will be removed in InstantSearch.js 5.0. Use the [**insights middleware**](https://www.algolia.com/doc/guides/building-search-ui/upgrade-guides/js/#analytics-widget) instead.
+</Warning>
+
+The analytics widget sends search analytics data to external platforms. It tracks search queries and refinements, calling a custom function with serialized parameters that you can forward to your analytics service.
+
+## Usage
+
+```javascript
+const analytics = instantsearch.widgets.analytics({
+  pushFunction(formattedParameters, state, results) {
+    // Send to your analytics platform
+    window.ga('send', 'pageview', '/search?' + formattedParameters);
+  },
+});
+
+search.addWidget(analytics);
+```
+
+## Examples
+
+### Google Analytics Integration
+
+```javascript
+instantsearch.widgets.analytics({
+  pushFunction(formattedParameters, state, results) {
+    window.ga('send', 'pageview', {
+      page: '/search?' + formattedParameters,
+    });
+  },
+  delay: 3000,
+});
+```
+
+### Custom Analytics with Debounce
+
+```javascript
+instantsearch.widgets.analytics({
+  pushFunction(formattedParameters, state, results) {
+    fetch('/analytics', {
+      method: 'POST',
+      body: JSON.stringify({
+        query: state.query,
+        parameters: formattedParameters,
+        resultsCount: results.nbHits,
+      }),
+    });
+  },
+  delay: 5000,
+  triggerOnUIInteraction: true,
+});
+```
+
+### Track Pagination
+
+```javascript
+instantsearch.widgets.analytics({
+  pushFunction(formattedParameters, state, results) {
+    console.log('Search analytics:', {
+      query: state.query,
+      page: state.page,
+      nbHits: results.nbHits,
+    });
+  },
+  pushPagination: true,
+});
+```
+
+## Options
+
+<ParamField path="pushFunction" type="function" required>
+  Function called when search parameters change. Use this to send data to your analytics platform.
+  
+  ```javascript
+  (
+    formattedParameters: string,
+    state: SearchParameters,
+    results: SearchResults
+  ) => void
+  ```
+  
+  **Parameters:**
+  - `formattedParameters`: Search parameters serialized as a query string
+  - `state`: The complete search state object
+  - `results`: The last received search results
+</ParamField>
+
+<ParamField path="delay" type="number" default="3000">
+  Number of milliseconds to wait after the last search keystroke before calling `pushFunction`. This debounces rapid changes.
+</ParamField>
+
+<ParamField path="triggerOnUIInteraction" type="boolean" default="false">
+  Whether to trigger `pushFunction` when the user clicks on the page or navigates away. Useful for capturing analytics before the user leaves.
+</ParamField>
+
+<ParamField path="pushInitialSearch" type="boolean" default="true">
+  Whether to trigger `pushFunction` when InstantSearch initializes. If `false`, analytics are only sent after user interactions.
+</ParamField>
+
+<ParamField path="pushPagination" type="boolean" default="false">
+  Whether to trigger `pushFunction` when the page changes. By default, pagination changes are not tracked separately.
+</ParamField>
+
+## Push Function Details
+
+The `formattedParameters` string contains serialized refinements in the format:
+
+```
+Query: search term, attribute1=attribute1_value1&attribute2=attribute2_value2to5, Page: 0
+```
+
+For example:
+```
+Query: laptop, category=category_electronics&price=price_500to1000, Page: 0
+```
+
+## Migration to Insights Middleware
+
+To migrate from the analytics widget to the insights middleware:
+
+```javascript
+// Old (deprecated)
+instantsearch.widgets.analytics({
+  pushFunction(formattedParameters, state, results) {
+    // Track search
+  },
+});
+
+// New (recommended)
+const insights = require('search-insights');
+
+const insightsMiddleware = instantsearch.middlewares.createInsightsMiddleware({
+  insightsClient: insights,
+});
+
+search.use(insightsMiddleware);
+```
+
+<Info>
+  Learn more about the migration in the [upgrade guide](https://www.algolia.com/doc/guides/building-search-ui/upgrade-guides/js/#analytics-widget).
+</Info>
+
+## Behavior
+
+The widget:
+1. Listens to search state changes (query, refinements, pagination)
+2. Waits for the configured `delay` after the last change
+3. Calls `pushFunction` with serialized parameters
+4. Skips duplicate calls (won't send identical data twice)
+
+If `triggerOnUIInteraction` is enabled:
+- Sends analytics on page clicks
+- Sends analytics before page unload

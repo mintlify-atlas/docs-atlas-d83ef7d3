@@ -1,0 +1,189 @@
+---
+title: 'useFrequentlyBoughtTogether'
+description: 'Display frequently bought together recommendations'
+---
+
+The `useFrequentlyBoughtTogether` hook provides the logic to build a custom component that displays products frequently bought together with a specific product.
+
+## Import
+
+```jsx
+import { useFrequentlyBoughtTogether } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="objectIDs" type="string[]" required>
+  The objectIDs of the products to get recommendations for.
+
+  ```jsx
+  const { items } = useFrequentlyBoughtTogether({
+    objectIDs: ['product-123'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="maxRecommendations" type="number">
+  Maximum number of recommendations to display.
+
+  ```jsx
+  const { items } = useFrequentlyBoughtTogether({
+    objectIDs: ['product-123'],
+    maxRecommendations: 5,
+  });
+  ```
+</ParamField>
+
+<ParamField path="queryParameters" type="SearchParameters">
+  Additional search parameters to apply.
+
+  ```jsx
+  const { items } = useFrequentlyBoughtTogether({
+    objectIDs: ['product-123'],
+    queryParameters: {
+      filters: 'available:true',
+    },
+  });
+  ```
+</ParamField>
+
+<ParamField path="threshold" type="number">
+  Minimum score for a recommendation to be included.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: Hit[]) => Hit[]">
+  Function to transform the items.
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="Hit[]">
+  The list of recommended products.
+
+  ```jsx
+  const { items } = useFrequentlyBoughtTogether({
+    objectIDs: ['product-123'],
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="results" type="SearchResults | undefined">
+  The complete recommendation results from Algolia.
+</ResponseField>
+
+## Examples
+
+### Basic Product Recommendations
+
+```jsx
+import { useFrequentlyBoughtTogether } from 'react-instantsearch';
+
+function FrequentlyBoughtTogether({ productId }) {
+  const { items } = useFrequentlyBoughtTogether({
+    objectIDs: [productId],
+    maxRecommendations: 4,
+  });
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="recommendations">
+      <h3>Frequently Bought Together</h3>
+      <div className="product-grid">
+        {items.map((item) => (
+          <div key={item.objectID} className="product-card">
+            <img src={item.image} alt={item.name} />
+            <h4>{item.name}</h4>
+            <p>${item.price}</p>
+            <button>Add to Cart</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### With Add All to Cart
+
+```jsx
+import { useFrequentlyBoughtTogether } from 'react-instantsearch';
+
+function BuyTogether({ productId }) {
+  const { items } = useFrequentlyBoughtTogether({
+    objectIDs: [productId],
+    maxRecommendations: 3,
+  });
+
+  const handleAddAllToCart = () => {
+    items.forEach((item) => {
+      // Add to cart logic
+      console.log('Adding to cart:', item.objectID);
+    });
+  };
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
+
+  return (
+    <div className="buy-together">
+      <h3>Frequently Bought Together</h3>
+      <div className="items">
+        {items.map((item, index) => (
+          <div key={item.objectID}>
+            {index > 0 && <span className="plus">+</span>}
+            <div className="item">
+              <img src={item.image} alt={item.name} />
+              <p>{item.name}</p>
+              <p>${item.price}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="total">
+        <strong>Total: ${totalPrice.toFixed(2)}</strong>
+        <button onClick={handleAddAllToCart}>Add All to Cart</button>
+      </div>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useFrequentlyBoughtTogether } from 'react-instantsearch';
+import type { UseFrequentlyBoughtTogetherProps } from 'react-instantsearch';
+
+interface Product {
+  objectID: string;
+  name: string;
+  price: number;
+  image: string;
+}
+
+function FrequentlyBoughtTogether({ productId }: { productId: string }) {
+  const { items } = useFrequentlyBoughtTogether<Product>({
+    objectIDs: [productId],
+  });
+
+  return (
+    <div>
+      {items.map((item) => (
+        <div key={item.objectID}>{item.name}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Related
+
+- [useRelatedProducts Hook](/api/react/hooks/use-related-products)
+- [useTrendingItems Hook](/api/react/hooks/use-trending-items)
+- [Recommend API](https://www.algolia.com/doc/rest-api/recommend/)

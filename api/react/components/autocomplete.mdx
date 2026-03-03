@@ -1,0 +1,193 @@
+---
+title: '<Autocomplete>'
+description: 'Autocomplete search component with multi-index support'
+---
+
+The `<Autocomplete>` component provides an autocomplete search experience with support for multiple indices, query suggestions, and recent searches.
+
+<Note>
+  This is an experimental component. The API may change in future releases.
+</Note>
+
+## Import
+
+```jsx
+import { EXPERIMENTAL_Autocomplete } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="indices" type="Array<IndexConfig>">
+  Configuration for additional indices to search in the autocomplete dropdown.
+
+  ```jsx
+  <EXPERIMENTAL_Autocomplete
+    indices={[
+      {
+        indexName: 'products',
+        itemComponent: ({ item }) => <div>{item.name}</div>,
+      },
+    ]}
+  />
+  ```
+</ParamField>
+
+<ParamField path="showSuggestions" type="object">
+  Configuration for displaying query suggestions.
+
+  ```jsx
+  <EXPERIMENTAL_Autocomplete
+    showSuggestions={{
+      indexName: 'query_suggestions',
+      itemComponent: ({ item }) => <div>{item.query}</div>,
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="showRecent" type="boolean | object">
+  Enable or configure recent search display.
+
+  ```jsx
+  // Simple enable
+  <EXPERIMENTAL_Autocomplete showRecent={true} />
+
+  // With configuration
+  <EXPERIMENTAL_Autocomplete
+    showRecent={{
+      storageKey: 'my-recent-searches',
+      headerComponent: () => <h3>Recent Searches</h3>,
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="getSearchPageURL" type="(nextUiState: IndexUiState) => string">
+  Function to generate the URL for the search results page when a query is selected.
+
+  ```jsx
+  <EXPERIMENTAL_Autocomplete
+    getSearchPageURL={(uiState) => `/search?query=${uiState.query}`}
+  />
+  ```
+</ParamField>
+
+<ParamField path="onSelect" type="function">
+  Custom function called when an item is selected.
+
+  ```jsx
+  <EXPERIMENTAL_Autocomplete
+    onSelect={({ query, setQuery, url }) => {
+      if (url) {
+        window.location.href = url;
+      } else {
+        setQuery(query);
+      }
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the items returned by the autocomplete.
+
+  ```jsx
+  <EXPERIMENTAL_Autocomplete
+    transformItems={(indices) =>
+      indices.map((index) => ({
+        ...index,
+        hits: index.hits.slice(0, 3),
+      }))
+    }
+  />
+  ```
+</ParamField>
+
+<ParamField path="panelComponent" type="React.Component">
+  Custom component to render the autocomplete panel.
+</ParamField>
+
+<ParamField path="searchParameters" type="object">
+  Additional search parameters to apply.
+
+  ```jsx
+  <EXPERIMENTAL_Autocomplete
+    searchParameters={{
+      hitsPerPage: 5,
+      filters: 'available:true',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="placeholder" type="string">
+  Placeholder text for the search input.
+</ParamField>
+
+<ParamField path="detachedMediaQuery" type="string" default="(max-width: 680px)">
+  Media query for enabling detached (mobile) mode. Set to empty string to disable.
+
+  ```jsx
+  <EXPERIMENTAL_Autocomplete detachedMediaQuery="(max-width: 768px)" />
+  ```
+</ParamField>
+
+<ParamField path="translations" type="object">
+  Customize the text strings.
+
+  ```jsx
+  <EXPERIMENTAL_Autocomplete
+    translations={{
+      detachedCancelButtonText: 'Cancel',
+      detachedSearchButtonTitle: 'Search',
+      detachedClearButtonTitle: 'Clear',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, EXPERIMENTAL_Autocomplete } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <EXPERIMENTAL_Autocomplete
+        indices={[
+          {
+            indexName: 'products',
+            itemComponent: ({ item }) => (
+              <div>
+                <h4>{item.name}</h4>
+                <p>${item.price}</p>
+              </div>
+            ),
+          },
+        ]}
+        showSuggestions={{
+          indexName: 'query_suggestions',
+        }}
+        showRecent={true}
+        placeholder="Search products..."
+      />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [SearchBox Component](/api/react/components/searchbox)
+- [useAutocomplete Hook](/api/react/hooks/use-autocomplete)

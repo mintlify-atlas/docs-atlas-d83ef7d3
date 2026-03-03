@@ -1,0 +1,117 @@
+---
+title: "connectQueryRules"
+description: "Build a custom widget to display custom data from Query Rules"
+---
+
+The **QueryRules** connector provides the logic to build a custom widget that displays custom data returned by [Query Rules](https://www.algolia.com/doc/guides/managing-results/rules/rules-overview/).
+
+## Usage
+
+```javascript
+import { connectQueryRules } from 'instantsearch.js/es/connectors';
+
+const customQueryRules = connectQueryRules(
+  (renderOptions, isFirstRender) => {
+    const { items, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    if (items.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+    
+    container.innerHTML = `
+      <div class="query-rules">
+        ${items.map(item => `
+          <div class="rule-item">
+            ${item.banner ? `
+              <img src="${item.banner}" alt="Banner" />
+            ` : ''}
+            ${item.title ? `<h3>${item.title}</h3>` : ''}
+            ${item.content ? `<p>${item.content}</p>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+);
+
+search.addWidgets([
+  customQueryRules({
+    container: document.querySelector('#query-rules'),
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="trackedFilters" type="object">
+  An object mapping facet names to filter tracking functions. This is used to automatically apply rule contexts based on active filters.
+  
+  Each function receives an array of active filter values and should return which values to track.
+  
+  ```javascript
+  trackedFilters: {
+    brand: (facetValues) => facetValues,
+    category: (facetValues) => {
+      // Only track specific categories
+      return facetValues.filter(value => 
+        ['electronics', 'clothing'].includes(value)
+      );
+    },
+  }
+  ```
+  
+  This will automatically add rule contexts in the format `ais-{facetName}-{facetValue}` (e.g., `ais-brand-apple`).
+</ParamField>
+
+<ParamField path="transformRuleContexts" type="(ruleContexts: string[]) => string[]">
+  Function to transform the rule contexts before they are sent to Algolia.
+  
+  ```javascript
+  transformRuleContexts(ruleContexts) {
+    // Limit to the most important contexts
+    return ruleContexts.slice(0, 5);
+  }
+  ```
+  
+  <Info>
+    Algolia supports a maximum of 10 rule contexts per query. If you exceed this limit, they will be automatically sliced.
+  </Info>
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items returned by Query Rules.
+  
+  ```javascript
+  transformItems(items) {
+    return items.map(item => ({
+      ...item,
+      title: item.title.toUpperCase(),
+    }));
+  }
+  ```
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<object>">
+  The custom data returned by Query Rules (`userData` in the Algolia response).
+  
+  The structure depends on what you configure in your Query Rules in the Algolia dashboard.
+  
+  ```javascript
+  // Example items from a promotional rule
+  [
+    {
+      title: 'Summer Sale',
+      banner: 'https://example.com/banner.jpg',
+      link: '/summer-sale',
+    }
+  ]
+  ```
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

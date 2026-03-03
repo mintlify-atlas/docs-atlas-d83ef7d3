@@ -1,0 +1,241 @@
+---
+title: 'useQueryRules'
+description: 'Display custom data from query rules'
+---
+
+The `useQueryRules` hook provides the logic to build a custom component that displays custom data returned by Algolia query rules.
+
+## Import
+
+```jsx
+import { useQueryRules } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="trackedFilters" type="TrackedFilters">
+  Filters to track for generating automatic rule contexts.
+
+  ```jsx
+  const { items } = useQueryRules({
+    trackedFilters: {
+      brand: (values) => values,
+      category: (values) => values.slice(0, 3),
+    },
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformRuleContexts" type="(ruleContexts: string[]) => string[]">
+  Function to transform the rule contexts.
+
+  ```jsx
+  const { items } = useQueryRules({
+    transformRuleContexts: (contexts) =>
+      contexts.map((context) => context.toLowerCase()),
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: any[]) => any[]">
+  Function to transform the custom data items.
+
+  ```jsx
+  const { items } = useQueryRules({
+    transformItems: (items) =>
+      items.map((item) => ({
+        ...item,
+        title: item.title.toUpperCase(),
+      })),
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="any[]">
+  The custom data items returned by query rules.
+
+  ```jsx
+  const { items } = useQueryRules();
+  console.log(items); // Custom data from query rules
+  ```
+</ResponseField>
+
+## Examples
+
+### Display Banner from Query Rules
+
+```jsx
+import { useQueryRules } from 'react-instantsearch';
+
+function QueryRuleBanner() {
+  const { items } = useQueryRules();
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div>
+      {items.map((item, index) => (
+        <div key={index} className="banner">
+          {item.banner && (
+            <a href={item.banner.link}>
+              <img
+                src={item.banner.image}
+                alt={item.banner.title}
+              />
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Custom Redirect
+
+```jsx
+import { useQueryRules } from 'react-instantsearch';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+
+function QueryRuleRedirect() {
+  const { items } = useQueryRules();
+  const router = useRouter();
+
+  useEffect(() => {
+    const redirect = items.find((item) => item.redirect);
+    if (redirect) {
+      router.push(redirect.redirect);
+    }
+  }, [items, router]);
+
+  return null;
+}
+```
+
+### Promotional Content
+
+```jsx
+import { useQueryRules } from 'react-instantsearch';
+
+function PromotionalContent() {
+  const { items } = useQueryRules();
+
+  const promotions = items.filter((item) => item.type === 'promotion');
+
+  if (promotions.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="promotions">
+      {promotions.map((promo, index) => (
+        <div key={index} className="promotion-card">
+          <h3>{promo.title}</h3>
+          <p>{promo.description}</p>
+          {promo.cta && (
+            <a href={promo.cta.link} className="cta-button">
+              {promo.cta.text}
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### With Tracked Filters
+
+```jsx
+import { useQueryRules } from 'react-instantsearch';
+
+function TrackedQueryRules() {
+  const { items } = useQueryRules({
+    trackedFilters: {
+      brand: (values) => values,
+      category: (values) => values,
+    },
+  });
+
+  return (
+    <div>
+      {items.map((item, index) => (
+        <div key={index} className="query-rule-content">
+          {item.content && <div dangerouslySetInnerHTML={{ __html: item.content }} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Facet Ordering from Query Rules
+
+```jsx
+import { useQueryRules } from 'react-instantsearch';
+
+function QueryRuleFacets() {
+  const { items } = useQueryRules();
+
+  const facetOrder = items.find((item) => item.facetOrder)?.facetOrder;
+
+  if (!facetOrder) {
+    return null;
+  }
+
+  return (
+    <div>
+      <h3>Recommended Filters</h3>
+      <ul>
+        {facetOrder.map((facet) => (
+          <li key={facet}>{facet}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useQueryRules } from 'react-instantsearch';
+import type { UseQueryRulesProps } from 'react-instantsearch';
+
+interface QueryRuleData {
+  banner?: {
+    image: string;
+    link: string;
+    title: string;
+  };
+  redirect?: string;
+}
+
+function QueryRuleBanner(props?: UseQueryRulesProps) {
+  const { items } = useQueryRules(props);
+
+  return (
+    <div>
+      {(items as QueryRuleData[]).map((item, index) => (
+        <div key={index}>
+          {item.banner && (
+            <a href={item.banner.link}>
+              <img src={item.banner.image} alt={item.banner.title} />
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Related
+
+- [Query Rules Guide](https://www.algolia.com/doc/guides/managing-results/rules/)
+- [useInstantSearch Hook](/api/react/hooks/use-instant-search)

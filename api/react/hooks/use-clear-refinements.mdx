@@ -1,0 +1,236 @@
+---
+title: 'useClearRefinements'
+description: 'Build custom clear refinements components'
+---
+
+The `useClearRefinements` hook provides the logic to build a custom component that clears all currently active refinements.
+
+## Import
+
+```jsx
+import { useClearRefinements } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="includedAttributes" type="string[]">
+  The attributes to include in the refinements to clear. Cannot be used with `excludedAttributes`.
+
+  ```jsx
+  const { refine } = useClearRefinements({
+    includedAttributes: ['brand', 'category'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="excludedAttributes" type="string[]">
+  The attributes to exclude from the refinements to clear. Cannot be used with `includedAttributes`.
+
+  ```jsx
+  const { refine } = useClearRefinements({
+    excludedAttributes: ['query'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: string[]) => string[]">
+  Function to transform the items passed to the templates.
+
+  ```jsx
+  const { refine } = useClearRefinements({
+    transformItems: (items) => items.filter((item) => item !== 'category'),
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="refine" type="() => void">
+  Function that triggers the clear of all currently refined values.
+
+  ```jsx
+  const { refine } = useClearRefinements();
+  refine(); // Clears all refinements
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether the search state can be refined (i.e., there are active refinements).
+
+  ```jsx
+  const { canRefine } = useClearRefinements();
+  if (!canRefine) {
+    return <p>No active filters</p>;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="hasRefinements" type="boolean">
+  Whether the search state is refined.
+
+  <Warning>
+    This property is deprecated. Use `canRefine` instead.
+  </Warning>
+</ResponseField>
+
+<ResponseField name="createURL" type="() => string">
+  Function to create a URL for the next state when refinements are cleared.
+
+  ```jsx
+  const { createURL } = useClearRefinements();
+  const url = createURL();
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Clear Button
+
+```jsx
+import { useClearRefinements } from 'react-instantsearch';
+
+function ClearFilters() {
+  const { refine, canRefine } = useClearRefinements();
+
+  return (
+    <button onClick={refine} disabled={!canRefine}>
+      Clear all filters
+    </button>
+  );
+}
+```
+
+### Clear Button with Count
+
+```jsx
+import { useClearRefinements, useCurrentRefinements } from 'react-instantsearch';
+
+function ClearFiltersWithCount() {
+  const { refine, canRefine } = useClearRefinements();
+  const { items } = useCurrentRefinements();
+
+  const count = items.reduce(
+    (acc, item) => acc + item.refinements.length,
+    0
+  );
+
+  return (
+    <button onClick={refine} disabled={!canRefine}>
+      Clear {count} {count === 1 ? 'filter' : 'filters'}
+    </button>
+  );
+}
+```
+
+### Clear Specific Attributes
+
+```jsx
+import { useClearRefinements } from 'react-instantsearch';
+
+function ClearPriceFilters() {
+  const { refine, canRefine } = useClearRefinements({
+    includedAttributes: ['price'],
+  });
+
+  return (
+    <button onClick={refine} disabled={!canRefine}>
+      Clear price filters
+    </button>
+  );
+}
+```
+
+### Exclude Query from Clear
+
+```jsx
+import { useClearRefinements } from 'react-instantsearch';
+
+function ClearFiltersExceptQuery() {
+  const { refine, canRefine } = useClearRefinements({
+    excludedAttributes: ['query'],
+  });
+
+  return (
+    <button onClick={refine} disabled={!canRefine}>
+      Clear all filters (keep search)
+    </button>
+  );
+}
+```
+
+### With Link Navigation
+
+```jsx
+import { useClearRefinements } from 'react-instantsearch';
+import Link from 'next/link';
+
+function ClearFiltersLink() {
+  const { refine, canRefine, createURL } = useClearRefinements();
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <Link
+      href={createURL()}
+      onClick={(e) => {
+        e.preventDefault();
+        refine();
+      }}
+    >
+      Clear all filters
+    </Link>
+  );
+}
+```
+
+### Styled Clear Button
+
+```jsx
+import { useClearRefinements } from 'react-instantsearch';
+
+function StyledClearButton() {
+  const { refine, canRefine } = useClearRefinements();
+
+  return (
+    <button
+      onClick={refine}
+      disabled={!canRefine}
+      className="clear-button"
+      style={{
+        padding: '10px 20px',
+        backgroundColor: canRefine ? '#e74c3c' : '#ccc',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: canRefine ? 'pointer' : 'not-allowed',
+      }}
+    >
+      ✕ Clear All
+    </button>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useClearRefinements } from 'react-instantsearch';
+import type { UseClearRefinementsProps } from 'react-instantsearch';
+
+function ClearFilters(props?: UseClearRefinementsProps) {
+  const { refine, canRefine } = useClearRefinements(props);
+
+  return (
+    <button onClick={refine} disabled={!canRefine}>
+      Clear filters
+    </button>
+  );
+}
+```
+
+## Related
+
+- [useCurrentRefinements Hook](/api/react/hooks/use-current-refinements)
+- [useRefinementList Hook](/api/react/hooks/use-refinement-list)

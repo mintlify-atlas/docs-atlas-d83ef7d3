@@ -1,0 +1,167 @@
+---
+title: 'usePoweredBy'
+description: 'Display Algolia powered by badge'
+---
+
+The `usePoweredBy` hook provides the logic to build a custom "Powered by Algolia" component.
+
+## Import
+
+```jsx
+import { usePoweredBy } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="url" type="string">
+  The URL to redirect to on click. Defaults to Algolia's website with UTM parameters.
+
+  ```jsx
+  const { url } = usePoweredBy({
+    url: 'https://www.algolia.com/',
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="url" type="string">
+  The URL to redirect to on click.
+
+  ```jsx
+  const { url } = usePoweredBy();
+  console.log(url); // "https://www.algolia.com/?utm_source=..."
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Link
+
+```jsx
+import { usePoweredBy } from 'react-instantsearch';
+
+function PoweredByAlgolia() {
+  const { url } = usePoweredBy();
+
+  return (
+    <div className="powered-by">
+      <span>Search by</span>
+      <a href={url} target="_blank" rel="noopener noreferrer">
+        Algolia
+      </a>
+    </div>
+  );
+}
+```
+
+### With Logo
+
+```jsx
+import { usePoweredBy } from 'react-instantsearch';
+
+function PoweredByWithLogo() {
+  const { url } = usePoweredBy();
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="powered-by-algolia"
+    >
+      <span>Search by</span>
+      <svg
+        width="130"
+        height="18"
+        viewBox="0 0 130 18"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <title>Algolia</title>
+        {/* Add Algolia logo SVG paths */}
+      </svg>
+    </a>
+  );
+}
+```
+
+### Styled Badge
+
+```jsx
+import { usePoweredBy } from 'react-instantsearch';
+
+function StyledPoweredBy() {
+  const { url } = usePoweredBy();
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '4px',
+        fontSize: '12px',
+      }}
+    >
+      <span>Powered by</span>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color: '#5468ff',
+          textDecoration: 'none',
+          fontWeight: 'bold',
+        }}
+      >
+        Algolia
+      </a>
+    </div>
+  );
+}
+```
+
+### Footer Badge
+
+```jsx
+import { usePoweredBy } from 'react-instantsearch';
+
+function SearchFooter() {
+  const { url } = usePoweredBy();
+
+  return (
+    <footer className="search-footer">
+      <p>
+        Search powered by{' '}
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          Algolia
+        </a>
+      </p>
+    </footer>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { usePoweredBy } from 'react-instantsearch';
+import type { UsePoweredByProps } from 'react-instantsearch';
+
+function PoweredByAlgolia(props?: UsePoweredByProps) {
+  const { url } = usePoweredBy(props);
+
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      Powered by Algolia
+    </a>
+  );
+}
+```
+
+## Related
+
+- [useStats Hook](/api/react/hooks/use-stats)
+- [useInstantSearch Hook](/api/react/hooks/use-instant-search)

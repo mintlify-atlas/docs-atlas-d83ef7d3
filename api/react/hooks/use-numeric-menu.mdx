@@ -1,0 +1,296 @@
+---
+title: 'useNumericMenu'
+description: 'Build custom numeric menu components'
+---
+
+The `useNumericMenu` hook provides the logic to build a custom component that displays a list of numeric ranges for faceted filtering.
+
+## Import
+
+```jsx
+import { useNumericMenu } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="attribute" type="string" required>
+  Name of the attribute for filtering.
+
+  ```jsx
+  const { items } = useNumericMenu({ attribute: 'price' });
+  ```
+</ParamField>
+
+<ParamField path="items" type="NumericMenuItem[]" required>
+  List of numeric range options.
+
+  ```jsx
+  const { items } = useNumericMenu({
+    attribute: 'price',
+    items: [
+      { label: 'All' },
+      { label: 'Less than $10', end: 10 },
+      { label: '$10 - $100', start: 10, end: 100 },
+      { label: '$100 - $500', start: 100, end: 500 },
+      { label: 'More than $500', start: 500 },
+    ],
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: NumericMenuItem[]) => NumericMenuItem[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="NumericMenuItem[]">
+  The list of available choices.
+
+  ```jsx
+  const { items } = useNumericMenu({
+    attribute: 'price',
+    items: [{ label: 'All' }],
+  });
+  items.forEach((item) => {
+    console.log(item.label);      // "Less than $10"
+    console.log(item.value);      // Encoded range value
+    console.log(item.isRefined);  // true/false
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(value: string) => void">
+  Function to select a numeric range and trigger a search.
+
+  ```jsx
+  const { items, refine } = useNumericMenu({
+    attribute: 'price',
+    items: [{ label: 'All' }],
+  });
+  refine(items[0].value);
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether the search state can be refined.
+</ResponseField>
+
+<ResponseField name="createURL" type="(value: string) => string">
+  Function to create a URL for a numeric range.
+</ResponseField>
+
+<ResponseField name="sendEvent" type="SendEventForFacet">
+  Function to send Insights events.
+</ResponseField>
+
+## Examples
+
+### Basic Price Ranges
+
+```jsx
+import { useNumericMenu } from 'react-instantsearch';
+
+function PriceRanges() {
+  const { items, refine } = useNumericMenu({
+    attribute: 'price',
+    items: [
+      { label: 'All' },
+      { label: 'Less than $10', end: 10 },
+      { label: '$10 - $100', start: 10, end: 100 },
+      { label: '$100 - $500', start: 100, end: 500 },
+      { label: 'More than $500', start: 500 },
+    ],
+  });
+
+  return (
+    <div>
+      <h3>Price Range</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <button
+              onClick={() => refine(item.value)}
+              style={{ fontWeight: item.isRefined ? 'bold' : 'normal' }}
+            >
+              {item.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### Radio Button Style
+
+```jsx
+import { useNumericMenu } from 'react-instantsearch';
+
+function RadioPriceRanges() {
+  const { items, refine } = useNumericMenu({
+    attribute: 'price',
+    items: [
+      { label: 'All prices' },
+      { label: 'Under $25', end: 25 },
+      { label: '$25 to $100', start: 25, end: 100 },
+      { label: '$100 to $500', start: 100, end: 500 },
+      { label: 'Over $500', start: 500 },
+    ],
+  });
+
+  return (
+    <div>
+      <h3>Price</h3>
+      {items.map((item) => (
+        <label key={item.value} style={{ display: 'block' }}>
+          <input
+            type="radio"
+            name="price-range"
+            checked={item.isRefined}
+            onChange={() => refine(item.value)}
+          />
+          {item.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+```
+
+### Dropdown Selector
+
+```jsx
+import { useNumericMenu } from 'react-instantsearch';
+
+function PriceDropdown() {
+  const { items, refine } = useNumericMenu({
+    attribute: 'price',
+    items: [
+      { label: 'All prices' },
+      { label: 'Under $50', end: 50 },
+      { label: '$50 - $200', start: 50, end: 200 },
+      { label: '$200 - $1000', start: 200, end: 1000 },
+      { label: 'Over $1000', start: 1000 },
+    ],
+  });
+
+  const currentValue = items.find((item) => item.isRefined)?.value || '';
+
+  return (
+    <div>
+      <label htmlFor="price-range">Price range:</label>
+      <select
+        id="price-range"
+        value={currentValue}
+        onChange={(e) => refine(e.target.value)}
+      >
+        {items.map((item) => (
+          <option key={item.value} value={item.value}>
+            {item.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+```
+
+### Rating Ranges
+
+```jsx
+import { useNumericMenu } from 'react-instantsearch';
+
+function RatingFilter() {
+  const { items, refine } = useNumericMenu({
+    attribute: 'rating',
+    items: [
+      { label: 'All ratings' },
+      { label: '4 stars & up', start: 4 },
+      { label: '3 stars & up', start: 3 },
+      { label: '2 stars & up', start: 2 },
+      { label: '1 star & up', start: 1 },
+    ],
+  });
+
+  return (
+    <div>
+      <h3>Customer Rating</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <button
+              onClick={() => refine(item.value)}
+              className={item.isRefined ? 'active' : ''}
+            >
+              {item.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### Button Group Style
+
+```jsx
+import { useNumericMenu } from 'react-instantsearch';
+
+function PriceButtons() {
+  const { items, refine } = useNumericMenu({
+    attribute: 'price',
+    items: [
+      { label: 'All', value: undefined },
+      { label: '<$50', end: 50 },
+      { label: '$50-200', start: 50, end: 200 },
+      { label: '>$200', start: 200 },
+    ],
+  });
+
+  return (
+    <div className="button-group">
+      {items.map((item) => (
+        <button
+          key={item.value}
+          onClick={() => refine(item.value)}
+          className={item.isRefined ? 'active' : ''}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useNumericMenu } from 'react-instantsearch';
+import type { UseNumericMenuProps } from 'react-instantsearch';
+
+function PriceRanges(props: UseNumericMenuProps) {
+  const { items, refine } = useNumericMenu(props);
+
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={item.value}>
+          <button onClick={() => refine(item.value)}>
+            {item.label}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Related
+
+- [useRange Hook](/api/react/hooks/use-range)
+- [useRefinementList Hook](/api/react/hooks/use-refinement-list)
+- [useMenu Hook](/api/react/hooks/use-menu)

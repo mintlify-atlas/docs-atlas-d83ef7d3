@@ -1,0 +1,151 @@
+---
+title: '<SearchBox>'
+description: 'Input field for search queries'
+---
+
+The `<SearchBox>` component provides an input field for users to enter search queries.
+
+## Import
+
+```jsx
+import { SearchBox } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="searchAsYouType" type="boolean" default="true">
+  Whether to trigger searches as the user types.
+
+  ```jsx
+  <SearchBox searchAsYouType={false} />
+  ```
+</ParamField>
+
+<ParamField path="queryHook" type="function">
+  Function to modify the query before searching.
+
+  ```jsx
+  <SearchBox
+    queryHook={(query, search) => {
+      // Debounce search
+      clearTimeout(window.searchTimeout);
+      window.searchTimeout = setTimeout(() => search(query), 300);
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="ignoreCompositionEvents" type="boolean" default="false">
+  Whether to ignore composition events (useful for Asian languages).
+
+  ```jsx
+  <SearchBox ignoreCompositionEvents={true} />
+  ```
+</ParamField>
+
+<ParamField path="placeholder" type="string">
+  Placeholder text for the search input.
+
+  ```jsx
+  <SearchBox placeholder="Search products..." />
+  ```
+</ParamField>
+
+<ParamField path="autoFocus" type="boolean" default="false">
+  Whether to automatically focus the input on mount.
+
+  ```jsx
+  <SearchBox autoFocus={true} />
+  ```
+</ParamField>
+
+<ParamField path="onSubmit" type="function">
+  Callback when the form is submitted.
+
+  ```jsx
+  <SearchBox
+    onSubmit={(event) => {
+      event.preventDefault();
+      console.log('Search submitted');
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="translations" type="object">
+  Customize the text strings.
+
+  ```jsx
+  <SearchBox
+    translations={{
+      submitButtonTitle: 'Submit search',
+      resetButtonTitle: 'Clear search',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, SearchBox, Hits } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox placeholder="Search products..." />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## With Debouncing
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox
+        placeholder="Search products..."
+        queryHook={(query, search) => {
+          clearTimeout(window.searchTimeout);
+          window.searchTimeout = setTimeout(() => search(query), 300);
+        }}
+      />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## Search on Submit
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox
+        placeholder="Search products..."
+        searchAsYouType={false}
+      />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [Autocomplete Component](/api/react/components/autocomplete)
+- [useSearchBox Hook](/api/react/hooks/use-search-box)

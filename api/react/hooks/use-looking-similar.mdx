@@ -1,0 +1,197 @@
+---
+title: 'useLookingSimilar'
+description: 'Display visually similar product recommendations'
+---
+
+The `useLookingSimilar` hook provides the logic to build a custom component that displays products that look visually similar to a specific product.
+
+## Import
+
+```jsx
+import { useLookingSimilar } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="objectIDs" type="string[]" required>
+  The objectIDs of the products to get similar-looking recommendations for.
+
+  ```jsx
+  const { items } = useLookingSimilar({
+    objectIDs: ['product-123'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="maxRecommendations" type="number">
+  Maximum number of recommendations to display.
+
+  ```jsx
+  const { items } = useLookingSimilar({
+    objectIDs: ['product-123'],
+    maxRecommendations: 6,
+  });
+  ```
+</ParamField>
+
+<ParamField path="queryParameters" type="SearchParameters">
+  Additional search parameters to apply.
+</ParamField>
+
+<ParamField path="threshold" type="number">
+  Minimum score for a recommendation to be included.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: Hit[]) => Hit[]">
+  Function to transform the items.
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="Hit[]">
+  The list of similar-looking products.
+</ResponseField>
+
+<ResponseField name="results" type="SearchResults | undefined">
+  The complete recommendation results from Algolia.
+</ResponseField>
+
+## Examples
+
+### Basic Similar Products
+
+```jsx
+import { useLookingSimilar } from 'react-instantsearch';
+
+function SimilarLookingProducts({ productId }) {
+  const { items } = useLookingSimilar({
+    objectIDs: [productId],
+    maxRecommendations: 6,
+  });
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="similar-products">
+      <h3>Similar Styles</h3>
+      <div className="product-grid">
+        {items.map((item) => (
+          <div key={item.objectID} className="product-card">
+            <img src={item.image} alt={item.name} />
+            <h4>{item.name}</h4>
+            <p>${item.price}</p>
+            <a href={`/products/${item.objectID}`}>View Details</a>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Fashion Recommendations
+
+```jsx
+import { useLookingSimilar } from 'react-instantsearch';
+
+function GetTheLook({ productId }) {
+  const { items } = useLookingSimilar({
+    objectIDs: [productId],
+    maxRecommendations: 8,
+  });
+
+  return (
+    <div className="get-the-look">
+      <h2>Get the Look</h2>
+      <p>Shop similar styles to complete your outfit</p>
+      <div className="style-grid">
+        {items.map((item) => (
+          <div key={item.objectID} className="style-item">
+            <div className="image-container">
+              <img src={item.image} alt={item.name} />
+              <button className="quick-view">Quick View</button>
+            </div>
+            <h4>{item.name}</h4>
+            <p className="price">${item.price}</p>
+            {item.discount && (
+              <span className="discount">-{item.discount}%</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Side-by-Side Comparison
+
+```jsx
+import { useLookingSimilar } from 'react-instantsearch';
+
+function VisualSimilarComparison({ productId, currentProduct }) {
+  const { items } = useLookingSimilar({
+    objectIDs: [productId],
+    maxRecommendations: 3,
+  });
+
+  return (
+    <div className="comparison-section">
+      <h3>Visually Similar Products</h3>
+      <div className="comparison-grid">
+        <div className="current-product">
+          <span className="label">Current</span>
+          <img src={currentProduct.image} alt={currentProduct.name} />
+          <p>{currentProduct.name}</p>
+          <p>${currentProduct.price}</p>
+        </div>
+        {items.map((item) => (
+          <div key={item.objectID} className="similar-product">
+            <span className="label">Similar</span>
+            <img src={item.image} alt={item.name} />
+            <p>{item.name}</p>
+            <p>${item.price}</p>
+            <button>Switch to This</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useLookingSimilar } from 'react-instantsearch';
+import type { UseLookingSimilarProps } from 'react-instantsearch';
+
+interface Product {
+  objectID: string;
+  name: string;
+  price: number;
+  image: string;
+}
+
+function SimilarProducts({ productId }: { productId: string }) {
+  const { items } = useLookingSimilar<Product>({
+    objectIDs: [productId],
+  });
+
+  return (
+    <div>
+      {items.map((item) => (
+        <div key={item.objectID}>{item.name}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Related
+
+- [useRelatedProducts Hook](/api/react/hooks/use-related-products)
+- [useFrequentlyBoughtTogether Hook](/api/react/hooks/use-frequently-bought-together)
+- [Visual Search Guide](https://www.algolia.com/doc/guides/algolia-ai/visual-search/)

@@ -1,0 +1,188 @@
+---
+title: 'useChat'
+description: 'Build AI-powered chat interfaces'
+---
+
+The `useChat` hook provides the logic to build a custom AI-powered chat component for conversational search experiences.
+
+## Import
+
+```jsx
+import { useChat } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="apiKey" type="string" required>
+  Your Algolia API key with chat permissions.
+
+  ```jsx
+  const { messages, sendMessage } = useChat({
+    apiKey: 'your-api-key',
+  });
+  ```
+</ParamField>
+
+<ParamField path="chatModel" type="string">
+  The chat model to use.
+</ParamField>
+
+<ParamField path="conversationId" type="string">
+  ID for the conversation to maintain context.
+</ParamField>
+
+## Returns
+
+<ResponseField name="messages" type="Message[]">
+  The list of chat messages in the conversation.
+
+  ```jsx
+  const { messages } = useChat({ apiKey: 'key' });
+  ```
+</ResponseField>
+
+<ResponseField name="sendMessage" type="(message: string) => void">
+  Function to send a message to the chat.
+
+  ```jsx
+  const { sendMessage } = useChat({ apiKey: 'key' });
+  sendMessage('What are your best-selling products?');
+  ```
+</ResponseField>
+
+<ResponseField name="isLoading" type="boolean">
+  Whether a response is currently being generated.
+</ResponseField>
+
+## Examples
+
+### Basic Chat Interface
+
+```jsx
+import { useChat } from 'react-instantsearch';
+import { useState } from 'react';
+
+function ChatSearch() {
+  const { messages, sendMessage, isLoading } = useChat({
+    apiKey: process.env.ALGOLIA_CHAT_API_KEY,
+  });
+  const [input, setInput] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage(input);
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="chat-interface">
+      <div className="messages">
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className={`message ${message.role}`}
+          >
+            <p>{message.content}</p>
+          </div>
+        ))}
+        {isLoading && <div className="typing-indicator">...</div>}
+      </div>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask me anything..."
+          disabled={isLoading}
+        />
+        <button type="submit" disabled={isLoading || !input.trim()}>
+          Send
+        </button>
+      </form>
+    </div>
+  );
+}
+```
+
+### Chat with Product Results
+
+```jsx
+import { useChat, useHits } from 'react-instantsearch';
+import { useState } from 'react';
+
+function ConversationalSearch() {
+  const { messages, sendMessage, isLoading } = useChat({
+    apiKey: process.env.ALGOLIA_CHAT_API_KEY,
+  });
+  const { items } = useHits();
+  const [input, setInput] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage(input);
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="conversational-search">
+      <div className="chat-panel">
+        <div className="messages">
+          {messages.map((message, index) => (
+            <div key={index} className={`message ${message.role}`}>
+              {message.content}
+            </div>
+          ))}
+        </div>
+        <form onSubmit={handleSubmit}>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about products..."
+          />
+          <button type="submit">Send</button>
+        </form>
+      </div>
+      <div className="results-panel">
+        <h3>Recommended Products</h3>
+        <div className="products">
+          {items.map((item) => (
+            <div key={item.objectID} className="product">
+              <img src={item.image} alt={item.name} />
+              <h4>{item.name}</h4>
+              <p>${item.price}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useChat } from 'react-instantsearch';
+import type { UseChatProps } from 'react-instantsearch';
+
+function ChatInterface(props: UseChatProps) {
+  const { messages, sendMessage } = useChat(props);
+
+  return (
+    <div>
+      {messages.map((message, index) => (
+        <div key={index}>{message.content}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Related
+
+- [useSearchBox Hook](/api/react/hooks/use-search-box)
+- [useHits Hook](/api/react/hooks/use-hits)

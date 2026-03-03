@@ -1,0 +1,134 @@
+---
+title: "connectVoiceSearch"
+description: "Build a custom voice search widget"
+---
+
+The **VoiceSearch** connector provides the logic to build a custom widget that lets users perform voice-based searches using the Web Speech API.
+
+## Usage
+
+```javascript
+import { connectVoiceSearch } from 'instantsearch.js/es/connectors';
+
+const customVoiceSearch = connectVoiceSearch(
+  (renderOptions, isFirstRender) => {
+    const {
+      isBrowserSupported,
+      isListening,
+      toggleListening,
+      voiceListeningState,
+      widgetParams,
+    } = renderOptions;
+    const { container } = widgetParams;
+    
+    if (!isBrowserSupported) {
+      container.innerHTML = '<p>Voice search is not supported in your browser</p>';
+      return;
+    }
+    
+    container.innerHTML = `
+      <button id="voice-button" class="${isListening ? 'listening' : ''}">
+        ${isListening ? '🎤 Listening...' : '🎤 Start voice search'}
+      </button>
+      <p class="status">
+        ${voiceListeningState.status}
+        ${voiceListeningState.transcript ? `: "${voiceListeningState.transcript}"` : ''}
+      </p>
+      ${voiceListeningState.errorCode ? `
+        <p class="error">Error: ${voiceListeningState.errorCode}</p>
+      ` : ''}
+    `;
+    
+    container.querySelector('#voice-button').addEventListener('click', () => {
+      toggleListening();
+    });
+  }
+);
+
+search.addWidgets([
+  customVoiceSearch({
+    container: document.querySelector('#voice-search'),
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="searchAsYouSpeak" type="boolean" default="false">
+  Whether to trigger a search for each interim transcript.
+  
+  - When `true`: Search updates as you speak (interim results)
+  - When `false`: Search only triggers when you finish speaking (final result)
+  
+  ```javascript
+  searchAsYouSpeak: true
+  ```
+</ParamField>
+
+<ParamField path="language" type="string">
+  The language for voice recognition, as a BCP 47 language tag (e.g., `en-US`, `fr-FR`).
+  
+  If not specified, defaults to the browser's language.
+  
+  ```javascript
+  language: 'en-US'
+  ```
+</ParamField>
+
+<ParamField path="additionalQueryParameters" type="(params: { query: string }) => object">
+  Function to pass additional search parameters when a voice query is performed.
+  
+  ```javascript
+  additionalQueryParameters({ query }) {
+    return {
+      ignorePlurals: true,
+      removeStopWords: true,
+      optionalWords: query,
+    };
+  }
+  ```
+</ParamField>
+
+<ParamField path="createVoiceSearchHelper" type="function">
+  Custom function to create the voice search helper. This is useful if you want to use a custom voice recognition implementation.
+  
+  By default, uses the browser's Web Speech API.
+</ParamField>
+
+## Render Options
+
+<ParamField path="isBrowserSupported" type="boolean">
+  Indicates whether the browser supports the Web Speech API for voice recognition.
+</ParamField>
+
+<ParamField path="isListening" type="boolean">
+  Indicates whether the voice recognition is currently active and listening.
+</ParamField>
+
+<ParamField path="toggleListening" type="() => void">
+  Toggles the voice listening state. If currently listening, stops listening. If not listening, starts listening.
+  
+  This function does nothing if the browser doesn't support voice recognition.
+</ParamField>
+
+<ParamField path="voiceListeningState" type="object">
+  An object containing the current state of voice recognition:
+  
+  - `status` (string): Current status (`initial`, `askingPermission`, `waiting`, `recognizing`, `finished`, `error`)
+  - `transcript` (string): The recognized text transcript
+  - `isSpeechFinal` (boolean): Whether the speech recognition is final
+  - `errorCode` (string): Error code if an error occurred
+  
+  ```javascript
+  {
+    status: 'recognizing',
+    transcript: 'running shoes',
+    isSpeechFinal: false,
+    errorCode: undefined
+  }
+  ```
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

@@ -1,0 +1,115 @@
+---
+title: "connectRelevantSort"
+description: "Build a custom widget to toggle between relevant and regular sorting"
+---
+
+The **RelevantSort** connector provides the logic to build a custom widget that allows users to toggle between relevant sorting and regular sorting on virtual replica indices.
+
+[Relevant sort](https://www.algolia.com/doc/guides/managing-results/refine-results/sorting/how-to/how-to-use-relevant-sort/) is a feature that dynamically sorts results based on relevance when there are enough results, and falls back to a custom ranking when there aren't.
+
+## Usage
+
+```javascript
+import { connectRelevantSort } from 'instantsearch.js/es/connectors';
+
+const customRelevantSort = connectRelevantSort(
+  (renderOptions, isFirstRender) => {
+    const {
+      isRelevantSorted,
+      isVirtualReplica,
+      canRefine,
+      refine,
+      widgetParams,
+    } = renderOptions;
+    const { container } = widgetParams;
+    
+    if (!canRefine) {
+      container.innerHTML = '';
+      return;
+    }
+    
+    container.innerHTML = `
+      <div class="relevant-sort">
+        <label>
+          <input 
+            type="radio" 
+            name="sort-type" 
+            value="relevant"
+            ${isRelevantSorted ? 'checked' : ''}
+          />
+          Sort by relevance
+        </label>
+        <label>
+          <input 
+            type="radio" 
+            name="sort-type" 
+            value="regular"
+            ${!isRelevantSorted ? 'checked' : ''}
+          />
+          Sort by default
+        </label>
+      </div>
+    `;
+    
+    container.querySelectorAll('input[type="radio"]').forEach((input) => {
+      input.addEventListener('change', (e) => {
+        const value = e.target.value;
+        if (value === 'relevant') {
+          refine(0); // Use relevant sort
+        } else {
+          refine(undefined); // Use default sort
+        }
+      });
+    });
+  }
+);
+
+search.addWidgets([
+  customRelevantSort({
+    container: document.querySelector('#relevant-sort'),
+  }),
+]);
+```
+
+## Connector Options
+
+This connector doesn't require any specific options.
+
+## Render Options
+
+<ParamField path="isRelevantSorted" type="boolean">
+  Indicates whether the results are currently sorted by relevance (when `appliedRelevancyStrictness` is greater than 0).
+  
+  Use this to show which sorting mode is active.
+</ParamField>
+
+<ParamField path="isVirtualReplica" type="boolean">
+  Indicates whether the current index is a virtual replica that supports relevant sort.
+  
+  This is `true` when `appliedRelevancyStrictness` is defined in the search results.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  Indicates whether the search state can be refined. This is equivalent to `isVirtualReplica`.
+  
+  Use this to determine whether to display the widget.
+</ParamField>
+
+<ParamField path="refine" type="(relevancyStrictness: number | undefined) => void">
+  Sets the relevancy strictness value and triggers a new search.
+  
+  - Pass a number (typically `0`) to enable relevant sort
+  - Pass `undefined` to disable relevant sort and use default sorting
+  
+  ```javascript
+  // Enable relevant sort
+  refine(0);
+  
+  // Disable relevant sort (use default)
+  refine(undefined);
+  ```
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

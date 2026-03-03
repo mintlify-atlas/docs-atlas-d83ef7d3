@@ -1,0 +1,129 @@
+---
+title: '<FilterSuggestions>'
+description: 'AI-powered filter suggestions'
+---
+
+The `<FilterSuggestions>` component provides AI-powered suggestions for filtering search results based on the current query and results.
+
+## Import
+
+```jsx
+import { FilterSuggestions } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="agentId" type="string" required>
+  The ID of the AI agent to use for generating suggestions.
+
+  ```jsx
+  <FilterSuggestions agentId="your-agent-id" />
+  ```
+</ParamField>
+
+<ParamField path="attributes" type="string[]">
+  Attributes to generate filter suggestions for.
+
+  ```jsx
+  <FilterSuggestions
+    agentId="your-agent-id"
+    attributes={['brand', 'category', 'color']}
+  />
+  ```
+</ParamField>
+
+<ParamField path="maxSuggestions" type="number">
+  Maximum number of suggestions to display.
+
+  ```jsx
+  <FilterSuggestions agentId="your-agent-id" maxSuggestions={5} />
+  ```
+</ParamField>
+
+<ParamField path="debounceMs" type="number">
+  Debounce time in milliseconds before fetching suggestions.
+
+  ```jsx
+  <FilterSuggestions agentId="your-agent-id" debounceMs={300} />
+  ```
+</ParamField>
+
+<ParamField path="hitsToSample" type="number">
+  Number of hits to sample when generating suggestions.
+
+  ```jsx
+  <FilterSuggestions agentId="your-agent-id" hitsToSample={10} />
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the suggestion items before displaying them.
+
+  ```jsx
+  <FilterSuggestions
+    agentId="your-agent-id"
+    transformItems={(items) => items.slice(0, 3)}
+  />
+  ```
+</ParamField>
+
+<ParamField path="itemComponent" type="React.Component">
+  Custom component to render each suggestion item.
+
+  ```jsx
+  <FilterSuggestions
+    agentId="your-agent-id"
+    itemComponent={({ item, refine }) => (
+      <button onClick={() => refine(item)}>
+        {item.label}
+      </button>
+    )}
+  />
+  ```
+</ParamField>
+
+<ParamField path="headerComponent" type="React.Component">
+  Custom component to render the header.
+</ParamField>
+
+<ParamField path="emptyComponent" type="React.Component">
+  Custom component to render when there are no suggestions.
+</ParamField>
+
+<ParamField path="transport" type="object">
+  Custom transport configuration for API requests.
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, FilterSuggestions, SearchBox } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      <FilterSuggestions
+        agentId="your-agent-id"
+        attributes={['brand', 'category', 'color']}
+        maxSuggestions={5}
+      />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [RefinementList Component](/api/react/components/refinementlist)
+- [useFilterSuggestions Hook](/api/react/hooks/use-filter-suggestions)

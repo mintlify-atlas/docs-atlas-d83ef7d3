@@ -1,0 +1,325 @@
+---
+title: 'useRange'
+description: 'Build custom range slider components'
+---
+
+The `useRange` hook provides the logic to build a custom component that allows users to filter results based on a numeric range.
+
+## Import
+
+```jsx
+import { useRange } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="attribute" type="string" required>
+  Name of the attribute for faceting.
+
+  ```jsx
+  const { range, start, refine } = useRange({ attribute: 'price' });
+  ```
+</ParamField>
+
+<ParamField path="min" type="number">
+  Minimal range value (defaults to automatically computed from the result set).
+
+  ```jsx
+  const hook = useRange({ attribute: 'price', min: 0 });
+  ```
+</ParamField>
+
+<ParamField path="max" type="number">
+  Maximal range value (defaults to automatically computed from the result set).
+
+  ```jsx
+  const hook = useRange({ attribute: 'price', max: 1000 });
+  ```
+</ParamField>
+
+<ParamField path="precision" type="number" default="0">
+  Number of digits after decimal point to use.
+
+  ```jsx
+  const hook = useRange({ attribute: 'price', precision: 2 });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="range" type="{ min: number, max: number }">
+  Maximum range possible for this search.
+
+  ```jsx
+  const { range } = useRange({ attribute: 'price' });
+  console.log(range.min); // 0
+  console.log(range.max); // 999.99
+  ```
+</ResponseField>
+
+<ResponseField name="start" type="[number | undefined, number | undefined]">
+  Current refinement of the search (tuple of [min, max] bounds).
+
+  ```jsx
+  const { start } = useRange({ attribute: 'price' });
+  console.log(start); // [10, 100]
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(rangeValue: [number | undefined, number | undefined]) => void">
+  Function to set a range to filter the results. Both values are optional and will default to the bounds.
+
+  ```jsx
+  const { refine } = useRange({ attribute: 'price' });
+  refine([10, 500]); // Filter between $10 and $500
+  refine([10, undefined]); // Filter $10 and above
+  refine([undefined, 500]); // Filter $500 and below
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether this widget can be refined.
+
+  ```jsx
+  const { canRefine } = useRange({ attribute: 'price' });
+  if (!canRefine) {
+    return <p>No price range available</p>;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="sendEvent" type="SendEventForFacet">
+  Function to send Insights events.
+</ResponseField>
+
+## Examples
+
+### Basic Range Input
+
+```jsx
+import { useRange } from 'react-instantsearch';
+import { useState } from 'react';
+
+function PriceRange() {
+  const { range, start, refine, canRefine } = useRange({
+    attribute: 'price',
+  });
+
+  const [minValue, setMinValue] = useState(start[0] ?? range.min);
+  const [maxValue, setMaxValue] = useState(start[1] ?? range.max);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    refine([minValue, maxValue]);
+  };
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Min:
+        <input
+          type="number"
+          value={minValue}
+          onChange={(e) => setMinValue(Number(e.target.value))}
+          min={range.min}
+          max={range.max}
+        />
+      </label>
+      <label>
+        Max:
+        <input
+          type="number"
+          value={maxValue}
+          onChange={(e) => setMaxValue(Number(e.target.value))}
+          min={range.min}
+          max={range.max}
+        />
+      </label>
+      <button type="submit">Apply</button>
+    </form>
+  );
+}
+```
+
+### Range Slider
+
+```jsx
+import { useRange } from 'react-instantsearch';
+import { useState, useEffect } from 'react';
+
+function PriceSlider() {
+  const { range, start, refine, canRefine } = useRange({
+    attribute: 'price',
+  });
+
+  const [values, setValues] = useState([start[0] ?? range.min, start[1] ?? range.max]);
+
+  useEffect(() => {
+    setValues([start[0] ?? range.min, start[1] ?? range.max]);
+  }, [start, range]);
+
+  const handleChange = (e, index) => {
+    const newValues = [...values];
+    newValues[index] = Number(e.target.value);
+    setValues(newValues);
+  };
+
+  const handleChangeCommitted = () => {
+    refine(values);
+  };
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <div>
+      <h3>Price Range</h3>
+      <div>
+        <input
+          type="range"
+          min={range.min}
+          max={range.max}
+          value={values[0]}
+          onChange={(e) => handleChange(e, 0)}
+          onMouseUp={handleChangeCommitted}
+          onTouchEnd={handleChangeCommitted}
+        />
+        <input
+          type="range"
+          min={range.min}
+          max={range.max}
+          value={values[1]}
+          onChange={(e) => handleChange(e, 1)}
+          onMouseUp={handleChangeCommitted}
+          onTouchEnd={handleChangeCommitted}
+        />
+      </div>
+      <div>
+        ${values[0]} - ${values[1]}
+      </div>
+    </div>
+  );
+}
+```
+
+### With Material-UI Slider
+
+```jsx
+import { useRange } from 'react-instantsearch';
+import Slider from '@mui/material/Slider';
+
+function MUIRangeSlider() {
+  const { range, start, refine, canRefine } = useRange({
+    attribute: 'price',
+  });
+
+  const [value, setValue] = useState([
+    start[0] ?? range.min,
+    start[1] ?? range.max,
+  ]);
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <div style={{ padding: '0 20px' }}>
+      <h3>Price Range</h3>
+      <Slider
+        value={value}
+        onChange={(_, newValue) => setValue(newValue)}
+        onChangeCommitted={(_, newValue) => refine(newValue)}
+        valueLabelDisplay="auto"
+        min={range.min}
+        max={range.max}
+        valueLabelFormat={(value) => `$${value}`}
+      />
+      <div>
+        ${value[0]} - ${value[1]}
+      </div>
+    </div>
+  );
+}
+```
+
+### Debounced Range Input
+
+```jsx
+import { useRange } from 'react-instantsearch';
+import { useState, useEffect, useRef } from 'react';
+
+function DebouncedPriceRange() {
+  const { range, start, refine } = useRange({ attribute: 'price' });
+  const [min, setMin] = useState(start[0] ?? range.min);
+  const [max, setMax] = useState(start[1] ?? range.max);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    timerRef.current = setTimeout(() => {
+      refine([min, max]);
+    }, 500);
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [min, max, refine]);
+
+  return (
+    <div>
+      <input
+        type="number"
+        value={min}
+        onChange={(e) => setMin(Number(e.target.value))}
+        placeholder="Min"
+      />
+      <input
+        type="number"
+        value={max}
+        onChange={(e) => setMax(Number(e.target.value))}
+        placeholder="Max"
+      />
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useRange } from 'react-instantsearch';
+import type { UseRangeProps } from 'react-instantsearch';
+
+function PriceRange(props: UseRangeProps) {
+  const { range, start, refine } = useRange(props);
+
+  return (
+    <div>
+      <input
+        type="number"
+        value={start[0] ?? range.min}
+        onChange={(e) => refine([Number(e.target.value), start[1]])}
+      />
+      <input
+        type="number"
+        value={start[1] ?? range.max}
+        onChange={(e) => refine([start[0], Number(e.target.value)])}
+      />
+    </div>
+  );
+}
+```
+
+## Related
+
+- [useNumericMenu Hook](/api/react/hooks/use-numeric-menu)
+- [useRefinementList Hook](/api/react/hooks/use-refinement-list)

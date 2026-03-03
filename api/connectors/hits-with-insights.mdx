@@ -1,0 +1,130 @@
+---
+title: "connectHitsWithInsights"
+description: "Build a custom widget to display search results with Insights support"
+---
+
+The **HitsWithInsights** connector provides the logic to build a custom widget that displays search results with automatic Insights tracking.
+
+<Warning>
+  This connector is deprecated. Use the `insights` middleware with `connectHits` instead. For more information, visit the [Algolia Insights documentation](https://www.algolia.com/doc/guides/getting-insights-and-analytics/search-analytics/click-through-and-conversions/how-to/send-click-and-conversion-events-with-instantsearch/js/).
+</Warning>
+
+## Usage
+
+```javascript
+import { connectHitsWithInsights } from 'instantsearch.js/es/connectors';
+
+const customHitsWithInsights = connectHitsWithInsights(
+  (renderOptions, isFirstRender) => {
+    const { items, insights, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <div class="hits">
+        ${items.map(item => `
+          <div class="hit" data-id="${item.objectID}">
+            <h3>${item.name}</h3>
+            <p>${item.description}</p>
+            <button class="click-btn">Track Click</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    
+    // Track click events
+    container.querySelectorAll('.click-btn').forEach((btn, index) => {
+      btn.addEventListener('click', () => {
+        insights('clickedObjectIDsAfterSearch', {
+          eventName: 'Product Clicked',
+          objectIDs: [items[index].objectID],
+        });
+      });
+    });
+  }
+);
+
+search.addWidgets([
+  customHitsWithInsights({
+    container: document.querySelector('#hits'),
+  }),
+]);
+```
+
+## Connector Options
+
+This connector accepts the same options as `connectHits`:
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags from hits string values.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+  
+  ```javascript
+  transformItems(items) {
+    return items.map(item => ({
+      ...item,
+      title: item.name.toUpperCase(),
+    }));
+  }
+  ```
+</ParamField>
+
+## Render Options
+
+This connector provides the same render options as `connectHits`, plus:
+
+<ParamField path="items" type="Array<Hit>">
+  The matched hits from the Algolia API.
+</ParamField>
+
+<ParamField path="hits" type="Array<Hit>">
+  The matched hits from the Algolia API.
+  
+  <Warning>
+    This parameter is deprecated. Use `items` instead.
+  </Warning>
+</ParamField>
+
+<ParamField path="results" type="SearchResults">
+  The complete response from the Algolia API.
+</ParamField>
+
+<ParamField path="banner" type="Banner">
+  The banner to display above the hits.
+</ParamField>
+
+<ParamField path="insights" type="(method: string, payload: object) => void">
+  Helper function to send Insights events. This function automatically infers query parameters from the search results.
+  
+  Supported methods:
+  - `clickedObjectIDsAfterSearch`: Track clicks on search results
+  - `convertedObjectIDsAfterSearch`: Track conversions from search results
+  
+  ```javascript
+  // Track a click event
+  insights('clickedObjectIDsAfterSearch', {
+    eventName: 'Product Clicked',
+    objectIDs: ['object1'],
+  });
+  
+  // Track a conversion event
+  insights('convertedObjectIDsAfterSearch', {
+    eventName: 'Product Purchased',
+    objectIDs: ['object1', 'object2'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="sendEvent" type="(eventType: string, hits: object | object[], eventName?: string) => void">
+  Sends an event to the Insights middleware.
+</ParamField>
+
+<ParamField path="bindEvent" type="(eventType: string, hits: object | object[], eventName?: string) => string">
+  Returns a string for the `data-insights-event` attribute for the Insights middleware.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

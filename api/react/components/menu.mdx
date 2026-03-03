@@ -1,0 +1,141 @@
+---
+title: '<Menu>'
+description: 'Display a single-select faceted menu'
+---
+
+The `<Menu>` component displays a list of facet values where users can select a single value to refine their search.
+
+## Import
+
+```jsx
+import { Menu } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="attribute" type="string" required>
+  The attribute to create the menu from.
+
+  ```jsx
+  <Menu attribute="brand" />
+  ```
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Maximum number of items to display.
+
+  ```jsx
+  <Menu attribute="brand" limit={20} />
+  ```
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to display a "Show more" button.
+
+  ```jsx
+  <Menu attribute="brand" showMore={true} />
+  ```
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  Maximum number of items to display when "Show more" is clicked.
+
+  ```jsx
+  <Menu attribute="brand" showMore={true} showMoreLimit={50} />
+  ```
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | function" default="['isRefined', 'name:asc']">
+  How to sort the items.
+
+  ```jsx
+  <Menu attribute="brand" sortBy={['count:desc', 'name:asc']} />
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the menu items before displaying them.
+
+  ```jsx
+  <Menu
+    attribute="brand"
+    transformItems={(items) =>
+      items.map((item) => ({
+        ...item,
+        label: item.label.toUpperCase(),
+      }))
+    }
+  />
+  ```
+</ParamField>
+
+<ParamField path="translations" type="object">
+  Customize the text strings.
+
+  ```jsx
+  <Menu
+    attribute="brand"
+    translations={{
+      showMoreButtonText: ({ isShowingMore }) =>
+        isShowingMore ? 'Show less' : 'Show more',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, Menu, SearchBox, Hits } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <div className="container">
+        <aside className="filters">
+          <Menu attribute="brand" />
+          <Menu attribute="category" />
+        </aside>
+        <main>
+          <SearchBox />
+          <Hits />
+        </main>
+      </div>
+    </InstantSearch>
+  );
+}
+```
+
+## With Show More
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <Menu
+        attribute="brand"
+        showMore={true}
+        limit={10}
+        showMoreLimit={50}
+        sortBy={['count:desc']}
+      />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [RefinementList Component](/api/react/components/refinementlist)
+- [HierarchicalMenu Component](/api/react/components/hierarchicalmenu)
+- [useMenu Hook](/api/react/hooks/use-menu)

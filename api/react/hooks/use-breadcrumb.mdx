@@ -1,0 +1,259 @@
+---
+title: 'useBreadcrumb'
+description: 'Build custom breadcrumb navigation components'
+---
+
+The `useBreadcrumb` hook provides the logic to build a custom breadcrumb component that displays the current hierarchical refinement path.
+
+## Import
+
+```jsx
+import { useBreadcrumb } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="attributes" type="string[]" required>
+  Attributes to use to generate the hierarchy of the breadcrumb.
+
+  ```jsx
+  const { items } = useBreadcrumb({
+    attributes: ['category', 'subcategory', 'type'],
+  });
+  ```
+</ParamField>
+
+<ParamField path="rootPath" type="string">
+  Prefix path to use if the first level is not the root level.
+
+  ```jsx
+  const { items } = useBreadcrumb({
+    attributes: ['category', 'subcategory'],
+    rootPath: 'Products',
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: BreadcrumbItem[]) => BreadcrumbItem[]">
+  Function to transform the items passed to the templates.
+
+  ```jsx
+  const { items } = useBreadcrumb({
+    attributes: ['category'],
+    transformItems: (items) =>
+      items.map((item) => ({
+        ...item,
+        label: item.label.toUpperCase(),
+      })),
+  });
+  ```
+</ParamField>
+
+<ParamField path="separator" type="string" default=">">
+  The level separator used in the records.
+
+  ```jsx
+  const { items } = useBreadcrumb({
+    attributes: ['category'],
+    separator: ' / ',
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="BreadcrumbItem[]">
+  Array of objects defining the different values and labels.
+
+  ```jsx
+  const { items } = useBreadcrumb({ attributes: ['category'] });
+  items.forEach((item) => {
+    console.log(item.label);  // "Electronics"
+    console.log(item.value);  // "Electronics"
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(value: string | null) => void">
+  Function to set the path of the hierarchical filter and trigger a new search.
+
+  ```jsx
+  const { refine } = useBreadcrumb({ attributes: ['category'] });
+  refine('Electronics > Phones');
+  ```
+</ResponseField>
+
+<ResponseField name="createURL" type="(value: string | null) => string">
+  Function to create a URL for a single item.
+
+  ```jsx
+  const { createURL } = useBreadcrumb({ attributes: ['category'] });
+  const url = createURL('Electronics');
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether refinements can be applied.
+
+  ```jsx
+  const { canRefine } = useBreadcrumb({ attributes: ['category'] });
+  if (!canRefine) {
+    return <p>No breadcrumb available</p>;
+  }
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Breadcrumb
+
+```jsx
+import { useBreadcrumb } from 'react-instantsearch';
+
+function CustomBreadcrumb() {
+  const { items, refine } = useBreadcrumb({
+    attributes: ['hierarchicalCategories.lvl0', 'hierarchicalCategories.lvl1', 'hierarchicalCategories.lvl2'],
+  });
+
+  return (
+    <nav aria-label="Breadcrumb">
+      <ol className="breadcrumb">
+        <li>
+          <a href="/" onClick={(e) => {
+            e.preventDefault();
+            refine(null);
+          }}>
+            Home
+          </a>
+        </li>
+        {items.map((item) => (
+          <li key={item.label}>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                refine(item.value);
+              }}
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+```
+
+### Breadcrumb with Custom Separator
+
+```jsx
+import { useBreadcrumb } from 'react-instantsearch';
+
+function BreadcrumbWithSeparator() {
+  const { items, refine } = useBreadcrumb({
+    attributes: ['category', 'subcategory'],
+  });
+
+  return (
+    <div className="breadcrumb">
+      <button onClick={() => refine(null)}>Home</button>
+      {items.map((item, index) => (
+        <span key={item.label}>
+          <span className="separator"> / </span>
+          <button onClick={() => refine(item.value)}>
+            {item.label}
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+}
+```
+
+### Breadcrumb with Icons
+
+```jsx
+import { useBreadcrumb } from 'react-instantsearch';
+
+function BreadcrumbWithIcons() {
+  const { items, refine } = useBreadcrumb({
+    attributes: ['category', 'subcategory', 'type'],
+  });
+
+  return (
+    <nav className="breadcrumb">
+      <button onClick={() => refine(null)}>
+        🏠 Home
+      </button>
+      {items.map((item) => (
+        <span key={item.label}>
+          <span className="arrow">→</span>
+          <button onClick={() => refine(item.value)}>
+            {item.label}
+          </button>
+        </span>
+      ))}
+    </nav>
+  );
+}
+```
+
+### Breadcrumb with URL Navigation
+
+```jsx
+import { useBreadcrumb } from 'react-instantsearch';
+import Link from 'next/link';
+
+function BreadcrumbWithLinks() {
+  const { items, refine, createURL } = useBreadcrumb({
+    attributes: ['category', 'subcategory'],
+  });
+
+  return (
+    <nav>
+      <Link href="/">Home</Link>
+      {items.map((item) => (
+        <span key={item.label}>
+          {' > '}
+          <Link
+            href={createURL(item.value)}
+            onClick={(e) => {
+              e.preventDefault();
+              refine(item.value);
+            }}
+          >
+            {item.label}
+          </Link>
+        </span>
+      ))}
+    </nav>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useBreadcrumb } from 'react-instantsearch';
+import type { UseBreadcrumbProps } from 'react-instantsearch';
+
+function CustomBreadcrumb(props: UseBreadcrumbProps) {
+  const { items, refine } = useBreadcrumb(props);
+
+  return (
+    <nav>
+      {items.map((item) => (
+        <button key={item.label} onClick={() => refine(item.value)}>
+          {item.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+```
+
+## Related
+
+- [useHierarchicalMenu Hook](/api/react/hooks/use-hierarchical-menu)
+- [useMenu Hook](/api/react/hooks/use-menu)

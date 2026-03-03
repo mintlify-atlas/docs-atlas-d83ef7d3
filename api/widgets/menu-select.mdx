@@ -1,0 +1,135 @@
+---
+title: menuSelect
+description: Single-select dropdown menu for faceted filtering
+---
+
+The menuSelect widget creates a dropdown (select element) that allows users to filter results by choosing a single facet value. It's similar to the menu widget but uses a dropdown interface instead of a list.
+
+## Usage
+
+```javascript
+const menuSelect = instantsearch.widgets.menuSelect({
+  container: '#category-select',
+  attribute: 'category',
+});
+
+search.addWidget(menuSelect);
+```
+
+## Examples
+
+### Basic Menu Select
+
+```javascript
+instantsearch.widgets.menuSelect({
+  container: '#category',
+  attribute: 'category',
+  limit: 10,
+});
+```
+
+### With Custom Sorting
+
+```javascript
+instantsearch.widgets.menuSelect({
+  container: '#brands',
+  attribute: 'brand',
+  sortBy: ['count:desc', 'name:asc'],
+  limit: 20,
+});
+```
+
+### With Transform Items
+
+```javascript
+instantsearch.widgets.menuSelect({
+  container: '#types',
+  attribute: 'type',
+  transformItems(items) {
+    return items.map(item => ({
+      ...item,
+      label: item.label.toUpperCase(),
+    }));
+  },
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="attribute" type="string" required>
+  The name of the attribute in your records. Must be declared as an attribute for faceting.
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Maximum number of facet values to display in the dropdown.
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | function" default="['name:asc']">
+  How to sort refinements. Available values:
+  - `'count:asc'` / `'count:desc'`
+  - `'name:asc'` / `'name:desc'`
+  - `'isRefined'`
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="item" type="Template">
+      Template for each option. Receives `label`, `value`, `count`, `isRefined`.
+    </ParamField>
+    <ParamField path="defaultOption" type="Template">
+      Template for the default "see all" option.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="noRefinementRoot" type="string | string[]">
+      CSS class when no refinements are available.
+    </ParamField>
+    <ParamField path="select" type="string | string[]">
+      CSS class for the select element.
+    </ParamField>
+    <ParamField path="option" type="string | string[]">
+      CSS class for each option element.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-MenuSelect">
+  <select class="ais-MenuSelect-select">
+    <option class="ais-MenuSelect-option" value="">All categories</option>
+    <option class="ais-MenuSelect-option" value="electronics">Electronics (4,123)</option>
+    <option class="ais-MenuSelect-option" value="clothing" selected>Clothing (2,984)</option>
+    <option class="ais-MenuSelect-option" value="home">Home & Garden (1,567)</option>
+  </select>
+</div>
+```
+
+## Requirements
+
+<Warning>
+  The attribute must be declared as an **attribute for faceting** in your Algolia index settings.
+</Warning>

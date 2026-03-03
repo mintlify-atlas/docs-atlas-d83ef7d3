@@ -1,0 +1,154 @@
+---
+title: '<RelatedProducts>'
+description: 'Display related product recommendations'
+---
+
+The `<RelatedProducts>` component displays product recommendations based on the current product.
+
+## Import
+
+```jsx
+import { RelatedProducts } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="objectIDs" type="string[]" required>
+  The object IDs to get related products for.
+
+  ```jsx
+  <RelatedProducts objectIDs={['product-123']} />
+  ```
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Maximum number of recommendations to display.
+
+  ```jsx
+  <RelatedProducts objectIDs={['product-123']} limit={5} />
+  ```
+</ParamField>
+
+<ParamField path="threshold" type="number">
+  Threshold for the recommendation score.
+
+  ```jsx
+  <RelatedProducts objectIDs={['product-123']} threshold={0.5} />
+  ```
+</ParamField>
+
+<ParamField path="queryParameters" type="object">
+  Additional query parameters for the recommendation request.
+
+  ```jsx
+  <RelatedProducts
+    objectIDs={['product-123']}
+    queryParameters={{
+      analytics: true,
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="fallbackParameters" type="object">
+  Fallback parameters when not enough recommendations are found.
+
+  ```jsx
+  <RelatedProducts
+    objectIDs={['product-123']}
+    fallbackParameters={{
+      filters: 'available:true',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML in the results.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the recommendation items before displaying them.
+
+  ```jsx
+  <RelatedProducts
+    objectIDs={['product-123']}
+    transformItems={(items) =>
+      items.map((item) => ({
+        ...item,
+        discounted: item.price * 0.9,
+      }))
+    }
+  />
+  ```
+</ParamField>
+
+<ParamField path="itemComponent" type="React.Component">
+  Custom component to render each recommendation item.
+
+  ```jsx
+  <RelatedProducts
+    objectIDs={['product-123']}
+    itemComponent={({ item }) => (
+      <div>
+        <img src={item.image} alt={item.name} />
+        <h4>{item.name}</h4>
+        <p>${item.price}</p>
+      </div>
+    )}
+  />
+  ```
+</ParamField>
+
+<ParamField path="headerComponent" type="React.Component">
+  Custom component to render the header.
+</ParamField>
+
+<ParamField path="emptyComponent" type="React.Component">
+  Custom component to render when there are no recommendations.
+</ParamField>
+
+<ParamField path="layoutComponent" type="React.Component">
+  Custom component to control the layout of items.
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, RelatedProducts } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function ProductPage({ productId }) {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <RelatedProducts
+        objectIDs={[productId]}
+        limit={4}
+        itemComponent={({ item }) => (
+          <div className="product-card">
+            <img src={item.image} alt={item.name} />
+            <h4>{item.name}</h4>
+            <p>${item.price}</p>
+            <button>View Details</button>
+          </div>
+        )}
+      />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [FrequentlyBoughtTogether Component](/api/react/components/frequentlyboughttogether)
+- [LookingSimilar Component](/api/react/components/lookingsimilar)
+- [useRelatedProducts Hook](/api/react/hooks/use-related-products)

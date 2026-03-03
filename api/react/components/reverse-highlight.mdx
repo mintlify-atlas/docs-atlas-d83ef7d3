@@ -1,0 +1,123 @@
+---
+title: '<ReverseHighlight>'
+description: 'Display reverse highlighted search matches'
+---
+
+The `<ReverseHighlight>` component displays highlighted parts of a search result attribute with inverted highlighting (non-matching parts are highlighted).
+
+## Import
+
+```jsx
+import { ReverseHighlight } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="hit" type="Hit" required>
+  The search result object containing highlight information.
+
+  ```jsx
+  <ReverseHighlight hit={hit} attribute="query" />
+  ```
+</ParamField>
+
+<ParamField path="attribute" type="string | string[]" required>
+  The attribute to highlight. Can be a string or array for nested attributes.
+
+  ```jsx
+  // Simple attribute
+  <ReverseHighlight hit={hit} attribute="query" />
+
+  // Nested attribute
+  <ReverseHighlight hit={hit} attribute={['author', 'name']} />
+  ```
+</ParamField>
+
+<ParamField path="highlightedTagName" type="string" default="mark">
+  The HTML tag to use for highlighted parts (non-matching parts).
+
+  ```jsx
+  <ReverseHighlight
+    hit={hit}
+    attribute="query"
+    highlightedTagName="em"
+  />
+  ```
+</ParamField>
+
+<ParamField path="nonHighlightedTagName" type="string" default="span">
+  The HTML tag to use for non-highlighted parts (matching parts).
+
+  ```jsx
+  <ReverseHighlight
+    hit={hit}
+    attribute="query"
+    nonHighlightedTagName="span"
+  />
+  ```
+</ParamField>
+
+<ParamField path="separator" type="string" default=", ">
+  The separator to use when the attribute is an array.
+
+  ```jsx
+  <ReverseHighlight hit={hit} attribute="tags" separator=" | " />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, ReverseHighlight } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function QuerySuggestion({ hit }) {
+  return (
+    <div>
+      <ReverseHighlight hit={hit} attribute="query" />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="query_suggestions">
+      {/* Your autocomplete implementation */}
+    </InstantSearch>
+  );
+}
+```
+
+## Use Case
+
+This component is particularly useful for query suggestions where you want to highlight the part of the suggestion that doesn't match the user's current input:
+
+```jsx
+// User types: "iph"
+// Suggestion: "iphone 15 pro"
+// ReverseHighlight displays: iph[one 15 pro]
+// (where [...] represents the highlighted portion)
+
+function AutocompleteSuggestion({ item }) {
+  return (
+    <div className="suggestion">
+      <ReverseHighlight hit={item} attribute="query" />
+    </div>
+  );
+}
+```
+
+## Related
+
+- [Highlight Component](/api/react/components/highlight)
+- [Snippet Component](/api/react/components/snippet)
+- [Autocomplete Component](/api/react/components/autocomplete)

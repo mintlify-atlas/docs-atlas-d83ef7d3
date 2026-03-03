@@ -1,0 +1,127 @@
+---
+title: '<Highlight>'
+description: 'Display highlighted search matches'
+---
+
+The `<Highlight>` component displays highlighted parts of a search result attribute.
+
+## Import
+
+```jsx
+import { Highlight } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="hit" type="Hit" required>
+  The search result object containing highlight information.
+
+  ```jsx
+  <Highlight hit={hit} attribute="name" />
+  ```
+</ParamField>
+
+<ParamField path="attribute" type="string | string[]" required>
+  The attribute to highlight. Can be a string or array for nested attributes.
+
+  ```jsx
+  // Simple attribute
+  <Highlight hit={hit} attribute="name" />
+
+  // Nested attribute
+  <Highlight hit={hit} attribute={['author', 'name']} />
+  ```
+</ParamField>
+
+<ParamField path="highlightedTagName" type="string" default="mark">
+  The HTML tag to use for highlighted parts.
+
+  ```jsx
+  <Highlight hit={hit} attribute="name" highlightedTagName="em" />
+  ```
+</ParamField>
+
+<ParamField path="nonHighlightedTagName" type="string" default="span">
+  The HTML tag to use for non-highlighted parts.
+
+  ```jsx
+  <Highlight
+    hit={hit}
+    attribute="name"
+    nonHighlightedTagName="span"
+  />
+  ```
+</ParamField>
+
+<ParamField path="separator" type="string" default=", ">
+  The separator to use when the attribute is an array.
+
+  ```jsx
+  <Highlight hit={hit} attribute="tags" separator=" | " />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, SearchBox, Hits, Highlight } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function Hit({ hit }) {
+  return (
+    <article>
+      <h1>
+        <Highlight hit={hit} attribute="name" />
+      </h1>
+      <p>
+        <Highlight hit={hit} attribute="description" />
+      </p>
+    </article>
+  );
+}
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      <Hits hitComponent={Hit} />
+    </InstantSearch>
+  );
+}
+```
+
+## With Custom Styling
+
+```jsx
+function Hit({ hit }) {
+  return (
+    <article>
+      <h1>
+        <Highlight
+          hit={hit}
+          attribute="name"
+          highlightedTagName="strong"
+          classNames={{
+            highlighted: 'text-primary font-bold',
+          }}
+        />
+      </h1>
+    </article>
+  );
+}
+```
+
+## Related
+
+- [Snippet Component](/api/react/components/snippet)
+- [ReverseHighlight Component](/api/react/components/reversehighlight)
+- [Hits Component](/api/react/components/hits)

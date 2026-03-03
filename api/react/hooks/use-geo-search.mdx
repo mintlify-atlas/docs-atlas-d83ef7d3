@@ -1,0 +1,274 @@
+---
+title: 'useGeoSearch'
+description: 'Build custom geo search components'
+---
+
+The `useGeoSearch` hook provides the logic to build a custom geographic search component with map integration.
+
+## Import
+
+```jsx
+import { useGeoSearch } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="initialZoom" type="number" default="1">
+  Initial zoom level for the map.
+
+  ```jsx
+  const hook = useGeoSearch({ initialZoom: 12 });
+  ```
+</ParamField>
+
+<ParamField path="initialPosition" type="{ lat: number, lng: number }">
+  Initial center position for the map.
+
+  ```jsx
+  const hook = useGeoSearch({
+    initialPosition: { lat: 40.7128, lng: -74.0060 },
+  });
+  ```
+</ParamField>
+
+<ParamField path="enableRefineOnMapMove" type="boolean" default="true">
+  Whether to refine search when the map is moved.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: Hit[]) => Hit[]">
+  Function to transform the items with geo coordinates.
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="Hit[]">
+  The list of items with geographic coordinates.
+
+  ```jsx
+  const { items } = useGeoSearch();
+  ```
+</ResponseField>
+
+<ResponseField name="position" type="{ lat: number, lng: number }">
+  The current map center position.
+</ResponseField>
+
+<ResponseField name="currentRefinement" type="BoundingBox">
+  The current geographic bounding box refinement.
+</ResponseField>
+
+<ResponseField name="refine" type="(bounds: BoundingBox) => void">
+  Function to refine the search by geographic bounds.
+</ResponseField>
+
+<ResponseField name="clearMapRefinement" type="() => void">
+  Function to clear the geographic refinement.
+</ResponseField>
+
+<ResponseField name="isRefineOnMapMove" type="boolean">
+  Whether refinement on map move is enabled.
+</ResponseField>
+
+<ResponseField name="toggleRefineOnMapMove" type="() => void">
+  Function to toggle refinement on map move.
+</ResponseField>
+
+<ResponseField name="setMapMoveSinceLastRefine" type="() => void">
+  Function to indicate the map has moved.
+</ResponseField>
+
+<ResponseField name="hasMapMoveSinceLastRefine" type="boolean">
+  Whether the map has moved since the last refinement.
+</ResponseField>
+
+## Examples
+
+### Basic Google Maps Integration
+
+```jsx
+import { useGeoSearch } from 'react-instantsearch';
+import { GoogleMap, Marker } from '@react-google-maps/api';
+
+function GeoSearchMap() {
+  const {
+    items,
+    refine,
+    clearMapRefinement,
+  } = useGeoSearch({
+    initialZoom: 12,
+    initialPosition: { lat: 40.7128, lng: -74.0060 },
+  });
+
+  const handleBoundsChanged = (map) => {
+    const bounds = map.getBounds();
+    if (bounds) {
+      refine({
+        northEast: {
+          lat: bounds.getNorthEast().lat(),
+          lng: bounds.getNorthEast().lng(),
+        },
+        southWest: {
+          lat: bounds.getSouthWest().lat(),
+          lng: bounds.getSouthWest().lng(),
+        },
+      });
+    }
+  };
+
+  return (
+    <div>
+      <GoogleMap
+        onBoundsChanged={handleBoundsChanged}
+        zoom={12}
+        center={{ lat: 40.7128, lng: -74.0060 }}
+      >
+        {items.map((item) => (
+          <Marker
+            key={item.objectID}
+            position={{
+              lat: item._geoloc.lat,
+              lng: item._geoloc.lng,
+            }}
+            title={item.name}
+          />
+        ))}
+      </GoogleMap>
+      <button onClick={clearMapRefinement}>Clear Map Filter</button>
+    </div>
+  );
+}
+```
+
+### Store Locator
+
+```jsx
+import { useGeoSearch } from 'react-instantsearch';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+
+function StoreLocator() {
+  const { items, position, refine } = useGeoSearch({
+    initialZoom: 10,
+    initialPosition: { lat: 40.7128, lng: -74.0060 },
+  });
+
+  return (
+    <div className="store-locator">
+      <div className="map-container">
+        <MapContainer
+          center={[position.lat, position.lng]}
+          zoom={10}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {items.map((store) => (
+            <Marker
+              key={store.objectID}
+              position={[store._geoloc.lat, store._geoloc.lng]}
+            >
+              <Popup>
+                <h3>{store.name}</h3>
+                <p>{store.address}</p>
+                <p>{store.phone}</p>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
+      <div className="store-list">
+        <h3>Nearby Stores</h3>
+        {items.map((store) => (
+          <div key={store.objectID} className="store-card">
+            <h4>{store.name}</h4>
+            <p>{store.address}</p>
+            <p>{store.phone}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Search Within Radius
+
+```jsx
+import { useGeoSearch } from 'react-instantsearch';
+import { useState } from 'react';
+
+function RadiusSearch() {
+  const { items, refine } = useGeoSearch();
+  const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 });
+  const [radius, setRadius] = useState(5000); // 5km
+
+  const handleSearch = () => {
+    refine({
+      aroundLatLng: `${center.lat}, ${center.lng}`,
+      aroundRadius: radius,
+    });
+  };
+
+  return (
+    <div>
+      <div className="search-controls">
+        <input
+          type="number"
+          value={center.lat}
+          onChange={(e) => setCenter({ ...center, lat: Number(e.target.value) })}
+          placeholder="Latitude"
+        />
+        <input
+          type="number"
+          value={center.lng}
+          onChange={(e) => setCenter({ ...center, lng: Number(e.target.value) })}
+          placeholder="Longitude"
+        />
+        <select value={radius} onChange={(e) => setRadius(Number(e.target.value))}>
+          <option value="1000">1 km</option>
+          <option value="5000">5 km</option>
+          <option value="10000">10 km</option>
+          <option value="50000">50 km</option>
+        </select>
+        <button onClick={handleSearch}>Search</button>
+      </div>
+      <div className="results">
+        <p>Found {items.length} results within {radius / 1000}km</p>
+      </div>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useGeoSearch } from 'react-instantsearch';
+import type { UseGeoSearchProps } from 'react-instantsearch';
+
+interface Location {
+  objectID: string;
+  name: string;
+  _geoloc: {
+    lat: number;
+    lng: number;
+  };
+}
+
+function GeoSearchMap(props?: UseGeoSearchProps) {
+  const { items } = useGeoSearch<Location>(props);
+
+  return (
+    <div>
+      {items.map((item) => (
+        <div key={item.objectID}>
+          {item.name} - {item._geoloc.lat}, {item._geoloc.lng}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Related
+
+- [Geo Search Guide](https://www.algolia.com/doc/guides/managing-results/refine-results/geolocation/)
+- [useConfigure Hook](/api/react/hooks/use-configure)
+- [Geo Search Parameters](https://www.algolia.com/doc/api-reference/api-parameters/aroundLatLng/)

@@ -1,0 +1,101 @@
+---
+title: '<SortBy>'
+description: 'Select a sort order for search results'
+---
+
+The `<SortBy>` component displays a dropdown to change the sort order of search results by selecting different indices.
+
+## Import
+
+```jsx
+import { SortBy } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="items" type="Array<{ label: string; value: string }>" required>
+  The indices to display in the dropdown.
+
+  ```jsx
+  <SortBy
+    items={[
+      { label: 'Most relevant', value: 'products' },
+      { label: 'Price (low to high)', value: 'products_price_asc' },
+      { label: 'Price (high to low)', value: 'products_price_desc' },
+    ]}
+  />
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the items before displaying them.
+
+  ```jsx
+  <SortBy
+    items={[
+      { label: 'Relevant', value: 'products' },
+      { label: 'Price ASC', value: 'products_price_asc' },
+    ]}
+    transformItems={(items) =>
+      items.map((item) => ({
+        ...item,
+        label: item.label.toUpperCase(),
+      }))
+    }
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, SortBy, Hits } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SortBy
+        items={[
+          { label: 'Most relevant', value: 'products' },
+          { label: 'Price (low to high)', value: 'products_price_asc' },
+          { label: 'Price (high to low)', value: 'products_price_desc' },
+          { label: 'Newest first', value: 'products_date_desc' },
+        ]}
+      />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+<Warning>
+  Make sure to create replica indices in your Algolia dashboard with the appropriate sorting configuration before using this component.
+</Warning>
+
+## Creating Replica Indices
+
+To use different sort orders, you need to create replica indices:
+
+1. Go to your Algolia dashboard
+2. Navigate to your index
+3. Go to "Replicas" tab
+4. Create replicas with different sorting:
+   - `products_price_asc`: Sort by `price` ascending
+   - `products_price_desc`: Sort by `price` descending
+   - `products_date_desc`: Sort by `date` descending
+
+## Related
+
+- [Configure Component](/api/react/configure)
+- [Index Component](/api/react/index)
+- [useSortBy Hook](/api/react/hooks/use-sort-by)

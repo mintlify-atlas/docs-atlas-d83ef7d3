@@ -1,0 +1,145 @@
+---
+title: '<Snippet>'
+description: 'Display snippeted search matches'
+---
+
+The `<Snippet>` component displays snippeted (truncated) parts of a search result attribute with highlighted matches.
+
+## Import
+
+```jsx
+import { Snippet } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="hit" type="Hit" required>
+  The search result object containing snippet information.
+
+  ```jsx
+  <Snippet hit={hit} attribute="description" />
+  ```
+</ParamField>
+
+<ParamField path="attribute" type="string | string[]" required>
+  The attribute to snippet. Can be a string or array for nested attributes.
+
+  ```jsx
+  // Simple attribute
+  <Snippet hit={hit} attribute="description" />
+
+  // Nested attribute
+  <Snippet hit={hit} attribute={['content', 'body']} />
+  ```
+</ParamField>
+
+<ParamField path="highlightedTagName" type="string" default="mark">
+  The HTML tag to use for highlighted parts.
+
+  ```jsx
+  <Snippet hit={hit} attribute="description" highlightedTagName="em" />
+  ```
+</ParamField>
+
+<ParamField path="nonHighlightedTagName" type="string" default="span">
+  The HTML tag to use for non-highlighted parts.
+
+  ```jsx
+  <Snippet
+    hit={hit}
+    attribute="description"
+    nonHighlightedTagName="span"
+  />
+  ```
+</ParamField>
+
+<ParamField path="separator" type="string" default=", ">
+  The separator to use when the attribute is an array.
+
+  ```jsx
+  <Snippet hit={hit} attribute="tags" separator=" | " />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, SearchBox, Hits, Highlight, Snippet } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function Hit({ hit }) {
+  return (
+    <article>
+      <h1>
+        <Highlight hit={hit} attribute="title" />
+      </h1>
+      <p>
+        <Snippet hit={hit} attribute="description" />
+      </p>
+    </article>
+  );
+}
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="articles">
+      <SearchBox />
+      <Hits hitComponent={Hit} />
+    </InstantSearch>
+  );
+}
+```
+
+## Difference from Highlight
+
+The `<Snippet>` component displays a truncated version of the attribute content centered around the matching terms, while `<Highlight>` displays the full content.
+
+```jsx
+// Highlight: Shows full content
+<Highlight hit={hit} attribute="description" />
+// Output: "This is a long description with the search term somewhere in the middle of a very long text"
+
+// Snippet: Shows truncated content around matches
+<Snippet hit={hit} attribute="description" />
+// Output: "...with the search term somewhere..."
+```
+
+<Note>
+  Make sure to enable snippeting in your index settings or using the `attributesToSnippet` search parameter.
+</Note>
+
+## With Custom Styling
+
+```jsx
+function Hit({ hit }) {
+  return (
+    <article>
+      <p>
+        <Snippet
+          hit={hit}
+          attribute="description"
+          highlightedTagName="strong"
+          classNames={{
+            highlighted: 'text-primary font-bold',
+          }}
+        />
+      </p>
+    </article>
+  );
+}
+```
+
+## Related
+
+- [Highlight Component](/api/react/components/highlight)
+- [ReverseHighlight Component](/api/react/components/reversehighlight)
+- [Hits Component](/api/react/components/hits)

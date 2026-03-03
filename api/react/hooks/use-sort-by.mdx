@@ -1,0 +1,308 @@
+---
+title: 'useSortBy'
+description: 'Build custom sort selection components'
+---
+
+The `useSortBy` hook provides the logic to build a custom widget that displays a list of indices or sorting strategies, allowing users to change how hits are sorted.
+
+## Import
+
+```jsx
+import { useSortBy } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="items" type="SortByItem[]" required>
+  Array of objects defining the different indices or strategies to choose from.
+
+  ```jsx
+  const { refine } = useSortBy({
+    items: [
+      { value: 'products', label: 'Most relevant' },
+      { value: 'products_price_asc', label: 'Lowest price' },
+      { value: 'products_price_desc', label: 'Highest price' },
+    ],
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: SortByItem[]) => SortByItem[]">
+  Function to transform the items passed to the templates.
+
+  ```jsx
+  const { options } = useSortBy({
+    items: [
+      { value: 'products', label: 'Relevant' },
+      { value: 'products_price_asc', label: 'Price: Low to High' },
+    ],
+    transformItems: (items) =>
+      items.map((item) => ({
+        ...item,
+        label: item.label.toUpperCase(),
+      })),
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="currentRefinement" type="string">
+  The currently selected index or strategy.
+
+  ```jsx
+  const { currentRefinement } = useSortBy({
+    items: [{ value: 'products', label: 'Products' }],
+  });
+  console.log(currentRefinement); // "products"
+  ```
+</ResponseField>
+
+<ResponseField name="options" type="Array<{ value: string; label: string }>">
+  All available indices and strategies.
+
+  ```jsx
+  const { options } = useSortBy({
+    items: [
+      { value: 'products', label: 'Relevant' },
+      { value: 'products_price_asc', label: 'Price Low' },
+    ],
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(value: string) => void">
+  Function to switch indices or strategies and trigger a new search.
+
+  ```jsx
+  const { refine } = useSortBy({
+    items: [{ value: 'products', label: 'Products' }],
+  });
+  refine('products_price_asc');
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether the widget can be refined.
+
+  ```jsx
+  const { canRefine } = useSortBy({
+    items: [{ value: 'products', label: 'Products' }],
+  });
+  if (!canRefine) {
+    return <p>No sort options available</p>;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="initialIndex" type="string">
+  The initially selected index or strategy.
+
+  ```jsx
+  const { initialIndex } = useSortBy({
+    items: [{ value: 'products', label: 'Products' }],
+  });
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Dropdown
+
+```jsx
+import { useSortBy } from 'react-instantsearch';
+
+function SortBySelector() {
+  const { currentRefinement, options, refine } = useSortBy({
+    items: [
+      { value: 'products', label: 'Most relevant' },
+      { value: 'products_price_asc', label: 'Lowest price' },
+      { value: 'products_price_desc', label: 'Highest price' },
+    ],
+  });
+
+  return (
+    <div>
+      <label htmlFor="sort-by">Sort by:</label>
+      <select
+        id="sort-by"
+        value={currentRefinement}
+        onChange={(e) => refine(e.target.value)}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+```
+
+### Radio Button Style
+
+```jsx
+import { useSortBy } from 'react-instantsearch';
+
+function RadioSortBy() {
+  const { currentRefinement, options, refine } = useSortBy({
+    items: [
+      { value: 'products', label: 'Relevance' },
+      { value: 'products_price_asc', label: 'Price: Low to High' },
+      { value: 'products_price_desc', label: 'Price: High to Low' },
+      { value: 'products_date_desc', label: 'Newest first' },
+    ],
+  });
+
+  return (
+    <div>
+      <h3>Sort By</h3>
+      {options.map((option) => (
+        <label key={option.value} style={{ display: 'block' }}>
+          <input
+            type="radio"
+            name="sort"
+            value={option.value}
+            checked={currentRefinement === option.value}
+            onChange={(e) => refine(e.target.value)}
+          />
+          {option.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+```
+
+### Button Group
+
+```jsx
+import { useSortBy } from 'react-instantsearch';
+
+function SortByButtons() {
+  const { currentRefinement, options, refine } = useSortBy({
+    items: [
+      { value: 'products', label: 'Relevant' },
+      { value: 'products_price_asc', label: '↑ Price' },
+      { value: 'products_price_desc', label: '↓ Price' },
+    ],
+  });
+
+  return (
+    <div className="sort-buttons">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          onClick={() => refine(option.value)}
+          className={currentRefinement === option.value ? 'active' : ''}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+### With Icons
+
+```jsx
+import { useSortBy } from 'react-instantsearch';
+
+const sortIcons = {
+  products: '🔥',
+  products_price_asc: '⬆️',
+  products_price_desc: '⬇️',
+  products_date_desc: '🆕',
+};
+
+function SortByWithIcons() {
+  const { currentRefinement, options, refine } = useSortBy({
+    items: [
+      { value: 'products', label: 'Most relevant' },
+      { value: 'products_price_asc', label: 'Price ascending' },
+      { value: 'products_price_desc', label: 'Price descending' },
+      { value: 'products_date_desc', label: 'Newest' },
+    ],
+  });
+
+  return (
+    <select
+      value={currentRefinement}
+      onChange={(e) => refine(e.target.value)}
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {sortIcons[option.value]} {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+### Compact Dropdown
+
+```jsx
+import { useSortBy } from 'react-instantsearch';
+
+function CompactSortBy() {
+  const { currentRefinement, options, refine } = useSortBy({
+    items: [
+      { value: 'products', label: 'Relevant' },
+      { value: 'products_price_asc', label: 'Price ↑' },
+      { value: 'products_price_desc', label: 'Price ↓' },
+    ],
+  });
+
+  const currentLabel = options.find(
+    (option) => option.value === currentRefinement
+  )?.label;
+
+  return (
+    <div className="compact-sort">
+      <span>Sort: </span>
+      <select
+        value={currentRefinement}
+        onChange={(e) => refine(e.target.value)}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useSortBy } from 'react-instantsearch';
+import type { UseSortByProps } from 'react-instantsearch';
+
+function SortBySelector(props: UseSortByProps) {
+  const { currentRefinement, options, refine } = useSortBy(props);
+
+  return (
+    <select
+      value={currentRefinement}
+      onChange={(e) => refine(e.target.value)}
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+## Related
+
+- [useMenu Hook](/api/react/hooks/use-menu)
+- [useRefinementList Hook](/api/react/hooks/use-refinement-list)

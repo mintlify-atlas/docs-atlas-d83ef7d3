@@ -1,0 +1,171 @@
+---
+title: '<HierarchicalMenu>'
+description: 'Display hierarchical faceted navigation'
+---
+
+The `<HierarchicalMenu>` component displays a hierarchical menu for navigating through multi-level categories.
+
+## Import
+
+```jsx
+import { HierarchicalMenu } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="attributes" type="string[]" required>
+  The hierarchical attributes in order of nesting.
+
+  ```jsx
+  <HierarchicalMenu
+    attributes={[
+      'hierarchicalCategories.lvl0',
+      'hierarchicalCategories.lvl1',
+      'hierarchicalCategories.lvl2',
+    ]}
+  />
+  ```
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Maximum number of items to display.
+
+  ```jsx
+  <HierarchicalMenu
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    limit={20}
+  />
+  ```
+</ParamField>
+
+<ParamField path="rootPath" type="string">
+  The path to use as the root level.
+
+  ```jsx
+  <HierarchicalMenu
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    rootPath="Products"
+  />
+  ```
+</ParamField>
+
+<ParamField path="separator" type="string" default=">">
+  The separator used in the hierarchical attributes.
+
+  ```jsx
+  <HierarchicalMenu
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    separator=" > "
+  />
+  ```
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to display a "Show more" button.
+
+  ```jsx
+  <HierarchicalMenu
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    showMore={true}
+  />
+  ```
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  Maximum number of items to display when "Show more" is clicked.
+
+  ```jsx
+  <HierarchicalMenu
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    showMore={true}
+    showMoreLimit={50}
+  />
+  ```
+</ParamField>
+
+<ParamField path="showParentLevel" type="boolean" default="true">
+  Whether to show the parent level when a refinement is applied.
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | function">
+  How to sort the items.
+
+  ```jsx
+  <HierarchicalMenu
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    sortBy={['name:asc']}
+  />
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the menu items before displaying them.
+
+  ```jsx
+  <HierarchicalMenu
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    transformItems={(items) =>
+      items.map((item) => ({
+        ...item,
+        label: item.label.toUpperCase(),
+      }))
+    }
+  />
+  ```
+</ParamField>
+
+<ParamField path="translations" type="object">
+  Customize the text strings.
+
+  ```jsx
+  <HierarchicalMenu
+    attributes={['categories.lvl0', 'categories.lvl1']}
+    translations={{
+      showMoreButtonText: ({ isShowingMore }) =>
+        isShowingMore ? 'Show less' : 'Show more',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, HierarchicalMenu, Breadcrumb } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  const hierarchicalAttributes = [
+    'hierarchicalCategories.lvl0',
+    'hierarchicalCategories.lvl1',
+    'hierarchicalCategories.lvl2',
+  ];
+
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <Breadcrumb attributes={hierarchicalAttributes} />
+      <HierarchicalMenu
+        attributes={hierarchicalAttributes}
+        showMore={true}
+        limit={10}
+        showMoreLimit={20}
+      />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [Breadcrumb Component](/api/react/components/breadcrumb)
+- [Menu Component](/api/react/components/menu)
+- [useHierarchicalMenu Hook](/api/react/hooks/use-hierarchical-menu)

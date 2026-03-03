@@ -1,0 +1,196 @@
+---
+title: '<RefinementList>'
+description: 'Display a multi-select faceted list'
+---
+
+The `<RefinementList>` component displays a list of facet values where users can select multiple values to refine their search.
+
+## Import
+
+```jsx
+import { RefinementList } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="attribute" type="string" required>
+  The attribute to create the refinement list from.
+
+  ```jsx
+  <RefinementList attribute="brand" />
+  ```
+</ParamField>
+
+<ParamField path="operator" type="'and' | 'or'" default="or">
+  How to apply multiple selections.
+
+  ```jsx
+  <RefinementList attribute="brand" operator="and" />
+  ```
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Maximum number of items to display.
+
+  ```jsx
+  <RefinementList attribute="brand" limit={20} />
+  ```
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to display a "Show more" button.
+
+  ```jsx
+  <RefinementList attribute="brand" showMore={true} />
+  ```
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  Maximum number of items to display when "Show more" is clicked.
+
+  ```jsx
+  <RefinementList
+    attribute="brand"
+    showMore={true}
+    showMoreLimit={50}
+  />
+  ```
+</ParamField>
+
+<ParamField path="searchable" type="boolean" default="false">
+  Whether to display a search box to filter the list.
+
+  ```jsx
+  <RefinementList attribute="brand" searchable={true} />
+  ```
+</ParamField>
+
+<ParamField path="searchablePlaceholder" type="string">
+  Placeholder text for the search box.
+
+  ```jsx
+  <RefinementList
+    attribute="brand"
+    searchable={true}
+    searchablePlaceholder="Search brands..."
+  />
+  ```
+</ParamField>
+
+<ParamField path="searchableSelectOnSubmit" type="boolean" default="true">
+  Whether to select the first item when submitting the search box.
+
+  ```jsx
+  <RefinementList
+    attribute="brand"
+    searchable={true}
+    searchableSelectOnSubmit={false}
+  />
+  ```
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | function" default="['isRefined', 'count:desc', 'name:asc']">
+  How to sort the items.
+
+  ```jsx
+  <RefinementList
+    attribute="brand"
+    sortBy={['count:desc', 'name:asc']}
+  />
+  ```
+</ParamField>
+
+<ParamField path="escapeFacetValues" type="boolean" default="true">
+  Whether to escape the facet values.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Transform the refinement items before displaying them.
+
+  ```jsx
+  <RefinementList
+    attribute="brand"
+    transformItems={(items) =>
+      items.map((item) => ({
+        ...item,
+        label: item.label.toUpperCase(),
+      }))
+    }
+  />
+  ```
+</ParamField>
+
+<ParamField path="translations" type="object">
+  Customize the text strings.
+
+  ```jsx
+  <RefinementList
+    attribute="brand"
+    translations={{
+      showMoreButtonText: ({ isShowingMore }) =>
+        isShowingMore ? 'Show less' : 'Show more',
+      noResultsText: 'No results.',
+      submitButtonTitle: 'Submit',
+      resetButtonTitle: 'Clear',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, RefinementList, SearchBox, Hits } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <div className="container">
+        <aside className="filters">
+          <RefinementList attribute="brand" />
+          <RefinementList attribute="category" />
+        </aside>
+        <main>
+          <SearchBox />
+          <Hits />
+        </main>
+      </div>
+    </InstantSearch>
+  );
+}
+```
+
+## With Search
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <RefinementList
+        attribute="brand"
+        searchable={true}
+        searchablePlaceholder="Search brands..."
+        showMore={true}
+        limit={10}
+        showMoreLimit={50}
+      />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [Menu Component](/api/react/components/menu)
+- [HierarchicalMenu Component](/api/react/components/hierarchicalmenu)
+- [useRefinementList Hook](/api/react/hooks/use-refinement-list)

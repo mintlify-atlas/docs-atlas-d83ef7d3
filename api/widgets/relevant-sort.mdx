@@ -1,0 +1,133 @@
+---
+title: relevantSort
+description: Toggle between relevant and exhaustive search modes
+---
+
+The relevantSort widget allows users to switch between relevant sorting and exhaustive search modes. This is useful for virtual replica indices that support Relevant Sort, letting users choose between more relevant results or comprehensive coverage.
+
+## Usage
+
+```javascript
+const relevantSort = instantsearch.widgets.relevantSort({
+  container: '#relevant-sort',
+});
+
+search.addWidget(relevantSort);
+```
+
+## Examples
+
+### Basic Relevant Sort
+
+```javascript
+instantsearch.widgets.relevantSort({
+  container: '#relevant-sort',
+});
+```
+
+### With Custom Templates
+
+```javascript
+instantsearch.widgets.relevantSort({
+  container: '#relevant-sort',
+  templates: {
+    text({ isRelevantSorted }) {
+      return isRelevantSorted
+        ? 'Showing relevant results'
+        : 'Showing all results';
+    },
+    button({ isRelevantSorted }) {
+      return isRelevantSorted
+        ? 'See all results'
+        : 'See relevant results';
+    },
+  },
+});
+```
+
+### With Custom CSS Classes
+
+```javascript
+instantsearch.widgets.relevantSort({
+  container: '#relevant-sort',
+  cssClasses: {
+    root: 'my-RelevantSort',
+    text: 'my-RelevantSort-text',
+    button: 'my-RelevantSort-button',
+  },
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="text" type="Template">
+      Template for the descriptive text. Receives `isRelevantSorted` (boolean).
+      
+      ```javascript
+      ({ isRelevantSorted }) => string
+      ```
+    </ParamField>
+    <ParamField path="button" type="Template">
+      Template for the toggle button. Receives `isRelevantSorted` (boolean).
+      
+      ```javascript
+      ({ isRelevantSorted }) => string
+      ```
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="text" type="string | string[]">
+      CSS class for the text element.
+    </ParamField>
+    <ParamField path="button" type="string | string[]">
+      CSS class for the button element.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-RelevantSort">
+  <div class="ais-RelevantSort-text">
+    We removed some search results to show you the most relevant ones
+  </div>
+  <button class="ais-RelevantSort-button">
+    See all results
+  </button>
+</div>
+```
+
+## Requirements
+
+<Warning>
+  This widget only works with **virtual replica indices** that have Relevant Sort enabled. Learn more about [Relevant Sort](https://www.algolia.com/doc/guides/managing-results/refine-results/sorting/how-to/sort-by-relevance/) in the Algolia documentation.
+</Warning>
+
+## Behavior
+
+The widget displays when:
+- The index is a virtual replica with Relevant Sort enabled
+- Results are available
+
+When users click the toggle button:
+- If currently showing relevant results: switches to exhaustive mode (shows all results)
+- If currently showing all results: switches back to relevant mode (shows only relevant results)
+
+The widget uses the `relevancyStrictness` search parameter to control the sorting mode.

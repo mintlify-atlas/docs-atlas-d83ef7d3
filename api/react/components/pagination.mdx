@@ -1,0 +1,132 @@
+---
+title: '<Pagination>'
+description: 'Navigate through search result pages'
+---
+
+The `<Pagination>` component displays pagination controls to navigate through search result pages.
+
+## Import
+
+```jsx
+import { Pagination } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="padding" type="number" default="3">
+  Number of page buttons to display on each side of the current page.
+
+  ```jsx
+  <Pagination padding={2} />
+  ```
+</ParamField>
+
+<ParamField path="totalPages" type="number">
+  Maximum number of pages to display.
+
+  ```jsx
+  <Pagination totalPages={20} />
+  ```
+</ParamField>
+
+<ParamField path="showFirst" type="boolean" default="true">
+  Whether to display the "First" button.
+
+  ```jsx
+  <Pagination showFirst={false} />
+  ```
+</ParamField>
+
+<ParamField path="showPrevious" type="boolean" default="true">
+  Whether to display the "Previous" button.
+
+  ```jsx
+  <Pagination showPrevious={false} />
+  ```
+</ParamField>
+
+<ParamField path="showNext" type="boolean" default="true">
+  Whether to display the "Next" button.
+
+  ```jsx
+  <Pagination showNext={false} />
+  ```
+</ParamField>
+
+<ParamField path="showLast" type="boolean" default="true">
+  Whether to display the "Last" button.
+
+  ```jsx
+  <Pagination showLast={false} />
+  ```
+</ParamField>
+
+<ParamField path="translations" type="object">
+  Customize the text strings.
+
+  ```jsx
+  <Pagination
+    translations={{
+      firstPageItemText: 'First',
+      previousPageItemText: 'Previous',
+      nextPageItemText: 'Next',
+      lastPageItemText: 'Last',
+      pageItemText: ({ currentPage }) => `${currentPage}`,
+      firstPageItemAriaLabel: 'First Page',
+      previousPageItemAriaLabel: 'Previous Page',
+      nextPageItemAriaLabel: 'Next Page',
+      lastPageItemAriaLabel: 'Last Page',
+      pageItemAriaLabel: ({ currentPage }) => `Page ${currentPage}`,
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, SearchBox, Hits, Pagination } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      <Hits />
+      <Pagination />
+    </InstantSearch>
+  );
+}
+```
+
+## Minimal Pagination
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <Hits />
+      <Pagination
+        showFirst={false}
+        showLast={false}
+        padding={2}
+      />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [InfiniteHits Component](/api/react/components/infinitehits)
+- [HitsPerPage Component](/api/react/components/hitsperpage)
+- [usePagination Hook](/api/react/hooks/use-pagination)

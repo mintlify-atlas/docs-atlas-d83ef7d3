@@ -1,0 +1,313 @@
+---
+title: 'useToggleRefinement'
+description: 'Build custom toggle filter components'
+---
+
+The `useToggleRefinement` hook provides the logic to build a custom component that toggles a facet filter on and off.
+
+## Import
+
+```jsx
+import { useToggleRefinement } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="attribute" type="string" required>
+  Name of the attribute for faceting (e.g., "free_shipping").
+
+  ```jsx
+  const { value, refine } = useToggleRefinement({
+    attribute: 'free_shipping',
+  });
+  ```
+</ParamField>
+
+<ParamField path="on" type="string | number | boolean | (string | number | boolean)[]">
+  Value to filter on when checked.
+
+  ```jsx
+  const hook = useToggleRefinement({
+    attribute: 'free_shipping',
+    on: true,
+  });
+  ```
+</ParamField>
+
+<ParamField path="off" type="string | number | boolean | (string | number | boolean)[]">
+  Value to filter on when unchecked.
+
+  ```jsx
+  const hook = useToggleRefinement({
+    attribute: 'status',
+    on: 'available',
+    off: 'out_of_stock',
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="value" type="{ isRefined: boolean, count: number | null }">
+  The current toggle state and result count.
+
+  ```jsx
+  const { value } = useToggleRefinement({
+    attribute: 'free_shipping',
+  });
+  console.log(value.isRefined); // true/false
+  console.log(value.count);     // Number of results with filter applied
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(options?: { isRefined: boolean }) => void">
+  Function to toggle the refinement.
+
+  ```jsx
+  const { refine } = useToggleRefinement({
+    attribute: 'free_shipping',
+  });
+  refine(); // Toggle the current state
+  refine({ isRefined: false }); // Explicitly set to off
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether the refinement can be applied.
+
+  ```jsx
+  const { canRefine } = useToggleRefinement({
+    attribute: 'free_shipping',
+  });
+  if (!canRefine) {
+    return null;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="createURL" type="(options: { isRefined: boolean }) => string">
+  Function to create a URL for the toggle state.
+</ResponseField>
+
+<ResponseField name="sendEvent" type="SendEventForToggle">
+  Function to send Insights events.
+</ResponseField>
+
+## Examples
+
+### Basic Toggle
+
+```jsx
+import { useToggleRefinement } from 'react-instantsearch';
+
+function FreeShippingToggle() {
+  const { value, refine } = useToggleRefinement({
+    attribute: 'free_shipping',
+    on: true,
+  });
+
+  return (
+    <label>
+      <input
+        type="checkbox"
+        checked={value.isRefined}
+        onChange={() => refine()}
+      />
+      Free shipping {value.count !== null && `(${value.count})`}
+    </label>
+  );
+}
+```
+
+### Toggle with Switch UI
+
+```jsx
+import { useToggleRefinement } from 'react-instantsearch';
+
+function AvailabilitySwitch() {
+  const { value, refine, canRefine } = useToggleRefinement({
+    attribute: 'available',
+    on: true,
+  });
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <div className="toggle-switch">
+      <span>In stock only</span>
+      <button
+        onClick={() => refine()}
+        className={`switch ${value.isRefined ? 'on' : 'off'}`}
+        role="switch"
+        aria-checked={value.isRefined}
+      >
+        <span className="switch-handle" />
+      </button>
+      {value.count !== null && <span>({value.count})</span>}
+    </div>
+  );
+}
+```
+
+### Multiple Toggles
+
+```jsx
+import { useToggleRefinement } from 'react-instantsearch';
+
+function ProductFilters() {
+  const freeShipping = useToggleRefinement({
+    attribute: 'free_shipping',
+    on: true,
+  });
+
+  const onSale = useToggleRefinement({
+    attribute: 'on_sale',
+    on: true,
+  });
+
+  const inStock = useToggleRefinement({
+    attribute: 'in_stock',
+    on: true,
+  });
+
+  return (
+    <div>
+      <h3>Filters</h3>
+      <label>
+        <input
+          type="checkbox"
+          checked={freeShipping.value.isRefined}
+          onChange={() => freeShipping.refine()}
+        />
+        Free shipping ({freeShipping.value.count})
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={onSale.value.isRefined}
+          onChange={() => onSale.refine()}
+        />
+        On sale ({onSale.value.count})
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={inStock.value.isRefined}
+          onChange={() => inStock.refine()}
+        />
+        In stock ({inStock.value.count})
+      </label>
+    </div>
+  );
+}
+```
+
+### Toggle with On/Off Values
+
+```jsx
+import { useToggleRefinement } from 'react-instantsearch';
+
+function StatusToggle() {
+  const { value, refine } = useToggleRefinement({
+    attribute: 'status',
+    on: 'available',
+    off: 'discontinued',
+  });
+
+  return (
+    <div>
+      <button onClick={() => refine()}>
+        {value.isRefined ? 'Show available' : 'Show discontinued'}
+      </button>
+      {value.count !== null && <span>({value.count} items)</span>}
+    </div>
+  );
+}
+```
+
+### Toggle Button
+
+```jsx
+import { useToggleRefinement } from 'react-instantsearch';
+
+function SaleToggle() {
+  const { value, refine } = useToggleRefinement({
+    attribute: 'on_sale',
+    on: true,
+  });
+
+  return (
+    <button
+      onClick={() => refine()}
+      className={value.isRefined ? 'active' : ''}
+      style={{
+        backgroundColor: value.isRefined ? '#e74c3c' : '#ccc',
+        color: 'white',
+        padding: '10px 20px',
+        border: 'none',
+        borderRadius: '4px',
+      }}
+    >
+      {value.isRefined ? '✓ ' : ''}On Sale
+      {value.count !== null && ` (${value.count})`}
+    </button>
+  );
+}
+```
+
+### With Link Navigation
+
+```jsx
+import { useToggleRefinement } from 'react-instantsearch';
+import Link from 'next/link';
+
+function FreeShippingLink() {
+  const { value, refine, createURL } = useToggleRefinement({
+    attribute: 'free_shipping',
+    on: true,
+  });
+
+  return (
+    <Link
+      href={createURL({ isRefined: !value.isRefined })}
+      onClick={(e) => {
+        e.preventDefault();
+        refine();
+      }}
+      style={{ fontWeight: value.isRefined ? 'bold' : 'normal' }}
+    >
+      Free shipping ({value.count})
+    </Link>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useToggleRefinement } from 'react-instantsearch';
+import type { UseToggleRefinementProps } from 'react-instantsearch';
+
+function FreeShippingToggle(props: UseToggleRefinementProps) {
+  const { value, refine } = useToggleRefinement(props);
+
+  return (
+    <label>
+      <input
+        type="checkbox"
+        checked={value.isRefined}
+        onChange={() => refine()}
+      />
+      Free shipping
+    </label>
+  );
+}
+```
+
+## Related
+
+- [useRefinementList Hook](/api/react/hooks/use-refinement-list)
+- [useMenu Hook](/api/react/hooks/use-menu)
+- [useClearRefinements Hook](/api/react/hooks/use-clear-refinements)

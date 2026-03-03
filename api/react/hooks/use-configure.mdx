@@ -1,0 +1,185 @@
+---
+title: 'useConfigure'
+description: 'Set search parameters'
+---
+
+The `useConfigure` hook provides the logic to configure Algolia search parameters programmatically.
+
+## Import
+
+```jsx
+import { useConfigure } from 'react-instantsearch';
+```
+
+## Parameters
+
+Accepts any valid [Algolia search parameter](https://www.algolia.com/doc/api-reference/search-api-parameters/).
+
+<ParamField path="searchParameters" type="PlainSearchParameters" required>
+  Any search parameters you want to configure.
+
+  ```jsx
+  useConfigure({
+    hitsPerPage: 20,
+    filters: 'price > 0',
+    distinct: true,
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="refine" type="(searchParameters: PlainSearchParameters) => void">
+  Function to refine the given search parameters.
+
+  ```jsx
+  const { refine } = useConfigure({ hitsPerPage: 10 });
+  refine({ hitsPerPage: 20 });
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Configuration
+
+```jsx
+import { useConfigure } from 'react-instantsearch';
+
+function SearchConfiguration() {
+  useConfigure({
+    hitsPerPage: 20,
+    attributesToSnippet: ['description:50'],
+    snippetEllipsisText: '...',
+  });
+
+  return null; // This component doesn't render anything
+}
+```
+
+### Dynamic Configuration
+
+```jsx
+import { useConfigure } from 'react-instantsearch';
+import { useState } from 'react';
+
+function DynamicConfiguration() {
+  const [distinct, setDistinct] = useState(true);
+
+  useConfigure({
+    distinct: distinct ? 1 : 0,
+  });
+
+  return (
+    <label>
+      <input
+        type="checkbox"
+        checked={distinct}
+        onChange={(e) => setDistinct(e.target.checked)}
+      />
+      Enable distinct
+    </label>
+  );
+}
+```
+
+### Geo Search Configuration
+
+```jsx
+import { useConfigure } from 'react-instantsearch';
+
+function GeoSearchConfig() {
+  useConfigure({
+    aroundLatLng: '40.7128, -74.0060', // New York City
+    aroundRadius: 10000, // 10km radius
+  });
+
+  return null;
+}
+```
+
+### Advanced Filters
+
+```jsx
+import { useConfigure } from 'react-instantsearch';
+
+function AdvancedFilters() {
+  useConfigure({
+    filters: 'available = 1 AND price > 0',
+    facetFilters: [['category:Electronics', 'category:Computers']],
+    numericFilters: ['price >= 10', 'price <= 1000'],
+  });
+
+  return null;
+}
+```
+
+### Search Settings
+
+```jsx
+import { useConfigure } from 'react-instantsearch';
+
+function SearchSettings() {
+  useConfigure({
+    typoTolerance: 'strict',
+    removeWordsIfNoResults: 'allOptional',
+    exactOnSingleWordQuery: 'word',
+    alternativesAsExact: ['ignorePlurals', 'singleWordSynonym'],
+  });
+
+  return null;
+}
+```
+
+### Pagination Configuration
+
+```jsx
+import { useConfigure } from 'react-instantsearch';
+
+function PaginationConfig() {
+  useConfigure({
+    hitsPerPage: 24,
+    page: 0,
+  });
+
+  return null;
+}
+```
+
+### Highlighting Configuration
+
+```jsx
+import { useConfigure } from 'react-instantsearch';
+
+function HighlightConfig() {
+  useConfigure({
+    attributesToHighlight: ['name', 'description'],
+    highlightPreTag: '<mark>',
+    highlightPostTag: '</mark>',
+  });
+
+  return null;
+}
+```
+
+## TypeScript
+
+```tsx
+import { useConfigure } from 'react-instantsearch';
+import type { UseConfigureProps } from 'react-instantsearch';
+
+function SearchConfiguration() {
+  const params: UseConfigureProps = {
+    hitsPerPage: 20,
+    distinct: true,
+  };
+
+  useConfigure(params);
+
+  return null;
+}
+```
+
+## Related
+
+- [Search Parameters API Reference](https://www.algolia.com/doc/api-reference/search-api-parameters/)
+- [useInstantSearch Hook](/api/react/hooks/use-instant-search)

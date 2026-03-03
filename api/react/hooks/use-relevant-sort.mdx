@@ -1,0 +1,224 @@
+---
+title: 'useRelevantSort'
+description: 'Control Relevant Sort behavior'
+---
+
+The `useRelevantSort` hook provides the logic to build a custom component that controls Algolia's Relevant Sort feature.
+
+## Import
+
+```jsx
+import { useRelevantSort } from 'react-instantsearch';
+```
+
+## Parameters
+
+This hook does not accept any parameters.
+
+## Returns
+
+<ResponseField name="isRelevantSorted" type="boolean">
+  Whether Relevant Sort is currently active (relevancyStrictness > 0).
+
+  ```jsx
+  const { isRelevantSorted } = useRelevantSort();
+  console.log(isRelevantSorted); // true/false
+  ```
+</ResponseField>
+
+<ResponseField name="isVirtualReplica" type="boolean">
+  Whether the results come from a virtual replica.
+
+  ```jsx
+  const { isVirtualReplica } = useRelevantSort();
+  if (isVirtualReplica) {
+    console.log('Using virtual replica');
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether the search state can be refined.
+
+  ```jsx
+  const { canRefine } = useRelevantSort();
+  if (!canRefine) {
+    return null;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(relevancyStrictness: number | undefined) => void">
+  Function to set the relevancy strictness and trigger a new search.
+
+  ```jsx
+  const { refine } = useRelevantSort();
+  refine(100); // Enable relevant sort
+  refine(undefined); // Disable relevant sort
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Relevant Sort Toggle
+
+```jsx
+import { useRelevantSort } from 'react-instantsearch';
+
+function RelevantSortToggle() {
+  const { isRelevantSorted, refine, canRefine } = useRelevantSort();
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={() => refine(isRelevantSorted ? undefined : 100)}
+      className={isRelevantSorted ? 'active' : ''}
+    >
+      {isRelevantSorted ? 'Show all results' : 'Show relevant results only'}
+    </button>
+  );
+}
+```
+
+### Toggle with Switch UI
+
+```jsx
+import { useRelevantSort } from 'react-instantsearch';
+
+function RelevantSortSwitch() {
+  const { isRelevantSorted, isVirtualReplica, refine, canRefine } =
+    useRelevantSort();
+
+  if (!canRefine || !isVirtualReplica) {
+    return null;
+  }
+
+  return (
+    <div className="relevant-sort-toggle">
+      <label>
+        <input
+          type="checkbox"
+          checked={isRelevantSorted}
+          onChange={() => refine(isRelevantSorted ? undefined : 100)}
+        />
+        Show only relevant results
+      </label>
+      {isRelevantSorted && (
+        <p className="info">
+          Showing results sorted by relevance. Some results may be hidden.
+        </p>
+      )}
+    </div>
+  );
+}
+```
+
+### With Info Banner
+
+```jsx
+import { useRelevantSort } from 'react-instantsearch';
+
+function RelevantSortBanner() {
+  const { isRelevantSorted, isVirtualReplica, refine } = useRelevantSort();
+
+  if (!isVirtualReplica || isRelevantSorted) {
+    return null;
+  }
+
+  return (
+    <div className="banner">
+      <p>
+        We found too many results. Would you like to see only the most relevant
+        ones?
+      </p>
+      <button onClick={() => refine(100)}>Show relevant results</button>
+    </div>
+  );
+}
+```
+
+### Custom Strictness Selector
+
+```jsx
+import { useRelevantSort } from 'react-instantsearch';
+
+function RelevantSortStrictness() {
+  const { isRelevantSorted, refine, canRefine } = useRelevantSort();
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <div>
+      <h4>Relevancy Filter</h4>
+      <select
+        value={isRelevantSorted ? '100' : '0'}
+        onChange={(e) => {
+          const value = e.target.value;
+          refine(value === '0' ? undefined : Number(value));
+        }}
+      >
+        <option value="0">All results</option>
+        <option value="50">Moderately relevant</option>
+        <option value="100">Highly relevant</option>
+      </select>
+    </div>
+  );
+}
+```
+
+### With Result Count
+
+```jsx
+import { useRelevantSort } from 'react-instantsearch';
+import { useStats } from 'react-instantsearch';
+
+function RelevantSortWithStats() {
+  const { isRelevantSorted, refine } = useRelevantSort();
+  const { nbHits, nbSortedHits } = useStats();
+
+  return (
+    <div>
+      {isRelevantSorted && nbSortedHits && (
+        <div className="relevant-sort-info">
+          <p>
+            Showing {nbSortedHits.toLocaleString()} of{' '}
+            {nbHits.toLocaleString()} results
+          </p>
+          <button onClick={() => refine(undefined)}>Show all results</button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useRelevantSort } from 'react-instantsearch';
+
+function RelevantSortToggle() {
+  const { isRelevantSorted, refine, canRefine } = useRelevantSort();
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <button onClick={() => refine(isRelevantSorted ? undefined : 100)}>
+      {isRelevantSorted ? 'All results' : 'Relevant only'}
+    </button>
+  );
+}
+```
+
+## Related
+
+- [Relevant Sort Guide](https://www.algolia.com/doc/guides/managing-results/refine-results/sorting/how-to/relevant-sort/)
+- [useStats Hook](/api/react/hooks/use-stats)
+- [useSortBy Hook](/api/react/hooks/use-sort-by)

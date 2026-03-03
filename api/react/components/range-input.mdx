@@ -1,0 +1,111 @@
+---
+title: '<RangeInput>'
+description: 'Filter numeric values with min and max inputs'
+---
+
+The `<RangeInput>` component provides input fields to filter results by a numeric range.
+
+## Import
+
+```jsx
+import { RangeInput } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="attribute" type="string" required>
+  The numeric attribute to filter.
+
+  ```jsx
+  <RangeInput attribute="price" />
+  ```
+</ParamField>
+
+<ParamField path="min" type="number">
+  Minimum value for the range. By default, it's automatically computed from the results.
+
+  ```jsx
+  <RangeInput attribute="price" min={0} />
+  ```
+</ParamField>
+
+<ParamField path="max" type="number">
+  Maximum value for the range. By default, it's automatically computed from the results.
+
+  ```jsx
+  <RangeInput attribute="price" max={1000} />
+  ```
+</ParamField>
+
+<ParamField path="precision" type="number" default="0">
+  Number of decimal places for the values.
+
+  ```jsx
+  <RangeInput attribute="price" precision={2} />
+  ```
+</ParamField>
+
+<ParamField path="translations" type="object">
+  Customize the text strings.
+
+  ```jsx
+  <RangeInput
+    attribute="price"
+    translations={{
+      separatorElementText: 'to',
+      submitButtonText: 'Go',
+    }}
+  />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, RangeInput, Hits } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <div className="filters">
+        <h3>Price</h3>
+        <RangeInput attribute="price" />
+      </div>
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## With Custom Bounds
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <RangeInput
+        attribute="price"
+        min={0}
+        max={1000}
+        precision={2}
+      />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [RefinementList Component](/api/react/components/refinementlist)
+- [useRange Hook](/api/react/hooks/use-range)

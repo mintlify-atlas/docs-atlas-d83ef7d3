@@ -1,0 +1,108 @@
+---
+title: "connectAutocomplete"
+description: "Build a custom autocomplete widget for multi-index search"
+---
+
+The **Autocomplete** connector provides the logic to build a custom widget that displays search results from multiple indices as users type.
+
+## Usage
+
+```javascript
+import { connectAutocomplete } from 'instantsearch.js/es/connectors';
+import { index } from 'instantsearch.js/es/widgets';
+
+const customAutocomplete = connectAutocomplete(
+  (renderOptions, isFirstRender) => {
+    const { indices, currentRefinement, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <input 
+        type="search" 
+        value="${currentRefinement}"
+        placeholder="Search..."
+        id="autocomplete-input"
+      />
+      <div class="autocomplete-results">
+        ${indices.map(({ indexName, hits }) => `
+          <div class="index-results">
+            <h3>${indexName}</h3>
+            ${hits.map(hit => `
+              <div class="hit">
+                <strong>${hit._highlightResult?.name?.value || hit.name}</strong>
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+      </div>
+    `;
+    
+    container.querySelector('#autocomplete-input').addEventListener('input', (e) => {
+      refine(e.target.value);
+    });
+  }
+);
+
+search.addWidgets([
+  index({ indexName: 'products' }),
+  index({ indexName: 'categories' }),
+  customAutocomplete({
+    container: document.querySelector('#autocomplete'),
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags from hits string values.
+</ParamField>
+
+<ParamField path="transformItems" type="(indices: object[]) => object[]">
+  Function to transform the items of all indices.
+  
+  Each index object contains:
+  - `indexName`: The name of the index
+  - `indexId`: The ID of the index
+  - `hits`: The resolved hits from the index
+  - `results`: The full results object from the Algolia API
+  
+  ```javascript
+  transformItems(indices) {
+    return indices.map(index => ({
+      ...index,
+      hits: index.hits.slice(0, 5), // Limit to 5 results per index
+    }));
+  }
+  ```
+</ParamField>
+
+## Render Options
+
+<ParamField path="currentRefinement" type="string">
+  The current value of the query.
+</ParamField>
+
+<ParamField path="indices" type="Array<object>">
+  The indices this widget has access to. Each index contains:
+  
+  - `indexName` (string): The name of the index
+  - `indexId` (string): The ID of the index
+  - `hits` (Array): The resolved hits from the index matching the query
+  - `results` (SearchResults): The full results object from the Algolia API
+  - `sendEvent` (function): Send event to insights middleware
+  
+  ```javascript
+  indices.forEach(({ indexName, hits }) => {
+    console.log(`Results from ${indexName}:`, hits);
+  });
+  ```
+</ParamField>
+
+<ParamField path="refine" type="(query: string) => void">
+  Searches into the indices with the provided query.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

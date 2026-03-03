@@ -1,0 +1,135 @@
+---
+title: '<ToggleRefinement>'
+description: 'Toggle a boolean facet on/off'
+---
+
+The `<ToggleRefinement>` component displays a checkbox to toggle a boolean facet value.
+
+## Import
+
+```jsx
+import { ToggleRefinement } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="attribute" type="string" required>
+  The attribute to toggle.
+
+  ```jsx
+  <ToggleRefinement attribute="free_shipping" />
+  ```
+</ParamField>
+
+<ParamField path="label" type="string">
+  The label to display next to the checkbox. By default, it uses the value name.
+
+  ```jsx
+  <ToggleRefinement attribute="free_shipping" label="Free Shipping" />
+  ```
+</ParamField>
+
+<ParamField path="on" type="boolean | number | string">
+  The value to filter on when the toggle is checked.
+
+  ```jsx
+  <ToggleRefinement attribute="free_shipping" on={true} />
+  ```
+</ParamField>
+
+<ParamField path="off" type="boolean | number | string">
+  The value to filter on when the toggle is unchecked.
+
+  ```jsx
+  <ToggleRefinement attribute="in_stock" on={true} off={false} />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, ToggleRefinement, Hits } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <div className="filters">
+        <ToggleRefinement
+          attribute="free_shipping"
+          label="Free Shipping"
+        />
+        <ToggleRefinement
+          attribute="on_sale"
+          label="On Sale"
+        />
+      </div>
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## With Custom Values
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <ToggleRefinement
+        attribute="status"
+        label="In Stock Only"
+        on="available"
+        off="all"
+      />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## Multiple Toggles
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <div className="filters">
+        <h3>Filters</h3>
+        <ToggleRefinement
+          attribute="free_shipping"
+          label="Free Shipping"
+        />
+        <ToggleRefinement
+          attribute="on_sale"
+          label="On Sale"
+        />
+        <ToggleRefinement
+          attribute="in_stock"
+          label="In Stock"
+        />
+        <ToggleRefinement
+          attribute="eco_friendly"
+          label="Eco-Friendly"
+        />
+      </div>
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [RefinementList Component](/api/react/components/refinementlist)
+- [Menu Component](/api/react/components/menu)
+- [useToggleRefinement Hook](/api/react/hooks/use-toggle-refinement)

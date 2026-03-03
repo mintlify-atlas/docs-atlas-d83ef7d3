@@ -1,0 +1,265 @@
+---
+title: 'useAutocomplete'
+description: 'Build custom autocomplete components'
+---
+
+The `useAutocomplete` hook provides the logic to build a custom autocomplete component that displays search results across multiple indices.
+
+## Import
+
+```jsx
+import { useAutocomplete } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags in hit string values.
+
+  ```jsx
+  const { indices } = useAutocomplete({ escapeHTML: false });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(indices: TransformItemsIndicesConfig[]) => TransformItemsIndicesConfig[]">
+  Function to transform the items of all indices.
+
+  ```jsx
+  const { indices } = useAutocomplete({
+    transformItems: (indices) =>
+      indices.map((index) => ({
+        ...index,
+        hits: index.hits.slice(0, 5),
+      })),
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="currentRefinement" type="string">
+  The current value of the query.
+
+  ```jsx
+  const { currentRefinement } = useAutocomplete();
+  console.log(currentRefinement); // "phone"
+  ```
+</ResponseField>
+
+<ResponseField name="indices" type="Array<IndexConfig>">
+  The indices this widget has access to, containing hits and results for each index.
+
+  ```jsx
+  const { indices } = useAutocomplete();
+  indices.forEach((index) => {
+    console.log(index.indexName);  // "products"
+    console.log(index.indexId);    // "products"
+    console.log(index.hits);       // Array of hits
+    console.log(index.results);    // Full results object
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(query: string) => void">
+  Function to search into the indices with the provided query.
+
+  ```jsx
+  const { refine } = useAutocomplete();
+  refine('new search query');
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Autocomplete
+
+```jsx
+import { useAutocomplete } from 'react-instantsearch';
+
+function CustomAutocomplete() {
+  const { currentRefinement, indices, refine } = useAutocomplete();
+
+  return (
+    <div className="autocomplete">
+      <input
+        type="search"
+        value={currentRefinement}
+        onChange={(e) => refine(e.target.value)}
+        placeholder="Search..."
+      />
+      {currentRefinement && (
+        <div className="autocomplete-dropdown">
+          {indices.map((index) => (
+            <div key={index.indexId}>
+              <h4>{index.indexName}</h4>
+              <ul>
+                {index.hits.map((hit) => (
+                  <li key={hit.objectID}>{hit.name}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Multi-Index Autocomplete
+
+```jsx
+import { useAutocomplete } from 'react-instantsearch';
+import { Index } from 'react-instantsearch';
+
+function MultiIndexAutocomplete() {
+  const { currentRefinement, indices, refine } = useAutocomplete();
+
+  return (
+    <div>
+      <input
+        type="search"
+        value={currentRefinement}
+        onChange={(e) => refine(e.target.value)}
+      />
+      {currentRefinement && (
+        <div className="results">
+          {indices.map((index) => (
+            <section key={index.indexId}>
+              <h3>{index.indexName}</h3>
+              <p>{index.results.nbHits} results</p>
+              {index.hits.map((hit) => (
+                <div key={hit.objectID}>
+                  <h4>{hit.name}</h4>
+                  <p>{hit.description}</p>
+                </div>
+              ))}
+            </section>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### With Keyboard Navigation
+
+```jsx
+import { useAutocomplete } from 'react-instantsearch';
+import { useState, useRef } from 'react';
+
+function AutocompleteWithKeyboard() {
+  const { currentRefinement, indices, refine } = useAutocomplete();
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const inputRef = useRef(null);
+
+  const allHits = indices.flatMap((index) => index.hits);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.min(prev + 1, allHits.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.max(prev - 1, -1));
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      // Navigate to selected item
+      window.location.href = `/products/${allHits[selectedIndex].objectID}`;
+    }
+  };
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="search"
+        value={currentRefinement}
+        onChange={(e) => refine(e.target.value)}
+        onKeyDown={handleKeyDown}
+      />
+      {currentRefinement && (
+        <ul>
+          {allHits.map((hit, idx) => (
+            <li
+              key={hit.objectID}
+              className={idx === selectedIndex ? 'selected' : ''}
+            >
+              {hit.name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+### With Insights Events
+
+```jsx
+import { useAutocomplete } from 'react-instantsearch';
+
+function AutocompleteWithInsights() {
+  const { currentRefinement, indices, refine } = useAutocomplete();
+
+  const handleClick = (index, hit) => {
+    index.sendEvent('click', hit, 'Autocomplete Result Clicked');
+    window.location.href = `/products/${hit.objectID}`;
+  };
+
+  return (
+    <div>
+      <input
+        type="search"
+        value={currentRefinement}
+        onChange={(e) => refine(e.target.value)}
+      />
+      {currentRefinement && (
+        <div>
+          {indices.map((index) => (
+            <div key={index.indexId}>
+              <h4>{index.indexName}</h4>
+              {index.hits.map((hit) => (
+                <div
+                  key={hit.objectID}
+                  onClick={() => handleClick(index, hit)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {hit.name}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useAutocomplete } from 'react-instantsearch';
+import type { UseAutocompleteProps } from 'react-instantsearch';
+
+function CustomAutocomplete(props?: UseAutocompleteProps) {
+  const { currentRefinement, indices, refine } = useAutocomplete(props);
+
+  return (
+    <input
+      type="search"
+      value={currentRefinement}
+      onChange={(e) => refine(e.target.value)}
+    />
+  );
+}
+```
+
+## Related
+
+- [useSearchBox Hook](/api/react/hooks/use-search-box)
+- [useHits Hook](/api/react/hooks/use-hits)
+- [Index Component](/api/react/widgets/index)

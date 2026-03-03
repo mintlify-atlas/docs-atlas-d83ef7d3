@@ -1,0 +1,70 @@
+---
+title: '<PoweredBy>'
+description: 'Display "Powered by Algolia" logo'
+---
+
+The `<PoweredBy>` component displays the "Powered by Algolia" logo with a link to Algolia's website.
+
+## Import
+
+```jsx
+import { PoweredBy } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="theme" type="'light' | 'dark'" default="light">
+  The theme of the logo.
+
+  ```jsx
+  <PoweredBy theme="dark" />
+  ```
+</ParamField>
+
+<ParamField path="classNames" type="object">
+  CSS classes to customize the component styling.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, SearchBox, Hits, PoweredBy } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      <Hits />
+      <footer>
+        <PoweredBy />
+      </footer>
+    </InstantSearch>
+  );
+}
+```
+
+## Dark Theme
+
+```jsx
+function App() {
+  return (
+    <div className="dark-background">
+      <InstantSearch searchClient={searchClient} indexName="products">
+        <SearchBox />
+        <Hits />
+        <PoweredBy theme="dark" />
+      </InstantSearch>
+    </div>
+  );
+}
+```
+
+## Related
+
+- [InstantSearch Component](/api/react/instantsearch)
