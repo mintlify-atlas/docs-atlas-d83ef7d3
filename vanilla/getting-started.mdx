@@ -1,0 +1,422 @@
+---
+title: "Getting Started with InstantSearch.js"
+description: "Build a search interface with vanilla JavaScript InstantSearch in minutes"
+---
+
+InstantSearch.js is a vanilla JavaScript library that lets you create instant search experiences using Algolia's search API. It works with any JavaScript framework or with no framework at all.
+
+## Installation
+
+Install InstantSearch.js and the Algolia search client:
+
+```bash
+npm install instantsearch.js algoliasearch
+# or
+yarn add instantsearch.js algoliasearch
+```
+
+### CDN Installation
+
+You can also include InstantSearch.js via CDN:
+
+```html index.html
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8/themes/satellite.min.css" />
+  </head>
+  <body>
+    <div id="searchbox"></div>
+    <div id="hits"></div>
+    <div id="pagination"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
+```
+
+<Note>
+The CDN build exposes `instantsearch` as a global variable. For production, use the npm package with a bundler for better tree-shaking and smaller bundle sizes.
+</Note>
+
+## Quick Start
+
+Create a basic search interface with just a few widgets:
+
+```javascript app.js
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import instantsearch from 'instantsearch.js';
+import { searchBox, hits, pagination } from 'instantsearch.js/es/widgets';
+
+// 1. Create the search client
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+// 2. Initialize InstantSearch
+const search = instantsearch({
+  indexName: 'your_index_name',
+  searchClient,
+});
+
+// 3. Add widgets
+search.addWidgets([
+  searchBox({
+    container: '#searchbox',
+    placeholder: 'Search for products',
+  }),
+  
+  hits({
+    container: '#hits',
+    templates: {
+      item: (hit, { html, components }) => html`
+        <article>
+          <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+          <p>${components.Highlight({ hit, attribute: 'description' })}</p>
+        </article>
+      `,
+    },
+  }),
+  
+  pagination({
+    container: '#pagination',
+  }),
+]);
+
+// 4. Start the search
+search.start();
+```
+
+<Tip>
+Use the `liteClient` from `algoliasearch/lite` for smaller bundle sizes. It includes only the search functionality without indexing capabilities.
+</Tip>
+
+## HTML Setup
+
+Create container elements in your HTML for each widget:
+
+```html index.html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InstantSearch.js Example</title>
+    
+    <!-- Import the default theme -->
+    <link rel="stylesheet" href="./src/index.css" />
+    <link rel="stylesheet" href="./src/app.css" />
+  </head>
+  
+  <body>
+    <header class="header">
+      <h1 class="header-title">
+        <a href="/">My Search App</a>
+      </h1>
+    </header>
+
+    <div class="container">
+      <div class="search-panel">
+        <div class="search-panel__filters">
+          <div id="brand-list"></div>
+          <div id="categories-list"></div>
+        </div>
+
+        <div class="search-panel__results">
+          <div id="searchbox"></div>
+          <div id="hits"></div>
+          <div id="pagination"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
+```
+
+## Core Concepts
+
+### InstantSearch Instance
+
+The `instantsearch()` function creates the main search instance:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  insights: true,
+  routing: true,
+});
+```
+
+**Key Options:**
+- `searchClient` - Algolia client instance (required)
+- `indexName` - The index to search (required)
+- `insights` - Enable click and conversion tracking
+- `routing` - Enable URL synchronization
+- `stalledSearchDelay` - Time before showing loading state (default: 200ms)
+
+### Widgets
+
+Widgets are UI components that interact with the search. InstantSearch.js provides many pre-built widgets:
+
+```javascript
+import {
+  searchBox,      // Search input
+  hits,           // Results list
+  refinementList, // Facet filters
+  pagination,     // Page navigation
+  configure,      // Search parameters
+  stats,          // Search statistics
+  sortBy,         // Sort options
+} from 'instantsearch.js/es/widgets';
+```
+
+### Adding Widgets
+
+Add widgets using `addWidgets()` before calling `start()`:
+
+```javascript
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  hits({ container: '#hits' }),
+]);
+
+search.start();
+```
+
+## Complete Example
+
+Here's a full search interface with filters and pagination:
+
+```javascript app.js
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import instantsearch from 'instantsearch.js';
+import {
+  searchBox,
+  hits,
+  refinementList,
+  pagination,
+  configure,
+  panel,
+  currentRefinements,
+} from 'instantsearch.js/es/widgets';
+
+import 'instantsearch.css/themes/satellite.css';
+
+const searchClient = algoliasearch(
+  'latency',
+  '6be0576ff61c053d5f9a3225e2a90f76'
+);
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient,
+  insights: true,
+});
+
+search.addWidgets([
+  configure({
+    hitsPerPage: 8,
+  }),
+  
+  searchBox({
+    container: '#searchbox',
+    placeholder: 'Search for products',
+    autofocus: true,
+  }),
+  
+  currentRefinements({
+    container: '#current-refinements',
+  }),
+  
+  panel({
+    templates: { header: 'Brands' },
+  })(refinementList)({
+    container: '#brand-list',
+    attribute: 'brand',
+    showMore: true,
+  }),
+  
+  panel({
+    templates: { header: 'Categories' },
+  })(refinementList)({
+    container: '#categories-list',
+    attribute: 'categories',
+    showMore: true,
+  }),
+  
+  hits({
+    container: '#hits',
+    templates: {
+      item: (hit, { html, components }) => html`
+        <article>
+          <h1>
+            <a href="/products.html?pid=${hit.objectID}">
+              ${components.Highlight({ hit, attribute: 'name' })}
+            </a>
+          </h1>
+          <p>${components.Highlight({ hit, attribute: 'description' })}</p>
+          <span class="price">$${hit.price}</span>
+        </article>
+      `,
+    },
+  }),
+  
+  pagination({
+    container: '#pagination',
+  }),
+]);
+
+search.start();
+```
+
+## Styling
+
+InstantSearch.js provides default CSS themes:
+
+```javascript
+import 'instantsearch.css/themes/satellite.css';
+// or
+import 'instantsearch.css/themes/algolia.css';
+// or
+import 'instantsearch.css/themes/reset.css'; // Minimal styles
+```
+
+All widgets use BEM class names for easy customization:
+
+```css
+.ais-SearchBox-input {
+  border: 2px solid #3a9fb5;
+  border-radius: 8px;
+}
+
+.ais-Hits-item {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+```
+
+## Template Helpers
+
+InstantSearch.js uses a tagged template function for rendering:
+
+```javascript
+hits({
+  container: '#hits',
+  templates: {
+    item: (hit, { html, components }) => html`
+      <article>
+        <!-- Highlight matching parts -->
+        <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+        
+        <!-- Snippet with highlighting -->
+        <p>${components.Snippet({ hit, attribute: 'description' })}</p>
+        
+        <!-- Reverse highlighting -->
+        <span>${components.ReverseHighlight({ hit, attribute: 'category' })}</span>
+        
+        <!-- Reverse snippet -->
+        <div>${components.ReverseSnippet({ hit, attribute: 'content' })}</div>
+      </article>
+    `,
+  },
+})
+```
+
+## Insights Tracking
+
+Enable insights to track user behavior:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  insights: true, // Enable insights
+});
+
+hits({
+  container: '#hits',
+  templates: {
+    item: (hit, { html, sendEvent }) => html`
+      <article>
+        <h3>${hit.name}</h3>
+        <button
+          onClick="${() => {
+            sendEvent('click', hit, 'Product Clicked');
+          }}"
+        >
+          View Product
+        </button>
+        <button
+          onClick="${() => {
+            sendEvent('conversion', hit, 'Product Added to Cart');
+          }}"
+        >
+          Add to Cart
+        </button>
+      </article>
+    `,
+  },
+})
+```
+
+## TypeScript Support
+
+InstantSearch.js has full TypeScript support:
+
+```typescript
+import type { Hit, BaseHit } from 'instantsearch.js';
+
+interface ProductRecord extends BaseHit {
+  name: string;
+  price: number;
+  image: string;
+  brand: string;
+}
+
+type ProductHit = Hit<ProductRecord>;
+
+hits({
+  container: '#hits',
+  templates: {
+    item: (hit: ProductHit, { html }) => html`
+      <article>
+        <img src="${hit.image}" alt="${hit.name}" />
+        <h3>${hit.name}</h3>
+        <p>${hit.brand}</p>
+        <span>$${hit.price}</span>
+      </article>
+    `,
+  },
+})
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Basic Usage" icon="cube" href="/vanilla/basic-usage">
+    Learn about all available widgets and their options
+  </Card>
+  <Card title="Customization" icon="palette" href="/vanilla/customization">
+    Customize templates and create custom widgets
+  </Card>
+  <Card title="Styling" icon="paintbrush" href="/vanilla/styling">
+    Style your search interface with CSS
+  </Card>
+  <Card title="Widgets API" icon="grid" href="/api/widgets/overview">
+    Explore the complete widgets reference
+  </Card>
+</CardGroup>
+
+## Examples
+
+Explore complete examples in the repository:
+
+- [Getting Started](https://github.com/algolia/instantsearch/tree/master/examples/js/getting-started) - Basic setup
+- [E-commerce](https://github.com/algolia/instantsearch/tree/master/examples/js/e-commerce) - Full product search
+- [Media](https://github.com/algolia/instantsearch/tree/master/examples/js/media) - Article search
+- [Tourism](https://github.com/algolia/instantsearch/tree/master/examples/js/tourism) - Location-based search

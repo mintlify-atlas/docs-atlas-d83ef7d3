@@ -1,0 +1,160 @@
+---
+title: configure
+---
+
+Configures search parameters to apply when the widget mounts. This is a renderless widget that allows you to set any Algolia search parameter.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { configure } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  configure({
+    hitsPerPage: 20,
+    distinct: true
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+The `configure` widget accepts any valid [Algolia search parameter](https://www.algolia.com/doc/api-reference/search-api-parameters/).
+
+<ParamField path="hitsPerPage" type="number">
+  Number of hits per page.
+</ParamField>
+
+<ParamField path="distinct" type="boolean | number">
+  Enable or disable the distinct feature. Can be a boolean or an integer.
+</ParamField>
+
+<ParamField path="filters" type="string">
+  Filter hits by facet value.
+</ParamField>
+
+<ParamField path="facetingAfterDistinct" type="boolean">
+  Force faceting to be applied after deduplication.
+</ParamField>
+
+<ParamField path="attributesToSnippet" type="string[]">
+  List of attributes to snippet, with an optional maximum number of words to snippet.
+</ParamField>
+
+<ParamField path="snippetEllipsisText" type="string">
+  String used as an ellipsis indicator when a snippet is truncated.
+</ParamField>
+
+<ParamField path="restrictSearchableAttributes" type="string[]">
+  Restrict which attributes can be searched.
+</ParamField>
+
+<ParamField path="typoTolerance" type="boolean | string">
+  Enable or disable typo tolerance.
+</ParamField>
+
+<ParamField path="minWordSizefor1Typo" type="number">
+  Minimum number of characters a word must contain to allow one typo.
+</ParamField>
+
+<ParamField path="minWordSizefor2Typos" type="number">
+  Minimum number of characters a word must contain to allow two typos.
+</ParamField>
+
+<ParamField path="allowTyposOnNumericTokens" type="boolean">
+  Whether to allow typos on numeric tokens.
+</ParamField>
+
+<ParamField path="ignorePlurals" type="boolean | string[]">
+  Remove plurals from queries.
+</ParamField>
+
+<ParamField path="disableTypoToleranceOnAttributes" type="string[]">
+  Disable typo tolerance on specific attributes.
+</ParamField>
+
+<ParamField path="queryType" type="string">
+  Controls how the query is interpreted (prefixAll, prefixLast, prefixNone).
+</ParamField>
+
+<ParamField path="removeWordsIfNoResults" type="string">
+  Strategy to remove words from the query when no results are found.
+</ParamField>
+
+<ParamField path="advancedSyntax" type="boolean">
+  Enable advanced query syntax.
+</ParamField>
+
+<ParamField path="optionalWords" type="string | string[]">
+  List of words that should be considered optional when found in the query.
+</ParamField>
+
+<ParamField path="removeStopWords" type="boolean | string[]">
+  Remove stop words from the query.
+</ParamField>
+
+<ParamField path="exactOnSingleWordQuery" type="string">
+  Controls how exact matches are ranked.
+</ParamField>
+
+<ParamField path="alternativesAsExact" type="string[]">
+  List of alternatives that should be considered as exact.
+</ParamField>
+
+## Examples
+
+### Basic configuration
+
+```javascript
+configure({
+  hitsPerPage: 20,
+  distinct: true,
+  attributesToSnippet: ['description:50']
+});
+```
+
+### Advanced filtering
+
+```javascript
+configure({
+  filters: 'price < 100 AND categories:Electronics',
+  facetingAfterDistinct: true
+});
+```
+
+### Typo tolerance settings
+
+```javascript
+configure({
+  typoTolerance: 'strict',
+  minWordSizefor1Typo: 4,
+  minWordSizefor2Typos: 8,
+  disableTypoToleranceOnAttributes: ['brand', 'sku']
+});
+```
+
+### Query behavior
+
+```javascript
+configure({
+  queryType: 'prefixLast',
+  removeWordsIfNoResults: 'allOptional',
+  advancedSyntax: true,
+  optionalWords: ['the', 'a', 'of']
+});
+```
+
+## Notes
+
+- This is a renderless widget that doesn't display any UI.
+- Multiple `configure` widgets can be used, but parameters from the last one take precedence.
+- All search parameters are forwarded to the Algolia search.
+- Parameters are only active while the widget is mounted.

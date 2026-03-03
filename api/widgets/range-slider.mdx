@@ -1,0 +1,171 @@
+---
+title: rangeSlider
+description: Filter results by numeric range with an interactive slider
+---
+
+The rangeSlider widget provides a visual slider interface for filtering results by numeric ranges. It offers a more user-friendly alternative to range inputs for selecting ranges.
+
+## Usage
+
+```javascript
+const rangeSlider = instantsearch.widgets.rangeSlider({
+  container: '#price-slider',
+  attribute: 'price',
+});
+
+search.addWidget(rangeSlider);
+```
+
+## Examples
+
+### Basic Range Slider
+
+```javascript
+instantsearch.widgets.rangeSlider({
+  container: '#price',
+  attribute: 'price',
+});
+```
+
+### With Custom Min/Max
+
+```javascript
+instantsearch.widgets.rangeSlider({
+  container: '#price',
+  attribute: 'price',
+  min: 0,
+  max: 500,
+});
+```
+
+### With Custom Step
+
+```javascript
+instantsearch.widgets.rangeSlider({
+  container: '#price',
+  attribute: 'price',
+  step: 10,
+});
+```
+
+### With Custom Tooltips
+
+```javascript
+instantsearch.widgets.rangeSlider({
+  container: '#price',
+  attribute: 'price',
+  tooltips: {
+    format(value) {
+      return `$${Math.round(value).toLocaleString()}`;
+    },
+  },
+});
+```
+
+### Without Pips
+
+```javascript
+instantsearch.widgets.rangeSlider({
+  container: '#price',
+  attribute: 'price',
+  pips: false,
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="attribute" type="string" required>
+  The name of the numeric attribute to filter on. Must be declared as an attribute for faceting.
+</ParamField>
+
+<ParamField path="min" type="number">
+  Minimum value for the slider. By default, automatically computed from the result set.
+</ParamField>
+
+<ParamField path="max" type="number">
+  Maximum value for the slider. By default, automatically computed from the result set.
+</ParamField>
+
+<ParamField path="precision" type="number" default="0">
+  Number of digits after the decimal point.
+</ParamField>
+
+<ParamField path="step" type="number" default="1">
+  Number of units to jump when moving the handle. Useful for creating discrete steps.
+</ParamField>
+
+<ParamField path="pips" type="boolean" default="true">
+  Whether to show pips (value markers) along the slider.
+</ParamField>
+
+<ParamField path="tooltips" type="boolean | object" default="true">
+  Whether to show tooltips displaying current values.
+  
+  When passing an object:
+  ```javascript
+  {
+    format: (value: number) => string
+  }
+  ```
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="disabledRoot" type="string | string[]">
+      CSS class when the slider is disabled.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-RangeSlider">
+  <div class="rheostat">
+    <!-- Slider implementation -->
+  </div>
+</div>
+```
+
+<Note>
+  The rangeSlider widget uses the [rheostat](https://github.com/airbnb/rheostat) library internally for the slider functionality.
+</Note>
+
+## Styling the Slider
+
+You can customize the slider appearance using CSS:
+
+```css
+.ais-RangeSlider .rheostat-background {
+  background-color: #e9e9e9;
+  height: 6px;
+}
+
+.ais-RangeSlider .rheostat-progress {
+  background-color: #3a96cf;
+}
+
+.ais-RangeSlider .rheostat-handle {
+  background-color: #fff;
+  border: 2px solid #3a96cf;
+  width: 20px;
+  height: 20px;
+}
+```
+
+## Requirements
+
+<Warning>
+  The attribute must be declared as an **attribute for faceting** in your Algolia index settings.
+  
+  The values must be JavaScript numbers (not strings).
+</Warning>

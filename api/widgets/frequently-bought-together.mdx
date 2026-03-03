@@ -1,0 +1,273 @@
+---
+title: frequentlyBoughtTogether
+---
+
+Displays products frequently bought together with specific items using Algolia's Recommend API.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { frequentlyBoughtTogether } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  frequentlyBoughtTogether({
+    container: '#frequently-bought-together',
+    objectIDs: ['product-1']
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="objectIDs" type="string[]" required>
+  Array of objectIDs of the items to get frequently bought together recommendations for.
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Number of recommendations to retrieve.
+</ParamField>
+
+<ParamField path="threshold" type="number">
+  Threshold for the recommendations confidence score (between 0 and 100).
+</ParamField>
+
+<ParamField path="queryParameters" type="object">
+  Additional search parameters to send to the Algolia API.
+</ParamField>
+
+<ParamField path="fallbackParameters" type="object">
+  Search parameters to use when not enough recommendations are available.
+</ParamField>
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags from items string values.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```typescript
+  (items: Hit[], { results: RecommendResponse }) => Hit[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to use for the widget.
+  
+  <Expandable title="properties">
+    <ParamField path="item" type="string | function">
+      Template for each recommendation item. Receives the hit data.
+    </ParamField>
+    
+    <ParamField path="empty" type="string | function">
+      Template to display when there are no results.
+    </ParamField>
+    
+    <ParamField path="header" type="string | function">
+      Template for the widget header. Receives `{ items, cssClasses }`.
+    </ParamField>
+    
+    <ParamField path="layout" type="function">
+      Template to wrap all items. Receives `{ items, templates, cssClasses }`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    
+    <ParamField path="emptyRoot" type="string | string[]">
+      CSS class for the root when there are no results.
+    </ParamField>
+    
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Basic usage
+
+```javascript
+frequentlyBoughtTogether({
+  container: '#frequently-bought-together',
+  objectIDs: ['product-123'],
+  limit: 4,
+  templates: {
+    item(hit, { html, components }) {
+      return html`
+        <div>
+          <img src="${hit.image}" alt="${hit.name}" />
+          <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+          <p>$${hit.price}</p>
+          <button>Add to cart</button>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### With header
+
+```javascript
+frequentlyBoughtTogether({
+  container: '#frequently-bought-together',
+  objectIDs: ['product-123'],
+  templates: {
+    header() {
+      return '<h2>Frequently Bought Together</h2>';
+    },
+    item(hit) {
+      return `
+        <article class="product-card">
+          <img src="${hit.image}" />
+          <h4>${hit.name}</h4>
+          <span class="price">$${hit.price}</span>
+        </article>
+      `;
+    }
+  }
+});
+```
+
+### Bundle display
+
+```javascript
+frequentlyBoughtTogether({
+  container: '#bundle',
+  objectIDs: ['product-123'],
+  transformItems(items) {
+    const total = items.reduce((sum, item) => sum + item.price, 0);
+    return items.map(item => ({ ...item, bundleTotal: total }));
+  },
+  templates: {
+    header({ items }) {
+      if (items.length === 0) return '';
+      const total = items[0].bundleTotal;
+      return `
+        <div class="bundle-header">
+          <h3>Complete the Bundle</h3>
+          <span class="total">Total: $${total.toFixed(2)}</span>
+        </div>
+      `;
+    },
+    item(hit) {
+      return `
+        <div class="bundle-item">
+          <input type="checkbox" checked />
+          <img src="${hit.image}" />
+          <span>${hit.name}</span>
+          <span>$${hit.price}</span>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### With add to cart
+
+```javascript
+frequentlyBoughtTogether({
+  container: '#frequently-bought-together',
+  objectIDs: ['product-123'],
+  templates: {
+    item(hit, { html }) {
+      return html`
+        <div class="product">
+          <img src="${hit.image}" />
+          <h4>${hit.name}</h4>
+          <p>$${hit.price}</p>
+          <button onclick="addToCart('${hit.objectID}')">
+            Add to cart
+          </button>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### With empty state
+
+```javascript
+frequentlyBoughtTogether({
+  container: '#frequently-bought-together',
+  objectIDs: ['product-123'],
+  templates: {
+    item(hit) {
+      return `<div class="product">${hit.name}</div>`;
+    },
+    empty() {
+      return '<p>No bundle recommendations available.</p>';
+    }
+  }
+});
+```
+
+### Multiple source products
+
+```javascript
+frequentlyBoughtTogether({
+  container: '#frequently-bought-together',
+  objectIDs: ['product-123', 'product-456'],
+  limit: 6,
+  templates: {
+    header: 'Complete Your Purchase',
+    item(hit) {
+      return `
+        <div class="recommendation">
+          <img src="${hit.image}" />
+          <div>${hit.name}</div>
+          <div>$${hit.price}</div>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+## HTML output
+
+```html
+<div class="ais-FrequentlyBoughtTogether">
+  <ol class="ais-FrequentlyBoughtTogether-list">
+    <li class="ais-FrequentlyBoughtTogether-item">
+      <!-- Item template content -->
+    </li>
+    <!-- More items -->
+  </ol>
+</div>
+```
+
+## Notes
+
+- Requires Algolia Recommend to be enabled on your account.
+- The widget uses the Frequently Bought Together model.
+- Perfect for product detail pages and cart pages.
+- Results are based on purchase history and co-occurrence patterns.
+- Use to increase average order value with intelligent bundling.

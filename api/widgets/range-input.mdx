@@ -1,0 +1,172 @@
+---
+title: rangeInput
+description: Filter results by numeric range with min/max input fields
+---
+
+The rangeInput widget allows users to filter results by entering minimum and maximum values for a numeric attribute. It's ideal for price ranges, ratings, or any numeric filtering.
+
+## Usage
+
+```javascript
+const rangeInput = instantsearch.widgets.rangeInput({
+  container: '#price-range',
+  attribute: 'price',
+});
+
+search.addWidget(rangeInput);
+```
+
+## Examples
+
+### Basic Range Input
+
+```javascript
+instantsearch.widgets.rangeInput({
+  container: '#price',
+  attribute: 'price',
+});
+```
+
+### With Custom Min/Max
+
+```javascript
+instantsearch.widgets.rangeInput({
+  container: '#price',
+  attribute: 'price',
+  min: 0,
+  max: 1000,
+});
+```
+
+### With Decimal Precision
+
+```javascript
+instantsearch.widgets.rangeInput({
+  container: '#rating',
+  attribute: 'rating',
+  min: 0,
+  max: 5,
+  precision: 1,
+});
+```
+
+### With Custom Templates
+
+```javascript
+instantsearch.widgets.rangeInput({
+  container: '#price',
+  attribute: 'price',
+  templates: {
+    separatorText: '→',
+    submitText: 'Filter',
+  },
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="attribute" type="string" required>
+  The name of the numeric attribute to filter on. Must be declared as an attribute for faceting.
+</ParamField>
+
+<ParamField path="min" type="number">
+  Minimum value for the range. By default, automatically computed from the result set.
+</ParamField>
+
+<ParamField path="max" type="number">
+  Maximum value for the range. By default, automatically computed from the result set.
+</ParamField>
+
+<ParamField path="precision" type="number" default="0">
+  Number of digits after the decimal point. Set to `1` for one decimal place, `2` for two, etc.
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="separatorText" type="Template" default="'to'">
+      Label between the min and max inputs.
+    </ParamField>
+    <ParamField path="submitText" type="Template" default="'Go'">
+      Label for the submit button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="noRefinement" type="string | string[]">
+      CSS class when there are no refinements.
+    </ParamField>
+    <ParamField path="form" type="string | string[]">
+      CSS class for the form element.
+    </ParamField>
+    <ParamField path="label" type="string | string[]">
+      CSS class for label elements.
+    </ParamField>
+    <ParamField path="input" type="string | string[]">
+      CSS class for input elements.
+    </ParamField>
+    <ParamField path="inputMin" type="string | string[]">
+      CSS class for the min input.
+    </ParamField>
+    <ParamField path="inputMax" type="string | string[]">
+      CSS class for the max input.
+    </ParamField>
+    <ParamField path="separator" type="string | string[]">
+      CSS class for the separator.
+    </ParamField>
+    <ParamField path="submit" type="string | string[]">
+      CSS class for the submit button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-RangeInput">
+  <form class="ais-RangeInput-form">
+    <label class="ais-RangeInput-label">
+      <input
+        class="ais-RangeInput-input ais-RangeInput-input--min"
+        type="number"
+        min="0"
+        max="1000"
+        step="1"
+        placeholder="0"
+      />
+    </label>
+    <span class="ais-RangeInput-separator">to</span>
+    <label class="ais-RangeInput-label">
+      <input
+        class="ais-RangeInput-input ais-RangeInput-input--max"
+        type="number"
+        min="0"
+        max="1000"
+        step="1"
+        placeholder="1000"
+      />
+    </label>
+    <button class="ais-RangeInput-submit" type="submit">Go</button>
+  </form>
+</div>
+```
+
+## Requirements
+
+<Warning>
+  The attribute must be declared as an **attribute for faceting** in your Algolia index settings.
+  
+  The values must be JavaScript numbers (not strings).
+</Warning>

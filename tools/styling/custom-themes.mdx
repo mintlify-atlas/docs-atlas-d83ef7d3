@@ -1,0 +1,392 @@
+---
+title: Custom Themes
+description: Create your own InstantSearch themes using CSS variables
+---
+
+InstantSearch.css is built with CSS custom properties (variables), making it easy to create custom themes that match your brand.
+
+## CSS Variables
+
+All theme customization is done through CSS variables in the `:root` scope.
+
+### Color Variables
+
+#### Text Colors
+
+```css
+:root {
+  /* Primary text color */
+  --ais-text-color-rgb: 38, 38, 38;
+  --ais-text-color-alpha: 1;
+  
+  /* Primary brand color */
+  --ais-primary-color-rgb: 30, 89, 255;
+  --ais-primary-color-alpha: 1;
+  
+  /* Muted/secondary text */
+  --ais-muted-color-rgb: 82, 82, 82;
+  --ais-muted-color-alpha: 1;
+  
+  /* Button text color */
+  --ais-button-text-color-rgb: 255, 255, 255;
+  --ais-button-text-color-alpha: 1;
+}
+```
+
+#### UI Colors
+
+```css
+:root {
+  /* Border color */
+  --ais-border-color-rgb: 150, 150, 150;
+  --ais-border-color-alpha: 1;
+  
+  /* Background color */
+  --ais-background-color-rgb: 255, 255, 255;
+  --ais-background-color-alpha: 1;
+  
+  /* Overlay color */
+  --ais-overlay-color-rgb: 115, 114, 129;
+  --ais-overlay-color-alpha: 0.4;
+  
+  /* Shadow color */
+  --ais-shadow-color-rgb: 23, 23, 23;
+}
+```
+
+### Spacing & Layout
+
+```css
+:root {
+  /* Base unit for calculations (in pixels without unit) */
+  --ais-base-unit: 16;
+  
+  /* Spacing multiplier */
+  --ais-spacing-factor: 1;
+  
+  /* Computed spacing value */
+  --ais-spacing: calc(var(--ais-base-unit) * var(--ais-spacing-factor) * 1px);
+}
+```
+
+### Shadows
+
+```css
+:root {
+  /* Small shadow */
+  --ais-shadow-sm: 0px 0px 0px 1px rgba(var(--ais-shadow-color-rgb), 0.05),
+                   0px 1px 3px 0px rgba(var(--ais-shadow-color-rgb), 0.25);
+  
+  /* Medium shadow */
+  --ais-shadow-md: 0px 0px 0px 1px rgba(var(--ais-shadow-color-rgb), 0.05),
+                   0px 4px 8px -2px rgba(var(--ais-shadow-color-rgb), 0.25);
+  
+  /* Large shadow */
+  --ais-shadow-lg: 0 0 0 1px rgba(var(--ais-shadow-color-rgb), 0.05),
+                   0 6px 16px -4px rgba(var(--ais-shadow-color-rgb), 0.15);
+}
+```
+
+### Border Radius
+
+```css
+:root {
+  --ais-border-radius-sm: 4px;
+  --ais-border-radius-md: 8px;
+  --ais-border-radius-lg: 16px;
+  --ais-border-radius-full: 9999px;
+}
+```
+
+### Typography
+
+```css
+:root {
+  --ais-font-size: calc(var(--ais-base-unit) * 1px);
+  --ais-font-weight-medium: 500;
+  --ais-font-weight-semibold: 600;
+  --ais-font-weight-bold: 700;
+}
+```
+
+### Icons
+
+```css
+:root {
+  --ais-icon-size: 20px;
+  --ais-icon-stroke-width: 1.6;
+}
+```
+
+### Transitions
+
+```css
+:root {
+  --ais-transition-duration: 0.3s;
+  --ais-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+```
+
+### Z-Index Layers
+
+```css
+:root {
+  --ais-z-index-chat: 9998;
+  --ais-z-index-autocomplete: 10000;
+}
+```
+
+### Component-Specific Variables
+
+#### Chat Component
+
+```css
+:root {
+  --ais-chat-width: 22.5rem;
+  --ais-chat-height: 70%;
+  --ais-chat-maximized-width: 70%;
+  --ais-chat-maximized-height: 100%;
+  --ais-chat-margin: 1.5rem;
+  --ais-chat-carousel-item-width: calc(var(--ais-spacing) * 10);
+}
+```
+
+#### Autocomplete Component
+
+```css
+:root {
+  --ais-autocomplete-search-input-height: 44px;
+  --ais-autocomplete-panel-max-height: 650px;
+  --ais-autocomplete-detached-media-query: (max-width: 680px);
+  --ais-autocomplete-detached-modal-media-query: (min-width: 680px);
+  --ais-autocomplete-detached-modal-max-width: 680px;
+  --ais-autocomplete-detached-modal-max-height: 500px;
+}
+```
+
+## Creating a Custom Theme
+
+### Simple Color Override
+
+Start with a base theme and override specific colors:
+
+```css
+import 'instantsearch.css/themes/satellite.css';
+
+:root {
+  /* Brand colors */
+  --ais-primary-color-rgb: 220, 38, 127; /* Pink */
+  --ais-text-color-rgb: 28, 28, 30; /* Almost black */
+  --ais-border-color-rgb: 200, 200, 200; /* Light gray */
+}
+```
+
+### Complete Custom Theme
+
+Build a theme from scratch using the reset:
+
+```css
+import 'instantsearch.css/themes/reset.css';
+
+:root {
+  /* Brand colors */
+  --ais-primary-color-rgb: 99, 102, 241; /* Indigo */
+  --ais-text-color-rgb: 17, 24, 39; /* Gray 900 */
+  --ais-muted-color-rgb: 107, 114, 128; /* Gray 500 */
+  --ais-background-color-rgb: 255, 255, 255;
+  --ais-border-color-rgb: 229, 231, 235; /* Gray 200 */
+  --ais-button-text-color-rgb: 255, 255, 255;
+  
+  /* Spacing */
+  --ais-spacing-factor: 1.2; /* 20% larger spacing */
+  
+  /* Border radius */
+  --ais-border-radius-sm: 6px;
+  --ais-border-radius-md: 12px;
+  --ais-border-radius-lg: 24px;
+  
+  /* Typography */
+  --ais-font-weight-medium: 500;
+  --ais-font-weight-semibold: 600;
+  --ais-font-weight-bold: 700;
+  
+  /* Shadows */
+  --ais-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --ais-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --ais-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+```
+
+## Theme Examples
+
+### Purple Theme
+
+```css
+import 'instantsearch.css/themes/reset.css';
+
+:root {
+  --ais-primary-color-rgb: 139, 92, 246; /* Purple 500 */
+  --ais-text-color-rgb: 17, 24, 39;
+  --ais-muted-color-rgb: 107, 114, 128;
+  --ais-background-color-rgb: 250, 250, 250;
+  --ais-border-color-rgb: 216, 180, 254; /* Purple 200 */
+  --ais-border-radius-md: 16px;
+}
+```
+
+### Dark Theme
+
+```css
+import 'instantsearch.css/themes/reset.css';
+
+:root {
+  --ais-primary-color-rgb: 96, 165, 250; /* Blue 400 */
+  --ais-text-color-rgb: 243, 244, 246; /* Gray 100 */
+  --ais-muted-color-rgb: 156, 163, 175; /* Gray 400 */
+  --ais-background-color-rgb: 17, 24, 39; /* Gray 900 */
+  --ais-border-color-rgb: 55, 65, 81; /* Gray 700 */
+  --ais-button-text-color-rgb: 17, 24, 39;
+  --ais-shadow-color-rgb: 0, 0, 0;
+}
+```
+
+### Minimalist Theme
+
+```css
+import 'instantsearch.css/themes/reset.css';
+
+:root {
+  --ais-primary-color-rgb: 0, 0, 0;
+  --ais-text-color-rgb: 0, 0, 0;
+  --ais-muted-color-rgb: 115, 115, 115;
+  --ais-background-color-rgb: 255, 255, 255;
+  --ais-border-color-rgb: 230, 230, 230;
+  --ais-border-radius-sm: 0;
+  --ais-border-radius-md: 0;
+  --ais-border-radius-lg: 0;
+  --ais-shadow-sm: none;
+  --ais-shadow-md: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  --ais-shadow-lg: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+```
+
+## Dark Mode
+
+### Automatic Dark Mode
+
+Use the built-in dark mode by setting `data-theme` or a class:
+
+```html
+<html data-theme="dark">
+  <!-- Your app -->
+</html>
+```
+
+### Custom Dark Mode
+
+Define your own dark mode variables:
+
+```css
+:root {
+  /* Light mode (default) */
+  --ais-primary-color-rgb: 59, 130, 246;
+  --ais-background-color-rgb: 255, 255, 255;
+  --ais-text-color-rgb: 17, 24, 39;
+}
+
+[data-theme="dark"] {
+  /* Dark mode overrides */
+  --ais-primary-color-rgb: 96, 165, 250;
+  --ais-background-color-rgb: 17, 24, 39;
+  --ais-text-color-rgb: 243, 244, 246;
+  --ais-border-color-rgb: 55, 65, 81;
+}
+```
+
+### System Preference
+
+Respect user's system preference:
+
+```css
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ais-primary-color-rgb: 96, 165, 250;
+    --ais-background-color-rgb: 17, 24, 39;
+    --ais-text-color-rgb: 243, 244, 246;
+    --ais-border-color-rgb: 55, 65, 81;
+  }
+}
+```
+
+## Responsive Spacing
+
+InstantSearch.css automatically increases spacing on touch devices:
+
+```css
+/* Increase spacing on touch screens */
+@media (hover: none) and (pointer: coarse) {
+  :root {
+    --ais-spacing-factor: 1.2;
+  }
+}
+```
+
+You can customize this behavior:
+
+```css
+/* Custom touch screen spacing */
+@media (hover: none) and (pointer: coarse) {
+  :root {
+    --ais-spacing-factor: 1.5;
+    --ais-font-size: 18px;
+  }
+}
+```
+
+## Best Practices
+
+<Card title="Use RGB values" icon="palette">
+  Colors use RGB values without the `rgb()` function to support alpha channels:
+  
+  ```css
+  --ais-primary-color-rgb: 30, 89, 255; /* ✓ Correct */
+  --ais-primary-color-rgb: rgb(30, 89, 255); /* ✗ Wrong */
+  ```
+</Card>
+
+<Card title="Test both themes" icon="moon">
+  Always test your custom theme in both light and dark modes
+</Card>
+
+<Card title="Maintain contrast" icon="eye">
+  Ensure sufficient color contrast for accessibility (WCAG AA: 4.5:1 for text)
+</Card>
+
+<Card title="Use calc() for derived values" icon="calculator">
+  Leverage CSS calc() for spacing and sizing:
+  
+  ```css
+  --custom-padding: calc(var(--ais-spacing) * 2);
+  ```
+</Card>
+
+## Debugging
+
+Inspect the computed values in DevTools:
+
+```javascript
+// Get computed value of a CSS variable
+getComputedStyle(document.documentElement)
+  .getPropertyValue('--ais-primary-color-rgb');
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="CSS Classes" href="/tools/styling/css-classes" icon="list">
+    See all available CSS classes for customization
+  </Card>
+  <Card title="InstantSearch.css" href="/tools/styling/instantsearch-css" icon="paintbrush">
+    Back to InstantSearch.css overview
+  </Card>
+</CardGroup>

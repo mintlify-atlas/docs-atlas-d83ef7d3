@@ -1,0 +1,278 @@
+---
+title: '<Configure>'
+description: 'Component for configuring search parameters'
+---
+
+The `<Configure>` component allows you to set search parameters declaratively. It's a declarative way to configure the search query.
+
+## Import
+
+```jsx
+import { Configure } from 'react-instantsearch';
+```
+
+## Props
+
+The `<Configure>` component accepts all [Algolia search parameters](https://www.algolia.com/doc/api-reference/search-api-parameters/) as props.
+
+### Common Parameters
+
+<ParamField path="hitsPerPage" type="number">
+  Number of hits to retrieve per page.
+
+  ```jsx
+  <Configure hitsPerPage={20} />
+  ```
+</ParamField>
+
+<ParamField path="filters" type="string">
+  Filter the search results using filter expressions.
+
+  ```jsx
+  <Configure filters="category:shoes AND price < 100" />
+  ```
+</ParamField>
+
+<ParamField path="facetFilters" type="string | string[] | string[][]">
+  Filter the search by facet values.
+
+  ```jsx
+  <Configure facetFilters={[["brand:Apple", "brand:Samsung"], "category:phones"]} />
+  ```
+</ParamField>
+
+<ParamField path="numericFilters" type="string | string[] | string[][]">
+  Filter the search by numeric values.
+
+  ```jsx
+  <Configure numericFilters={["price >= 10", "price <= 100"]} />
+  ```
+</ParamField>
+
+<ParamField path="attributesToRetrieve" type="string[]">
+  Attributes to retrieve from the index.
+
+  ```jsx
+  <Configure attributesToRetrieve={["name", "description", "price", "image"]} />
+  ```
+</ParamField>
+
+<ParamField path="attributesToHighlight" type="string[]">
+  Attributes to highlight in the results.
+
+  ```jsx
+  <Configure attributesToHighlight={["name", "description"]} />
+  ```
+</ParamField>
+
+<ParamField path="attributesToSnippet" type="string[]">
+  Attributes to snippet in the results.
+
+  ```jsx
+  <Configure attributesToSnippet={["description:20"]} />
+  ```
+</ParamField>
+
+<ParamField path="highlightPreTag" type="string">
+  Tag to use before highlighted parts.
+
+  ```jsx
+  <Configure highlightPreTag="<mark>" highlightPostTag="</mark>" />
+  ```
+</ParamField>
+
+<ParamField path="highlightPostTag" type="string">
+  Tag to use after highlighted parts.
+</ParamField>
+
+<ParamField path="distinct" type="boolean | number">
+  Enable de-duplication or grouping of results.
+
+  ```jsx
+  <Configure distinct={true} />
+  ```
+</ParamField>
+
+<ParamField path="analytics" type="boolean">
+  Enable or disable analytics.
+
+  ```jsx
+  <Configure analytics={true} />
+  ```
+</ParamField>
+
+<ParamField path="clickAnalytics" type="boolean">
+  Enable click analytics.
+
+  ```jsx
+  <Configure clickAnalytics={true} />
+  ```
+</ParamField>
+
+<ParamField path="enablePersonalization" type="boolean">
+  Enable personalization.
+
+  ```jsx
+  <Configure enablePersonalization={true} />
+  ```
+</ParamField>
+
+<ParamField path="userToken" type="string">
+  User token for personalization and analytics.
+
+  ```jsx
+  <Configure userToken="user-123" />
+  ```
+</ParamField>
+
+<ParamField path="aroundLatLng" type="string">
+  Search around a specific location (latitude, longitude).
+
+  ```jsx
+  <Configure aroundLatLng="37.7749,-122.4194" aroundRadius={5000} />
+  ```
+</ParamField>
+
+<ParamField path="aroundRadius" type="number | 'all'">
+  Radius in meters for geo search.
+</ParamField>
+
+## Examples
+
+### Basic Configuration
+
+```jsx
+import { InstantSearch, Configure, SearchBox, Hits } from 'react-instantsearch';
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <Configure
+        hitsPerPage={12}
+        attributesToRetrieve={['name', 'description', 'price', 'image']}
+        attributesToHighlight={['name', 'description']}
+      />
+      <SearchBox />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+### Filtering Results
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <Configure
+        filters="category:electronics AND in_stock:true"
+        hitsPerPage={20}
+      />
+      <SearchBox />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+### Geo Search
+
+```jsx
+function App() {
+  const [userLocation, setUserLocation] = useState(null);
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition((position) => {
+      setUserLocation(
+        `${position.coords.latitude},${position.coords.longitude}`
+      );
+    });
+  }, []);
+
+  return (
+    <InstantSearch searchClient={searchClient} indexName="restaurants">
+      {userLocation && (
+        <Configure
+          aroundLatLng={userLocation}
+          aroundRadius={5000}
+        />
+      )}
+      <SearchBox />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+### Conditional Configuration
+
+```jsx
+function App() {
+  const [showOnlyInStock, setShowOnlyInStock] = useState(false);
+
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <Configure
+        filters={showOnlyInStock ? 'in_stock:true' : ''}
+        hitsPerPage={20}
+      />
+      
+      <label>
+        <input
+          type="checkbox"
+          checked={showOnlyInStock}
+          onChange={(e) => setShowOnlyInStock(e.target.checked)}
+        />
+        Show only in stock
+      </label>
+      
+      <SearchBox />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+### Per-Index Configuration
+
+```jsx
+import { InstantSearch, Index, Configure, Hits } from 'react-instantsearch';
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      {/* Global configuration */}
+      <Configure hitsPerPage={10} />
+      
+      <Index indexName="products">
+        {/* Override for this index */}
+        <Configure hitsPerPage={5} filters="featured:true" />
+        <Hits />
+      </Index>
+      
+      <Index indexName="articles">
+        {/* Different configuration for articles */}
+        <Configure hitsPerPage={3} />
+        <Hits />
+      </Index>
+    </InstantSearch>
+  );
+}
+```
+
+## Notes
+
+<Note>
+  The `<Configure>` component doesn't render anything to the DOM. It only configures the search parameters.
+</Note>
+
+<Warning>
+  When using multiple `<Configure>` components, later ones override earlier ones for the same parameters. Use this behavior intentionally for conditional configurations.
+</Warning>
+
+## Related
+
+- [useConfigure Hook](/api/react/hooks/use-configure)
+- [Algolia Search Parameters](https://www.algolia.com/doc/api-reference/search-api-parameters/)
+- [Index Component](/api/react/index)

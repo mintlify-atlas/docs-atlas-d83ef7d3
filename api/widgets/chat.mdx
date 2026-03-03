@@ -1,0 +1,349 @@
+---
+title: chat
+---
+
+Provides an AI-powered conversational search interface with support for Algolia's AI Search capabilities.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { chat } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  chat({
+    container: '#chat',
+    apiKey: 'YOUR_API_KEY',
+    indexName: 'instant_search'
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="apiKey" type="string" required>
+  Your Algolia API key with AI Search access.
+</ParamField>
+
+<ParamField path="indexName" type="string" required>
+  The name of the index to search in.
+</ParamField>
+
+<ParamField path="resume" type="boolean" default="false">
+  Whether to resume the previous conversation on page load.
+</ParamField>
+
+<ParamField path="getSearchPageURL" type="function">
+  Function to return the URL for the main search page. Used for "View all" links.
+  
+  ```typescript
+  (nextUiState: IndexUiState) => string
+  ```
+</ParamField>
+
+<ParamField path="tools" type="object">
+  Custom client-side tools to add to the chat.
+  
+  Each tool is an object with:
+  - `templates.layout`: Template for rendering the tool output
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the chat interface.
+  
+  <Expandable title="properties">
+    <ParamField path="item" type="string | function">
+      Template for rendering product items in search results. Receives hit data.
+    </ParamField>
+    
+    <ParamField path="header" type="object">
+      Templates for the chat header.
+      
+      <Expandable title="sub-properties">
+        <ParamField path="layout" type="function">
+          Template for the entire header.
+        </ParamField>
+        
+        <ParamField path="titleText" type="string">
+          Title text for the chat header.
+        </ParamField>
+        
+        <ParamField path="closeIcon" type="function">
+          Template for the close icon.
+        </ParamField>
+        
+        <ParamField path="minimizeIcon" type="function">
+          Template for the minimize icon.
+        </ParamField>
+        
+        <ParamField path="maximizeIcon" type="function">
+          Template for the maximize icon.
+        </ParamField>
+      </Expandable>
+    </ParamField>
+    
+    <ParamField path="messages" type="object">
+      Templates for chat messages.
+      
+      <Expandable title="sub-properties">
+        <ParamField path="loader" type="function">
+          Template for the loading state.
+        </ParamField>
+        
+        <ParamField path="error" type="function">
+          Template for error messages.
+        </ParamField>
+      </Expandable>
+    </ParamField>
+    
+    <ParamField path="prompt" type="object">
+      Templates for the input prompt.
+      
+      <Expandable title="sub-properties">
+        <ParamField path="layout" type="function">
+          Template for the prompt layout.
+        </ParamField>
+        
+        <ParamField path="textareaPlaceholderText" type="string">
+          Placeholder text for the input.
+        </ParamField>
+      </Expandable>
+    </ParamField>
+    
+    <ParamField path="toggleButton" type="object">
+      Templates for the toggle button.
+      
+      <Expandable title="sub-properties">
+        <ParamField path="layout" type="function">
+          Template for the button.
+        </ParamField>
+        
+        <ParamField path="icon" type="function">
+          Template for the button icon.
+        </ParamField>
+      </Expandable>
+    </ParamField>
+    
+    <ParamField path="suggestions" type="function">
+      Template for prompt suggestions.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    
+    <ParamField path="header" type="string | string[]">
+      CSS class for the header.
+    </ParamField>
+    
+    <ParamField path="messages" type="string | string[]">
+      CSS class for the messages container.
+    </ParamField>
+    
+    <ParamField path="prompt" type="string | string[]">
+      CSS class for the prompt area.
+    </ParamField>
+    
+    <ParamField path="toggleButton" type="string | string[]">
+      CSS class for the toggle button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Basic chat
+
+```javascript
+chat({
+  container: '#chat',
+  apiKey: 'YOUR_API_KEY',
+  indexName: 'products'
+});
+```
+
+### Custom item template
+
+```javascript
+chat({
+  container: '#chat',
+  apiKey: 'YOUR_API_KEY',
+  indexName: 'products',
+  templates: {
+    item(hit, { html }) {
+      return html`
+        <div class="chat-product">
+          <img src="${hit.image}" alt="${hit.name}" />
+          <div>
+            <h4>${hit.name}</h4>
+            <p>$${hit.price}</p>
+          </div>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### Custom header
+
+```javascript
+chat({
+  container: '#chat',
+  apiKey: 'YOUR_API_KEY',
+  indexName: 'products',
+  templates: {
+    header: {
+      titleText: 'Shopping Assistant',
+      closeLabelText: 'Close chat',
+      clearLabelText: 'Clear conversation'
+    }
+  }
+});
+```
+
+### With search page integration
+
+```javascript
+import qs from 'qs';
+
+chat({
+  container: '#chat',
+  apiKey: 'YOUR_API_KEY',
+  indexName: 'products',
+  getSearchPageURL(nextUiState) {
+    return `/search?${qs.stringify(nextUiState)}`;
+  }
+});
+```
+
+### Custom prompt placeholder
+
+```javascript
+chat({
+  container: '#chat',
+  apiKey: 'YOUR_API_KEY',
+  indexName: 'products',
+  templates: {
+    prompt: {
+      textareaPlaceholderText: 'Ask me about our products...'
+    }
+  }
+});
+```
+
+### With suggestions
+
+```javascript
+chat({
+  container: '#chat',
+  apiKey: 'YOUR_API_KEY',
+  indexName: 'products',
+  templates: {
+    suggestions({ suggestions, onSuggestionClick }) {
+      return `
+        <div class="suggestions">
+          ${suggestions.map(s => `
+            <button onclick="${() => onSuggestionClick(s)}">
+              ${s}
+            </button>
+          `).join('')}
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### Resume conversation
+
+```javascript
+chat({
+  container: '#chat',
+  apiKey: 'YOUR_API_KEY',
+  indexName: 'products',
+  resume: true // Restore previous conversation
+});
+```
+
+### Custom tools
+
+```javascript
+import { SearchIndexToolType } from 'instantsearch.js/es/widgets';
+
+chat({
+  container: '#chat',
+  apiKey: 'YOUR_API_KEY',
+  indexName: 'products',
+  tools: {
+    [SearchIndexToolType]: {
+      templates: {
+        layout({ message }) {
+          const hits = message?.output?.hits || [];
+          return `
+            <div class="custom-results">
+              ${hits.map(hit => `<div>${hit.name}</div>`).join('')}
+            </div>
+          `;
+        }
+      }
+    }
+  }
+});
+```
+
+## HTML output
+
+```html
+<div class="ais-Chat">
+  <button class="ais-Chat-toggleButton">
+    <!-- Toggle button content -->
+  </button>
+  
+  <div class="ais-Chat-dialog">
+    <div class="ais-Chat-header">
+      <h3>Chat</h3>
+      <button class="close">×</button>
+    </div>
+    
+    <div class="ais-Chat-messages">
+      <div class="ais-Chat-message ais-Chat-message--user">
+        <!-- User message -->
+      </div>
+      <div class="ais-Chat-message ais-Chat-message--assistant">
+        <!-- Assistant message -->
+      </div>
+    </div>
+    
+    <div class="ais-Chat-prompt">
+      <textarea placeholder="Ask a question..."></textarea>
+      <button>Send</button>
+    </div>
+  </div>
+</div>
+```
+
+## Notes
+
+- Requires Algolia AI Search to be enabled on your account.
+- The chat maintains conversation history.
+- Supports multiple interaction patterns: search, recommend, filters.
+- Messages are stored locally and can be resumed.
+- The widget handles streaming responses automatically.

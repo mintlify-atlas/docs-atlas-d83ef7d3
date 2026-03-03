@@ -1,0 +1,156 @@
+---
+title: queryRuleContext
+---
+
+Applies query rules context based on filters applied to the search. This is a renderless widget used with Algolia's [Query Rules](https://www.algolia.com/doc/guides/managing-results/rules/rules-overview/).
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { queryRuleContext } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  queryRuleContext({
+    trackedFilters: {
+      brand: () => ['Apple', 'Samsung'],
+      category: values => values
+    }
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="trackedFilters" type="object" required>
+  Object mapping attribute names to functions that return the values to track.
+  
+  ```typescript
+  {
+    [attribute: string]: (values: string[]) => string[]
+  }
+  ```
+  
+  For each attribute:
+  - The key is the attribute name
+  - The value is a function that receives the current filter values and returns which values to track
+  
+  Example:
+  ```javascript
+  {
+    brand: () => ['Apple'],           // Always track "Apple"
+    category: values => values,        // Track all selected categories
+    price: () => []                    // Don't track price
+  }
+  ```
+</ParamField>
+
+<ParamField path="transformRuleContexts" type="function">
+  Function to transform the rule contexts before sending them to Algolia.
+  
+  ```typescript
+  (ruleContexts: string[]) => string[]
+  ```
+</ParamField>
+
+## Examples
+
+### Track specific brand values
+
+```javascript
+queryRuleContext({
+  trackedFilters: {
+    brand: () => ['Apple', 'Samsung']
+  }
+});
+```
+
+### Track all selected values
+
+```javascript
+queryRuleContext({
+  trackedFilters: {
+    brand: values => values,
+    category: values => values
+  }
+});
+```
+
+### Conditional tracking
+
+```javascript
+queryRuleContext({
+  trackedFilters: {
+    brand: values => values.filter(v => ['Apple', 'Samsung'].includes(v)),
+    category: values => values,
+    price: () => [] // Don't track price filters
+  }
+});
+```
+
+### Transform rule contexts
+
+```javascript
+queryRuleContext({
+  trackedFilters: {
+    brand: values => values,
+    category: values => values
+  },
+  transformRuleContexts(ruleContexts) {
+    return ruleContexts.map(context => `filter_${context}`);
+  }
+});
+```
+
+### Complex filtering logic
+
+```javascript
+queryRuleContext({
+  trackedFilters: {
+    brand: values => {
+      // Only track premium brands
+      const premiumBrands = ['Apple', 'Samsung', 'Sony'];
+      return values.filter(brand => premiumBrands.includes(brand));
+    },
+    category: values => {
+      // Track all except specific categories
+      return values.filter(cat => !['Other', 'Misc'].includes(cat));
+    },
+    color: values => {
+      // Track only first selected color
+      return values.slice(0, 1);
+    }
+  }
+});
+```
+
+## Use with Query Rules
+
+In your Algolia dashboard, create query rules that target the contexts:
+
+1. Context format: `ais-{attribute}-{value}`
+2. Example contexts:
+   - `ais-brand-Apple`
+   - `ais-category-Electronics`
+   - `ais-brand-Samsung`
+
+### Example rule
+
+If filter is `brand:Apple`, the context `ais-brand-Apple` is applied. You can then create a rule in your dashboard:
+
+- **Condition**: Context is `ais-brand-Apple`
+- **Consequence**: Boost hits with `badge: "iPhone"`
+
+## Notes
+
+- This is a renderless widget (no UI output).
+- Rule contexts are automatically formatted as `ais-{attribute}-{value}`.
+- Use with Algolia's Query Rules feature for dynamic ranking and merchandising.
+- The widget monitors refinements from other widgets.

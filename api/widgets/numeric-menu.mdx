@@ -1,0 +1,203 @@
+---
+title: numericMenu
+description: Filter results by predefined numeric ranges
+---
+
+The numericMenu widget displays a list of predefined numeric ranges that users can select to filter results. It's ideal for price ranges, size ranges, or any scenario where you want to offer preset filtering options.
+
+## Usage
+
+```javascript
+const numericMenu = instantsearch.widgets.numericMenu({
+  container: '#price-menu',
+  attribute: 'price',
+  items: [
+    { label: 'All' },
+    { label: 'Less than $10', end: 10 },
+    { label: '$10 - $100', start: 10, end: 100 },
+    { label: '$100 - $500', start: 100, end: 500 },
+    { label: 'More than $500', start: 500 },
+  ],
+});
+
+search.addWidget(numericMenu);
+```
+
+## Examples
+
+### Price Ranges
+
+```javascript
+instantsearch.widgets.numericMenu({
+  container: '#price-ranges',
+  attribute: 'price',
+  items: [
+    { label: 'All prices' },
+    { label: 'Under $50', end: 50 },
+    { label: '$50 to $200', start: 50, end: 200 },
+    { label: '$200 to $500', start: 200, end: 500 },
+    { label: 'Over $500', start: 500 },
+  ],
+});
+```
+
+### File Size Ranges
+
+```javascript
+instantsearch.widgets.numericMenu({
+  container: '#file-size',
+  attribute: 'file_size',
+  items: [
+    { label: 'All sizes' },
+    { label: 'Small (< 1MB)', end: 1048576 },
+    { label: 'Medium (1-10MB)', start: 1048576, end: 10485760 },
+    { label: 'Large (> 10MB)', start: 10485760 },
+  ],
+});
+```
+
+### With Transform Items
+
+```javascript
+instantsearch.widgets.numericMenu({
+  container: '#price',
+  attribute: 'price',
+  items: [
+    { label: 'All' },
+    { label: 'Budget', end: 50 },
+    { label: 'Mid-range', start: 50, end: 200 },
+    { label: 'Premium', start: 200 },
+  ],
+  transformItems: (items) =>
+    items.map((item) => ({
+      ...item,
+      label: `${item.label} (${item.count})`,
+    })),
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="attribute" type="string" required>
+  The name of the numeric attribute to filter on. Must be declared as an attribute for faceting.
+</ParamField>
+
+<ParamField path="items" type="array" required>
+  Array of objects defining the numeric ranges.
+  
+  Each item can have:
+  - `label` (string, required): Display label for the range
+  - `start` (number, optional): Lower bound (inclusive, `>=`)
+  - `end` (number, optional): Upper bound (inclusive, `<=`)
+  
+  Omitting both `start` and `end` creates an "All" option.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="item" type="Template">
+      Template for each item.
+      
+      Receives:
+      - `attribute`: The attribute name
+      - `label`: The label for the option
+      - `value`: Encoded bounds object
+      - `isRefined`: Whether selected
+      - `url`: URL for this refinement
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="noRefinementRoot" type="string | string[]">
+      CSS class when no refinements are available.
+    </ParamField>
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item.
+    </ParamField>
+    <ParamField path="selectedItem" type="string | string[]">
+      CSS class for the selected item.
+    </ParamField>
+    <ParamField path="label" type="string | string[]">
+      CSS class for the label.
+    </ParamField>
+    <ParamField path="labelText" type="string | string[]">
+      CSS class for the label text.
+    </ParamField>
+    <ParamField path="radio" type="string | string[]">
+      CSS class for the radio button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-NumericMenu">
+  <ul class="ais-NumericMenu-list">
+    <li class="ais-NumericMenu-item">
+      <label class="ais-NumericMenu-label">
+        <input class="ais-NumericMenu-radio" type="radio" name="NumericMenu" />
+        <span class="ais-NumericMenu-labelText">All prices</span>
+      </label>
+    </li>
+    <li class="ais-NumericMenu-item ais-NumericMenu-item--selected">
+      <label class="ais-NumericMenu-label">
+        <input class="ais-NumericMenu-radio" type="radio" name="NumericMenu" checked />
+        <span class="ais-NumericMenu-labelText">$10 - $100</span>
+      </label>
+    </li>
+  </ul>
+</div>
+```
+
+## Item Definition
+
+The `items` array defines the numeric ranges:
+
+```javascript
+[
+  // "All" option - no filtering
+  { label: 'All' },
+  
+  // Upper bound only: value <= 10
+  { label: 'Less than $10', end: 10 },
+  
+  // Both bounds: 10 <= value <= 100
+  { label: '$10 to $100', start: 10, end: 100 },
+  
+  // Lower bound only: value >= 500
+  { label: 'More than $500', start: 500 },
+]
+```
+
+## Requirements
+
+<Warning>
+  The attribute must be declared as an **attribute for faceting** in your Algolia index settings.
+  
+  The values must be JavaScript numbers (not strings).
+</Warning>

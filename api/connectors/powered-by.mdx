@@ -1,0 +1,66 @@
+---
+title: "connectPoweredBy"
+description: "Build a custom widget to display the Algolia logo"
+---
+
+The **PoweredBy** connector provides the logic to build a custom widget that displays the Algolia logo with a link.
+
+## Usage
+
+```javascript
+import { connectPoweredBy } from 'instantsearch.js/es/connectors';
+
+const customPoweredBy = connectPoweredBy(
+  (renderOptions, isFirstRender) => {
+    const { url, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <a 
+        href="${url}" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        style="display: flex; align-items: center; gap: 8px;"
+      >
+        <span>Search by</span>
+        <img 
+          src="https://www.algolia.com/static_assets/images/press/downloads/algolia-logo-light.svg" 
+          alt="Algolia" 
+          height="20"
+        />
+      </a>
+    `;
+  }
+);
+
+search.addWidgets([
+  customPoweredBy({
+    container: document.querySelector('#powered-by'),
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="url" type="string">
+  The URL to redirect to on click.
+  
+  Defaults to a URL with UTM parameters tracking the referrer:
+  ```
+  https://www.algolia.com/?
+    utm_source=instantsearch.js&
+    utm_medium=website&
+    utm_content={hostname}&
+    utm_campaign=poweredby
+  ```
+</ParamField>
+
+## Render Options
+
+<ParamField path="url" type="string">
+  The URL to redirect to on click.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

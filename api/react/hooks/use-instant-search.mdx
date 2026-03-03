@@ -1,0 +1,359 @@
+---
+title: 'useInstantSearch'
+description: 'Access the InstantSearch instance and search state'
+---
+
+The `useInstantSearch` hook provides access to the InstantSearch instance and the current search state.
+
+## Import
+
+```jsx
+import { useInstantSearch } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="catchError" type="boolean" default="false">
+  Whether to catch errors from the search lifecycle. When `true`, errors are caught and available in the `error` property.
+
+  ```jsx
+  const { error } = useInstantSearch({ catchError: true });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="uiState" type="UiState">
+  The current UI state for all indices.
+
+  ```jsx
+  const { uiState } = useInstantSearch();
+  console.log(uiState.products.query); // Current query
+  console.log(uiState.products.refinementList); // Active refinements
+  ```
+</ResponseField>
+
+<ResponseField name="setUiState" type="(state: UiState | (prev: UiState) => UiState) => void">
+  Function to update the UI state.
+
+  ```jsx
+  const { setUiState } = useInstantSearch();
+  
+  // Set directly
+  setUiState({ products: { query: 'phone' } });
+  
+  // Use function updater
+  setUiState((prev) => ({
+    ...prev,
+    products: {
+      ...prev.products,
+      query: 'phone',
+    },
+  }));
+  ```
+</ResponseField>
+
+<ResponseField name="indexUiState" type="IndexUiState">
+  The UI state for the current index.
+
+  ```jsx
+  const { indexUiState } = useInstantSearch();
+  console.log(indexUiState.query);
+  console.log(indexUiState.refinementList);
+  ```
+</ResponseField>
+
+<ResponseField name="setIndexUiState" type="(state: IndexUiState | (prev: IndexUiState) => IndexUiState) => void">
+  Function to update the UI state for the current index.
+
+  ```jsx
+  const { setIndexUiState } = useInstantSearch();
+  setIndexUiState({ query: 'phone', page: 1 });
+  ```
+</ResponseField>
+
+<ResponseField name="renderState" type="RenderState">
+  The render state for all indices, containing widget states.
+
+  ```jsx
+  const { renderState } = useInstantSearch();
+  console.log(renderState.products.searchBox.query);
+  ```
+</ResponseField>
+
+<ResponseField name="indexRenderState" type="IndexRenderState">
+  The render state for the current index.
+
+  ```jsx
+  const { indexRenderState } = useInstantSearch();
+  console.log(indexRenderState.searchBox.query);
+  ```
+</ResponseField>
+
+<ResponseField name="results" type="SearchResults | null">
+  The search results from Algolia.
+
+  ```jsx
+  const { results } = useInstantSearch();
+  console.log(results?.nbHits);
+  ```
+</ResponseField>
+
+<ResponseField name="scopedResults" type="ScopedResult[]">
+  Results for all indices in a multi-index search.
+
+  ```jsx
+  const { scopedResults } = useInstantSearch();
+  scopedResults.forEach(({ indexId, results }) => {
+    console.log(`${indexId}: ${results.nbHits} hits`);
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="status" type="'idle' | 'loading' | 'stalled' | 'error'">
+  The current status of the search.
+
+  ```jsx
+  const { status } = useInstantSearch();
+  if (status === 'loading') return <div>Loading...</div>;
+  if (status === 'error') return <div>Error occurred</div>;
+  ```
+</ResponseField>
+
+<ResponseField name="error" type="Error | undefined">
+  The error that occurred during search (only when `status === 'error'`).
+
+  ```jsx
+  const { error, status } = useInstantSearch({ catchError: true });
+  if (status === 'error') {
+    console.error(error);
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="refresh" type="() => void">
+  Function to refresh the search results by clearing the cache.
+
+  ```jsx
+  const { refresh } = useInstantSearch();
+  
+  // Refresh after an indexing operation
+  await updateIndex();
+  refresh();
+  ```
+</ResponseField>
+
+<ResponseField name="addMiddlewares" type="(...middlewares: Middleware[]) => () => void">
+  Function to add middlewares to InstantSearch. Returns a cleanup function.
+
+  ```jsx
+  const { addMiddlewares } = useInstantSearch();
+  
+  useEffect(() => {
+    const removeMiddlewares = addMiddlewares(
+      myCustomMiddleware(),
+      anotherMiddleware()
+    );
+    
+    return removeMiddlewares; // Cleanup on unmount
+  }, [addMiddlewares]);
+  ```
+</ResponseField>
+
+## Examples
+
+### Access Current Query
+
+```jsx
+function QueryDisplay() {
+  const { indexUiState } = useInstantSearch();
+
+  return (
+    <div>
+      {indexUiState.query ? (
+        <p>Searching for: {indexUiState.query}</p>
+      ) : (
+        <p>No search query</p>
+      )}
+    </div>
+  );
+}
+```
+
+### Clear All Refinements
+
+```jsx
+function ClearAllButton() {
+  const { setIndexUiState } = useInstantSearch();
+
+  const clearAll = () => {
+    setIndexUiState((prev) => ({
+      ...prev,
+      refinementList: {},
+      menu: {},
+      range: {},
+    }));
+  };
+
+  return <button onClick={clearAll}>Clear All Filters</button>;
+}
+```
+
+### Loading Indicator
+
+```jsx
+function LoadingIndicator() {
+  const { status } = useInstantSearch();
+
+  if (status === 'loading' || status === 'stalled') {
+    return (
+      <div className="loading">
+        <div className="spinner" />
+        {status === 'stalled' && <p>Still loading...</p>}
+      </div>
+    );
+  }
+
+  return null;
+}
+```
+
+### Error Handling
+
+```jsx
+function SearchError() {
+  const { status, error } = useInstantSearch({ catchError: true });
+
+  if (status === 'error') {
+    return (
+      <div className="error">
+        <h3>Search Error</h3>
+        <p>{error?.message || 'An error occurred'}</p>
+      </div>
+    );
+  }
+
+  return null;
+}
+```
+
+### Search Statistics
+
+```jsx
+function SearchStats() {
+  const { results } = useInstantSearch();
+
+  if (!results) return null;
+
+  return (
+    <div>
+      <p>
+        {results.nbHits.toLocaleString()} results found in{' '}
+        {results.processingTimeMS}ms
+      </p>
+    </div>
+  );
+}
+```
+
+### Refresh After Update
+
+```jsx
+function RefreshButton() {
+  const { refresh } = useInstantSearch();
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleUpdate = async () => {
+    setIsUpdating(true);
+    try {
+      // Perform your index update
+      await updateAlgoliaIndex();
+      
+      // Refresh the search results
+      refresh();
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <button onClick={handleUpdate} disabled={isUpdating}>
+      {isUpdating ? 'Updating...' : 'Update Index'}
+    </button>
+  );
+}
+```
+
+### Multi-Index Results
+
+```jsx
+function MultiIndexStats() {
+  const { scopedResults } = useInstantSearch();
+
+  return (
+    <div>
+      {scopedResults.map(({ indexId, results }) => (
+        <div key={indexId}>
+          <h3>{indexId}</h3>
+          <p>{results.nbHits} results</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Custom Middleware
+
+```jsx
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+
+function InsightsSetup() {
+  const { addMiddlewares } = useInstantSearch();
+
+  useEffect(() => {
+    const insightsMiddleware = createInsightsMiddleware({
+      insightsClient: window.aa,
+    });
+
+    const removeMiddlewares = addMiddlewares(insightsMiddleware);
+
+    return removeMiddlewares;
+  }, [addMiddlewares]);
+
+  return null;
+}
+```
+
+## TypeScript
+
+```tsx
+import { useInstantSearch } from 'react-instantsearch';
+import type { UiState } from 'instantsearch.js';
+
+interface MyUiState extends UiState {
+  products: {
+    query?: string;
+    refinementList?: {
+      brand?: string[];
+      category?: string[];
+    };
+  };
+}
+
+function MyComponent() {
+  const { uiState, setUiState } = useInstantSearch<MyUiState>();
+
+  // Type-safe access
+  const query = uiState.products.query;
+  const brands = uiState.products.refinementList?.brand;
+
+  return <div>{/* ... */}</div>;
+}
+```
+
+## Related
+
+- [InstantSearch Component](/api/react/instantsearch)
+- [Building Custom Widgets](/guides/building-custom-widgets)
+- [useSearchBox Hook](/api/react/hooks/use-search-box)

@@ -1,0 +1,178 @@
+---
+title: "Connectors Overview"
+description: "Learn how connectors work and explore all available connectors in InstantSearch.js"
+---
+
+## What are connectors?
+
+Connectors are the core building blocks of InstantSearch.js widgets. They provide the logic for search widgets without the rendering, allowing you to build custom UI components while leveraging InstantSearch's powerful search functionality.
+
+Each connector:
+- Manages search state and parameters
+- Handles search results processing
+- Provides render and refine functions
+- Works with any UI library or framework
+
+## How connectors work
+
+Connectors follow a simple pattern:
+
+```javascript
+const customWidget = connectSearchBox(
+  (renderOptions, isFirstRender) => {
+    const { query, refine, clear } = renderOptions;
+    
+    // Your custom rendering logic here
+  }
+);
+```
+
+The connector calls your render function with:
+- `renderOptions`: The current state and available actions
+- `isFirstRender`: Boolean indicating if this is the initial render
+
+## Available connectors
+
+### Search
+
+<Card title="Search Box" icon="magnifying-glass" href="/api/connectors/search-box">
+  Input widget for the main search query
+</Card>
+
+### Results
+
+<CardGroup cols={2}>
+<Card title="Hits" icon="list" href="/api/connectors/hits">
+  Display search results
+</Card>
+
+<Card title="Infinite Hits" icon="arrows-down-to-line" href="/api/connectors/infinite-hits">
+  Display search results with infinite scrolling
+</Card>
+</CardGroup>
+
+### Filtering
+
+<CardGroup cols={2}>
+<Card title="Refinement List" icon="list-check" href="/api/connectors/refinement-list">
+  Multi-select faceted filtering
+</Card>
+
+<Card title="Hierarchical Menu" icon="sitemap" href="/api/connectors/hierarchical-menu">
+  Multi-level hierarchical faceted filtering
+</Card>
+
+<Card title="Menu" icon="bars" href="/api/connectors/menu">
+  Single-select faceted filtering
+</Card>
+
+<Card title="Range" icon="sliders" href="/api/connectors/range">
+  Filter by numeric range
+</Card>
+
+<Card title="Rating Menu" icon="star" href="/api/connectors/rating-menu">
+  Filter by rating values
+</Card>
+
+<Card title="Numeric Menu" icon="list-ol" href="/api/connectors/numeric-menu">
+  Filter by numeric ranges with predefined options
+</Card>
+
+<Card title="Toggle Refinement" icon="toggle-on" href="/api/connectors/toggle-refinement">
+  On/off filtering based on attribute value
+</Card>
+</CardGroup>
+
+### Current Filters
+
+<CardGroup cols={2}>
+<Card title="Current Refinements" icon="filter-list" href="/api/connectors/current-refinements">
+  Display and remove active filters
+</Card>
+
+<Card title="Clear Refinements" icon="xmark" href="/api/connectors/clear-refinements">
+  Button to clear all active filters
+</Card>
+</CardGroup>
+
+### Navigation
+
+<CardGroup cols={2}>
+<Card title="Pagination" icon="list" href="/api/connectors/pagination">
+  Navigate between result pages
+</Card>
+
+<Card title="Breadcrumb" icon="arrow-right" href="/api/connectors/breadcrumb">
+  Display hierarchical navigation path
+</Card>
+</CardGroup>
+
+### UI Controls
+
+<CardGroup cols={2}>
+<Card title="Hits Per Page" icon="hashtag" href="/api/connectors/hits-per-page">
+  Select number of results per page
+</Card>
+
+<Card title="Sort By" icon="arrow-down-up-across-line" href="/api/connectors/sort-by">
+  Switch between indices or sorting strategies
+</Card>
+
+<Card title="Stats" icon="chart-simple" href="/api/connectors/stats">
+  Display search statistics
+</Card>
+</CardGroup>
+
+### Other
+
+<CardGroup cols={2}>
+<Card title="Configure" icon="gear" href="/api/connectors/configure">
+  Set search parameters programmatically
+</Card>
+
+<Card title="Powered By" icon="algolia" href="/api/connectors/powered-by">
+  Display Algolia logo
+</Card>
+
+<Card title="Geo Search" icon="map" href="/api/connectors/geo-search">
+  Search and filter by geographic location
+</Card>
+</CardGroup>
+
+## Creating custom widgets
+
+To create a custom widget with a connector:
+
+1. Import the connector
+2. Define your rendering function
+3. Call the connector with your rendering function
+4. Add the widget to your InstantSearch instance
+
+```javascript
+import { connectSearchBox } from 'instantsearch.js/es/connectors';
+
+const customSearchBox = connectSearchBox(
+  (renderOptions, isFirstRender) => {
+    const { query, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <input 
+        type="search" 
+        value="${query}"
+        placeholder="Search..."
+      />
+    `;
+    
+    container.querySelector('input').addEventListener('input', (e) => {
+      refine(e.target.value);
+    });
+  }
+);
+
+search.addWidgets([
+  customSearchBox({
+    container: document.querySelector('#searchbox'),
+  }),
+]);
+```

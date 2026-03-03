@@ -1,0 +1,170 @@
+---
+title: Examples Overview
+description: Explore working examples of InstantSearch implementations across different use cases and frameworks
+---
+
+Discover how to build powerful search experiences with InstantSearch through our collection of real-world examples. Each example includes complete, working code that you can use as a starting point for your own projects.
+
+## Available Examples
+
+<CardGroup cols={2}>
+  <Card
+    title="E-Commerce Search"
+    icon="shopping-cart"
+    href="/examples/e-commerce"
+  >
+    Complete product search with facets, filters, sorting, and pagination
+  </Card>
+  
+  <Card
+    title="Media Search"
+    icon="image"
+    href="/examples/media-search"
+  >
+    Image and article search with infinite scroll and date filtering
+  </Card>
+  
+  <Card
+    title="Geographic Search"
+    icon="map"
+    href="/examples/geo-search"
+  >
+    Location-based search with map visualization using GeoSearch
+  </Card>
+  
+  <Card
+    title="Multi-Index Search"
+    icon="layer-group"
+    href="/examples/multi-index"
+  >
+    Search across multiple indices simultaneously
+  </Card>
+  
+  <Card
+    title="Next.js SSR"
+    icon="server"
+    href="/examples/ssr-nextjs"
+  >
+    Server-side rendering with Next.js for better SEO and performance
+  </Card>
+  
+  <Card
+    title="URL Routing"
+    icon="route"
+    href="/examples/routing"
+  >
+    Sync search state with URL for shareable searches
+  </Card>
+</CardGroup>
+
+## Source Code
+
+All examples are available in the [InstantSearch repository](https://github.com/algolia/instantsearch) under the `examples/` directory:
+
+- **JavaScript**: `examples/js/`
+- **React**: `examples/react/`
+- **Vue**: `examples/vue/`
+
+## Getting Started
+
+Each example includes:
+
+<Steps>
+  <Step title="Complete source code">
+    Fully functional implementations you can copy and modify
+  </Step>
+  
+  <Step title="Setup instructions">
+    Step-by-step guide to get the example running locally
+  </Step>
+  
+  <Step title="Key concepts">
+    Explanation of the main features and patterns used
+  </Step>
+  
+  <Step title="Customization tips">
+    Suggestions for adapting the example to your needs
+  </Step>
+</Steps>
+
+## Running Examples Locally
+
+To run any example from the repository:
+
+```bash
+# Clone the repository
+git clone https://github.com/algolia/instantsearch.git
+cd instantsearch
+
+# Install dependencies
+yarn install
+
+# Navigate to an example
+cd examples/js/e-commerce  # or any other example
+
+# Install example dependencies and start
+yarn install
+yarn start
+```
+
+<Note>
+  Most examples use demo Algolia credentials that are publicly available. For production use, replace these with your own Algolia application ID and API key.
+</Note>
+
+## Framework Variations
+
+Many examples are available in multiple framework implementations:
+
+| Example | JavaScript | React | Vue |
+|---------|-----------|-------|-----|
+| E-Commerce | ✓ | ✓ | ✓ |
+| Media Search | ✓ | - | ✓ |
+| Geographic Search | ✓ | - | - |
+| Query Suggestions | ✓ | ✓ | - |
+| SSR | - | ✓ | ✓ |
+| Next.js | - | ✓ | - |
+
+## Common Patterns
+
+Across all examples, you'll find consistent patterns:
+
+### Search Client Setup
+
+```javascript
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YOUR_APP_ID',
+  'YOUR_SEARCH_API_KEY'
+);
+```
+
+### Widget Configuration
+
+Widgets are configured with containers and customizable templates:
+
+```javascript
+searchBox({
+  container: '#search-box',
+  placeholder: 'Search for products...'
+})
+```
+
+### Styling
+
+Examples use InstantSearch CSS themes as a foundation:
+
+```javascript
+import 'instantsearch.css/themes/satellite.css';
+// or
+import 'instantsearch.css/themes/reset.css';
+```
+
+## Need Help?
+
+If you have questions about any example:
+
+- Check the example's README file in the repository
+- Visit our [community forum](https://discourse.algolia.com/)
+- Review the [API reference](/api-reference/widgets) for widget options
+- Explore [guides](/guides) for conceptual explanations

@@ -1,0 +1,465 @@
+---
+title: ais-configure
+description: Configure Algolia search parameters declaratively
+---
+
+`<ais-configure>` is a component that allows you to configure search parameters declaratively. Any Algolia search parameter can be passed as a prop and will be applied to the search.
+
+## Usage
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient" index-name="products">
+    <ais-configure
+      :hits-per-page.camel="20"
+      :distinct="true"
+      :filters="'available = true'"
+    />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+
+<script>
+import algoliasearch from 'algoliasearch/lite';
+import { AisInstantSearch, AisConfigure, AisHits } from 'vue-instantsearch';
+
+export default {
+  components: { AisInstantSearch, AisConfigure, AisHits },
+  data() {
+    return {
+      searchClient: algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey'),
+    };
+  },
+};
+</script>
+```
+
+## Props
+
+`<ais-configure>` accepts any valid Algolia search parameter as a prop. All props are passed directly to the Algolia search API.
+
+<Note>
+  When using camelCase search parameters in Vue templates, you need to use the `.camel` modifier (e.g., `:hits-per-page.camel="20"`) or bind them as strings with bracket notation.
+</Note>
+
+### Common Search Parameters
+
+<ParamField path="hitsPerPage" type="number">
+  Number of hits to retrieve per page.
+  
+  ```vue
+  <ais-configure :hits-per-page.camel="20" />
+  ```
+</ParamField>
+
+<ParamField path="filters" type="string">
+  Filter expression to apply to the search.
+  
+  ```vue
+  <ais-configure :filters="'category:shoes AND price < 100'" />
+  ```
+</ParamField>
+
+<ParamField path="facetFilters" type="array | string">
+  Filter hits by facet values.
+  
+  ```vue
+  <ais-configure :facet-filters.camel="[['brand:Apple', 'brand:Samsung']]" />
+  ```
+</ParamField>
+
+<ParamField path="numericFilters" type="array | string">
+  Filter hits by numeric attributes.
+  
+  ```vue
+  <ais-configure :numeric-filters.camel="['price >= 10', 'price <= 100']" />
+  ```
+</ParamField>
+
+<ParamField path="tagFilters" type="array | string">
+  Filter hits by tags.
+  
+  ```vue
+  <ais-configure :tag-filters.camel="['featured']" />
+  ```
+</ParamField>
+
+<ParamField path="distinct" type="boolean | number">
+  Enable distinct feature to remove duplicates based on the attribute set in the index settings.
+  
+  ```vue
+  <ais-configure :distinct="true" />
+  ```
+</ParamField>
+
+<ParamField path="attributesToRetrieve" type="array">
+  List of attributes to retrieve.
+  
+  ```vue
+  <ais-configure :attributes-to-retrieve.camel="['name', 'price', 'image']" />
+  ```
+</ParamField>
+
+<ParamField path="attributesToHighlight" type="array">
+  List of attributes to highlight.
+  
+  ```vue
+  <ais-configure :attributes-to-highlight.camel="['name', 'description']" />
+  ```
+</ParamField>
+
+<ParamField path="attributesToSnippet" type="array">
+  List of attributes to snippet with their maximum length.
+  
+  ```vue
+  <ais-configure :attributes-to-snippet.camel="['description:50']" />
+  ```
+</ParamField>
+
+<ParamField path="highlightPreTag" type="string">
+  String to insert before highlighted parts.
+  
+  ```vue
+  <ais-configure :highlight-pre-tag.camel="'<strong>'" />
+  ```
+</ParamField>
+
+<ParamField path="highlightPostTag" type="string">
+  String to insert after highlighted parts.
+  
+  ```vue
+  <ais-configure :highlight-post-tag.camel="'</strong>'" />
+  ```
+</ParamField>
+
+<ParamField path="snippetEllipsisText" type="string">
+  String to use as an ellipsis indicator for snippets.
+  
+  ```vue
+  <ais-configure :snippet-ellipsis-text.camel="'...'" />
+  ```
+</ParamField>
+
+<ParamField path="restrictHighlightAndSnippetArrays" type="boolean">
+  Restrict highlighting and snippeting to matched query words only.
+  
+  ```vue
+  <ais-configure :restrict-highlight-and-snippet-arrays.camel="true" />
+  ```
+</ParamField>
+
+<ParamField path="page" type="number">
+  Specify the page to retrieve (zero-based).
+  
+  ```vue
+  <ais-configure :page="0" />
+  ```
+</ParamField>
+
+<ParamField path="offset" type="number">
+  Specify the offset of the first hit to return.
+  
+  ```vue
+  <ais-configure :offset="20" />
+  ```
+</ParamField>
+
+<ParamField path="length" type="number">
+  Number of hits to return when using offset/length pagination.
+  
+  ```vue
+  <ais-configure :length="10" />
+  ```
+</ParamField>
+
+<ParamField path="aroundLatLng" type="string">
+  Search for entries around a central geolocation.
+  
+  ```vue
+  <ais-configure :around-lat-lng.camel="'40.71, -74.01'" />
+  ```
+</ParamField>
+
+<ParamField path="aroundRadius" type="number | string">
+  Maximum radius for geo search (in meters).
+  
+  ```vue
+  <ais-configure :around-radius.camel="5000" />
+  ```
+</ParamField>
+
+<ParamField path="minimumAroundRadius" type="number">
+  Minimum radius for geo search (in meters).
+  
+  ```vue
+  <ais-configure :minimum-around-radius.camel="1000" />
+  ```
+</ParamField>
+
+<ParamField path="analytics" type="boolean">
+  Enable or disable analytics.
+  
+  ```vue
+  <ais-configure :analytics="true" />
+  ```
+</ParamField>
+
+<ParamField path="analyticsTags" type="array">
+  Tags to apply to the analytics.
+  
+  ```vue
+  <ais-configure :analytics-tags.camel="['mobile', 'sale']" />
+  ```
+</ParamField>
+
+<ParamField path="clickAnalytics" type="boolean">
+  Enable click analytics.
+  
+  ```vue
+  <ais-configure :click-analytics.camel="true" />
+  ```
+</ParamField>
+
+<ParamField path="userToken" type="string">
+  Associates a user token with the search.
+  
+  ```vue
+  <ais-configure :user-token.camel="'user-123'" />
+  ```
+</ParamField>
+
+<ParamField path="enablePersonalization" type="boolean">
+  Enable personalization.
+  
+  ```vue
+  <ais-configure :enable-personalization.camel="true" />
+  ```
+</ParamField>
+
+<ParamField path="ruleContexts" type="array">
+  Enable specific query rules based on context.
+  
+  ```vue
+  <ais-configure :rule-contexts.camel="['mobile', 'sale']" />
+  ```
+</ParamField>
+
+## Scoped Slot
+
+The component provides a scoped slot that exposes the current search parameters and a `refine` function:
+
+<ParamField path="default" type="slot">
+  <Expandable title="Slot Props">
+    <ParamField path="searchParameters" type="object">
+      Current search parameters applied to the search.
+    </ParamField>
+    
+    <ParamField path="refine" type="Function">
+      Function to update search parameters programmatically.
+    </ParamField>
+  </Expandable>
+  
+  ```vue
+  <ais-configure :hits-per-page.camel="10">
+    <template v-slot="{ searchParameters, refine }">
+      <div>
+        Current hits per page: {{ searchParameters.hitsPerPage }}
+        <button @click="refine({ hitsPerPage: 20 })">
+          Show more results
+        </button>
+      </div>
+    </template>
+  </ais-configure>
+  ```
+</ParamField>
+
+## CSS Classes
+
+When using the scoped slot, the component renders with:
+
+- `ais-Configure` - Root container class
+
+## Examples
+
+### Basic Configuration
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient" index-name="products">
+    <ais-configure
+      :hits-per-page.camel="12"
+      :distinct="true"
+      :click-analytics.camel="true"
+    />
+    <ais-search-box />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+```
+
+### With Filters
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient" index-name="products">
+    <ais-configure
+      :hits-per-page.camel="20"
+      :filters="activeFilters"
+    />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      showOnlyAvailable: true,
+    };
+  },
+  computed: {
+    activeFilters() {
+      return this.showOnlyAvailable ? 'available = true' : '';
+    },
+  },
+};
+</script>
+```
+
+### Geo Search Configuration
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient" index-name="stores">
+    <ais-configure
+      :around-lat-lng.camel="userLocation"
+      :around-radius.camel="5000"
+      :hits-per-page.camel="10"
+    />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      userLocation: '40.7128,-74.0060', // New York City
+    };
+  },
+};
+</script>
+```
+
+### Custom Highlighting
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient" index-name="articles">
+    <ais-configure
+      :attributes-to-highlight.camel="['title', 'content']"
+      :attributes-to-snippet.camel="['content:100']"
+      :highlight-pre-tag.camel="'<mark class=\"highlight\">'"
+      :highlight-post-tag.camel="'</mark>'"
+    />
+    <ais-search-box />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+```
+
+### Analytics Configuration
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient" index-name="products">
+    <ais-configure
+      :analytics="true"
+      :analytics-tags.camel="analyticsTagsList"
+      :click-analytics.camel="true"
+      :user-token.camel="userId"
+    />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      userId: 'user-12345',
+      analyticsTagsList: ['web', 'desktop'],
+    };
+  },
+};
+</script>
+```
+
+### Dynamic Configuration with Scoped Slot
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient" index-name="products">
+    <ais-configure :hits-per-page.camel="hitsPerPage">
+      <template v-slot="{ searchParameters, refine }">
+        <div class="configure-panel">
+          <p>Showing {{ searchParameters.hitsPerPage }} results per page</p>
+          <button @click="refine({ hitsPerPage: 10 })">10</button>
+          <button @click="refine({ hitsPerPage: 20 })">20</button>
+          <button @click="refine({ hitsPerPage: 50 })">50</button>
+        </div>
+      </template>
+    </ais-configure>
+    <ais-hits />
+  </ais-instant-search>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      hitsPerPage: 20,
+    };
+  },
+};
+</script>
+```
+
+### Multiple Configurations for Different Indices
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient">
+    <ais-index index-name="products">
+      <ais-configure
+        :hits-per-page.camel="12"
+        :filters="'available = true'"
+      />
+      <ais-hits />
+    </ais-index>
+    
+    <ais-index index-name="articles">
+      <ais-configure
+        :hits-per-page.camel="5"
+        :attributes-to-snippet.camel="['content:200']"
+      />
+      <ais-hits />
+    </ais-index>
+  </ais-instant-search>
+</template>
+```
+
+## Notes
+
+<Note>
+  The `configure` state is not included in the URL when using routing. This is by design to avoid polluting the URL with technical search parameters.
+</Note>
+
+<Warning>
+  Parameters set via `ais-configure` override any default settings from your Algolia dashboard. Make sure your configuration doesn't conflict with index settings.
+</Warning>
+
+## Related Components
+
+- [ais-instant-search](/api/vue/ais-instant-search) - Root search component
+- [ais-index](/api/vue/ais-index) - Manage multiple indices

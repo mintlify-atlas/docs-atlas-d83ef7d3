@@ -1,0 +1,254 @@
+---
+title: 'Getting started with Vue InstantSearch'
+description: 'Learn how to build fast search experiences with Vue InstantSearch and Algolia'
+keywords: ['vue', 'instantsearch', 'getting started', 'installation', 'setup']
+---
+
+## Overview
+
+Vue InstantSearch is the lightning-fast search library for building search interfaces in Vue.js applications. It provides a complete set of components to build feature-rich search experiences powered by Algolia.
+
+<Note>
+Vue InstantSearch supports both Vue 2 (2.6.0+) and Vue 3 (3.0.0+). The library automatically uses the correct build based on your Vue version.
+</Note>
+
+## Installation
+
+Install Vue InstantSearch and the Algolia search client:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install vue-instantsearch algoliasearch
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add vue-instantsearch algoliasearch
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add vue-instantsearch algoliasearch
+    ```
+  </Tab>
+</Tabs>
+
+## Quick start
+
+<Steps>
+  <Step title="Register the plugin">
+    Import and register Vue InstantSearch in your application.
+
+    <CodeGroup>
+    ```javascript Vue 2 (main.js)
+    import Vue from 'vue';
+    import InstantSearch from 'vue-instantsearch';
+    import App from './App.vue';
+
+    Vue.use(InstantSearch);
+
+    new Vue({
+      render: (h) => h(App),
+    }).$mount('#app');
+    ```
+
+    ```javascript Vue 3 (main.js)
+    import { createApp } from 'vue';
+    import InstantSearch from 'vue-instantsearch';
+    import App from './App.vue';
+
+    const app = createApp(App);
+    app.use(InstantSearch);
+    app.mount('#app');
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Create a search client">
+    Initialize the Algolia search client with your credentials.
+
+    ```javascript
+    import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+    const searchClient = algoliasearch(
+      'YOUR_APP_ID',
+      'YOUR_SEARCH_API_KEY'
+    );
+    ```
+
+    <Warning>
+    Use your **search-only API key**, not your admin API key. The search-only key is safe to expose in client-side code.
+    </Warning>
+  </Step>
+
+  <Step title="Build your search UI">
+    Use InstantSearch components to create your search interface.
+
+    ```vue App.vue
+    <template>
+      <div>
+        <ais-instant-search
+          :search-client="searchClient"
+          index-name="your_index_name"
+        >
+          <ais-search-box placeholder="Search products..." />
+          <ais-hits>
+            <template #item="{ item }">
+              <article>
+                <h2>
+                  <ais-highlight :hit="item" attribute="name" />
+                </h2>
+                <p>
+                  <ais-highlight :hit="item" attribute="description" />
+                </p>
+              </article>
+            </template>
+          </ais-hits>
+        </ais-instant-search>
+      </div>
+    </template>
+
+    <script>
+    import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+    export default {
+      data() {
+        return {
+          searchClient: algoliasearch(
+            'YOUR_APP_ID',
+            'YOUR_SEARCH_API_KEY'
+          ),
+        };
+      },
+    };
+    </script>
+    ```
+  </Step>
+
+  <Step title="Add styling">
+    Include the InstantSearch CSS theme for default styling.
+
+    <CodeGroup>
+    ```javascript Import in JavaScript
+    import 'instantsearch.css/themes/algolia-min.css';
+    ```
+
+    ```html CDN link
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/instantsearch.css@8/themes/algolia-min.css"
+    />
+    ```
+    </CodeGroup>
+
+    <Tip>
+    You can customize the styling by overriding CSS classes or creating your own theme. All components use BEM naming conventions.
+    </Tip>
+  </Step>
+</Steps>
+
+## Complete example
+
+Here's a full working example with search, filtering, and pagination:
+
+```vue
+<template>
+  <div>
+    <header>
+      <h1>Product Search</h1>
+    </header>
+
+    <div class="container">
+      <ais-instant-search
+        :search-client="searchClient"
+        index-name="instant_search"
+        :insights="true"
+      >
+        <ais-configure :hits-per-page.camel="8" />
+        
+        <div class="search-panel">
+          <div class="search-panel__filters">
+            <ais-panel>
+              <template #header>Brand</template>
+              <ais-refinement-list attribute="brand" />
+            </ais-panel>
+          </div>
+
+          <div class="search-panel__results">
+            <ais-search-box placeholder="Search for products" />
+            
+            <ais-hits>
+              <template #item="{ item }">
+                <article>
+                  <h1>
+                    <ais-highlight :hit="item" attribute="name" />
+                  </h1>
+                  <p>
+                    <ais-highlight :hit="item" attribute="description" />
+                  </p>
+                </article>
+              </template>
+            </ais-hits>
+
+            <ais-pagination />
+          </div>
+        </div>
+      </ais-instant-search>
+    </div>
+  </div>
+</template>
+
+<script>
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+export default {
+  data() {
+    return {
+      searchClient: algoliasearch(
+        'latency',
+        '6be0576ff61c053d5f9a3225e2a90f76'
+      ),
+    };
+  },
+};
+</script>
+
+<style>
+.search-panel {
+  display: flex;
+  gap: 2rem;
+}
+
+.search-panel__filters {
+  flex: 1;
+}
+
+.search-panel__results {
+  flex: 3;
+}
+</style>
+```
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Basic usage" icon="book" href="/vue/basic-usage">
+    Learn about core components and configuration options
+  </Card>
+  <Card title="Vue 2 vs Vue 3" icon="git-compare" href="/vue/vue2-vs-vue3">
+    Understand the differences between Vue versions
+  </Card>
+  <Card title="Server-side rendering" icon="server" href="/vue/server-side-rendering">
+    Implement SSR with Vue InstantSearch
+  </Card>
+  <Card title="Component reference" icon="puzzle" href="/components/instant-search">
+    Explore all available components
+  </Card>
+</Columns>
+
+## Resources
+
+- [GitHub repository](https://github.com/algolia/instantsearch/tree/master/packages/vue-instantsearch)
+- [Live examples](https://github.com/algolia/instantsearch/tree/master/examples/vue)
+- [API reference](/api-reference/vue)

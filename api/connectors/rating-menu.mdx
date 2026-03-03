@@ -1,0 +1,103 @@
+---
+title: "connectRatingMenu"
+description: "Build a custom widget for filtering by rating values"
+---
+
+The **RatingMenu** connector provides the logic to build a custom widget that lets users refine search results based on ratings.
+
+## Usage
+
+```javascript
+import { connectRatingMenu } from 'instantsearch.js/es/connectors';
+
+const customRatingMenu = connectRatingMenu(
+  (renderOptions, isFirstRender) => {
+    const { items, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <ul>
+        ${items.map(item => `
+          <li>
+            <a 
+              href="#" 
+              data-value="${item.value}"
+              style="${item.isRefined ? 'font-weight: bold' : ''}"
+            >
+              ${item.stars.map((filled, index) => 
+                filled ? '★' : '☆'
+              ).join('')} & Up (${item.count})
+            </a>
+          </li>
+        `).join('')}
+      </ul>
+    `;
+    
+    container.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        refine(e.target.dataset.value);
+      });
+    });
+  }
+);
+
+search.addWidgets([
+  customRatingMenu({
+    container: document.querySelector('#rating-menu'),
+    attribute: 'rating',
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="attribute" type="string" required>
+  Name of the attribute for faceting (e.g., "rating").
+</ParamField>
+
+<ParamField path="max" type="number" default="5">
+  The maximum rating value.
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<StarRatingItem>">
+  Possible star ratings the user can apply.
+  
+  Each item has:
+  - `name`: Name corresponding to the number of stars
+  - `label`: Human-readable name for the number of stars
+  - `value`: Number of stars as string
+  - `count`: Count of matched results for this number of stars
+  - `stars`: Array of length equal to max rating value with stars to display or not
+  - `isRefined`: Indicates if star rating refinement is applied
+</ParamField>
+
+<ParamField path="refine" type="(value: string) => void">
+  Selects a rating to filter the results. Takes the value of an item as parameter.
+</ParamField>
+
+<ParamField path="createURL" type="(value: string) => string">
+  Creates a URL for the next state. Takes the value of an item as parameter.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  Indicates if search state can be refined.
+</ParamField>
+
+<ParamField path="hasNoResults" type="boolean">
+  `true` if the last search contains no result.
+  
+  <Warning>
+    This parameter is deprecated. Use `canRefine` instead.
+  </Warning>
+</ParamField>
+
+<ParamField path="sendEvent" type="function">
+  Sends an event to the Insights middleware.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

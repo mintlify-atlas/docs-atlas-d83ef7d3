@@ -1,0 +1,123 @@
+---
+title: "connectGeoSearch"
+description: "Build a custom widget to search and filter by geographic location"
+---
+
+The **GeoSearch** connector provides the logic to build a custom widget that displays results on a map and provides a way to search for results based on their position.
+
+<Note>
+  The GeoSearch connector uses the [geosearch](https://www.algolia.com/doc/guides/searching/geo-search) capabilities of Algolia. Your hits **must** have a `_geoloc` attribute to be displayed on the map.
+  
+  Currently, the feature is not compatible with multiple values in the `_geoloc` attribute.
+</Note>
+
+## Usage
+
+```javascript
+import { connectGeoSearch } from 'instantsearch.js/es/connectors';
+
+const customGeoSearch = connectGeoSearch(
+  (renderOptions, isFirstRender) => {
+    const { 
+      items, 
+      refine, 
+      clearMapRefinement, 
+      isRefinedWithMap, 
+      toggleRefineOnMapMove,
+      isRefineOnMapMove,
+      widgetParams 
+    } = renderOptions;
+    const { container } = widgetParams;
+    
+    if (isFirstRender) {
+      // Initialize your map here
+      // This example is simplified - you would typically use a mapping library
+      container.innerHTML = `
+        <div id="map" style="height: 400px;"></div>
+        <label>
+          <input type="checkbox" id="refine-toggle" ${isRefineOnMapMove() ? 'checked' : ''} />
+          Search on map move
+        </label>
+        <button id="clear">Clear map refinement</button>
+      `;
+      
+      container.querySelector('#refine-toggle').addEventListener('change', () => {
+        toggleRefineOnMapMove();
+      });
+      
+      container.querySelector('#clear').addEventListener('click', () => {
+        clearMapRefinement();
+      });
+    }
+    
+    // Update map markers with items
+    console.log(`${items.length} results on the map`);
+  }
+);
+
+search.addWidgets([
+  customGeoSearch({
+    container: document.querySelector('#geo-search'),
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="enableRefineOnMapMove" type="boolean" default="true">
+  If `true`, refine will be triggered as you move the map.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<GeoHit>">
+  The matched hits from Algolia API that have a `_geoloc` attribute.
+</ParamField>
+
+<ParamField path="position" type="{ lat: number, lng: number }">
+  The current position of the search.
+</ParamField>
+
+<ParamField path="currentRefinement" type="{ northEast: { lat: number, lng: number }, southWest: { lat: number, lng: number } }">
+  The current bounding box of the search.
+</ParamField>
+
+<ParamField path="refine" type="(bounds: { northEast: { lat: number, lng: number }, southWest: { lat: number, lng: number } }) => void">
+  Sets a bounding box to filter the results from the given map bounds.
+</ParamField>
+
+<ParamField path="clearMapRefinement" type="() => void">
+  Resets the current bounding box refinement.
+</ParamField>
+
+<ParamField path="isRefinedWithMap" type="() => boolean">
+  Returns `true` if the current refinement is set with the map bounds.
+</ParamField>
+
+<ParamField path="toggleRefineOnMapMove" type="() => void">
+  Toggles the fact that the user is able to refine on map move.
+</ParamField>
+
+<ParamField path="isRefineOnMapMove" type="() => boolean">
+  Returns `true` if the user is able to refine on map move.
+</ParamField>
+
+<ParamField path="setMapMoveSinceLastRefine" type="() => void">
+  Sets the fact that the map has moved since the last refinement. Should be called on each map move. The call triggers a new rendering only when the value changes.
+</ParamField>
+
+<ParamField path="hasMapMoveSinceLastRefine" type="() => boolean">
+  Returns `true` if the map has moved since the last refinement.
+</ParamField>
+
+<ParamField path="sendEvent" type="function">
+  Sends an event to the Insights middleware.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

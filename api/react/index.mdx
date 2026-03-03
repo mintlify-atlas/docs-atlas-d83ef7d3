@@ -1,0 +1,151 @@
+---
+title: '<Index>'
+description: 'Component for targeting a specific index in multi-index search'
+---
+
+The `<Index>` component allows you to target a specific index for multi-index search scenarios.
+
+## Import
+
+```jsx
+import { Index } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="indexName" type="string" required>
+  The name of the index to target.
+
+  ```jsx
+  <Index indexName="products_by_price_asc">
+    {/* Widgets for this index */}
+  </Index>
+  ```
+</ParamField>
+
+<ParamField path="indexId" type="string">
+  A unique identifier for this index. Required when using the same index multiple times with different configurations.
+
+  ```jsx
+  <Index indexName="products" indexId="products_featured">
+    <Configure filters="featured:true" />
+    {/* ... */}
+  </Index>
+
+  <Index indexName="products" indexId="products_on_sale">
+    <Configure filters="on_sale:true" />
+    {/* ... */}
+  </Index>
+  ```
+</ParamField>
+
+<ParamField path="children" type="ReactNode">
+  The child components, typically search widgets scoped to this index.
+</ParamField>
+
+## Example
+
+### Multi-Index Search
+
+```jsx
+import { InstantSearch, Index, Hits, SearchBox } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      
+      <h2>Products</h2>
+      <Hits />
+      
+      <h2>Articles</h2>
+      <Index indexName="articles">
+        <Hits />
+      </Index>
+      
+      <h2>Categories</h2>
+      <Index indexName="categories">
+        <Hits />
+      </Index>
+    </InstantSearch>
+  );
+}
+```
+
+### Same Index with Different Configurations
+
+```jsx
+import { InstantSearch, Index, Configure, Hits } from 'react-instantsearch';
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <h2>Featured Products</h2>
+      <Index indexName="products" indexId="featured">
+        <Configure filters="featured:true" hitsPerPage={3} />
+        <Hits />
+      </Index>
+      
+      <h2>On Sale Products</h2>
+      <Index indexName="products" indexId="on_sale">
+        <Configure filters="on_sale:true" hitsPerPage={5} />
+        <Hits />
+      </Index>
+    </InstantSearch>
+  );
+}
+```
+
+### Different Sort Orders
+
+```jsx
+import { InstantSearch, Index, Hits, SortBy } from 'react-instantsearch';
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SortBy
+        items={[
+          { label: 'Relevance', value: 'products' },
+          { label: 'Price (asc)', value: 'products_price_asc' },
+          { label: 'Price (desc)', value: 'products_price_desc' },
+        ]}
+      />
+      
+      <Index indexName="products">
+        <Hits />
+      </Index>
+      
+      <Index indexName="products_price_asc">
+        <Hits />
+      </Index>
+      
+      <Index indexName="products_price_desc">
+        <Hits />
+      </Index>
+    </InstantSearch>
+  );
+}
+```
+
+## Notes
+
+<Note>
+  The `<Index>` component shares the search query with the root `<InstantSearch>` component by default. Each index maintains its own state for refinements, pagination, and other parameters.
+</Note>
+
+<Warning>
+  When using the same `indexName` multiple times, you must provide a unique `indexId` to avoid state conflicts.
+</Warning>
+
+## Related
+
+- [InstantSearch Component](/api/react/instantsearch)
+- [Configure Component](/api/react/configure)
+- [Multi-Index Search Guide](/guides/multi-index-search)

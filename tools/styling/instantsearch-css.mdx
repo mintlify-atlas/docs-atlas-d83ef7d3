@@ -1,0 +1,270 @@
+---
+title: InstantSearch.css
+description: Style your InstantSearch widgets with the official CSS library
+---
+
+InstantSearch.css is the official CSS library for styling InstantSearch-powered search experiences across all flavors.
+
+## Overview
+
+InstantSearch.css provides pre-built themes and component styles that work with:
+- InstantSearch.js
+- React InstantSearch
+- Vue InstantSearch
+- Angular InstantSearch
+
+<ParamField path="Version" type="string">
+  8.11.0
+</ParamField>
+
+<ParamField path="License" type="string">
+  MIT
+</ParamField>
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install instantsearch.css
+```
+
+```bash yarn
+yarn add instantsearch.css
+```
+</CodeGroup>
+
+## Available Themes
+
+InstantSearch.css includes three ready-to-use themes:
+
+### Algolia Theme
+
+The official Algolia-branded theme with blue accents.
+
+<CodeGroup>
+```javascript ES Module
+import 'instantsearch.css/themes/algolia.css';
+```
+
+```javascript Minified
+import 'instantsearch.css/themes/algolia-min.css';
+```
+
+```html CDN
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8.11.0/themes/algolia-min.css">
+```
+</CodeGroup>
+
+**Color palette:**
+- Primary: Algolia Blue (`rgb(0, 174, 255)`)
+- Accent: Koromiko (`rgb(255, 193, 104)`)
+- Text: Port Gore (`rgb(58, 69, 112)`)
+
+### Satellite Theme
+
+A modern, neutral theme suitable for any brand.
+
+<CodeGroup>
+```javascript ES Module
+import 'instantsearch.css/themes/satellite.css';
+```
+
+```javascript Minified
+import 'instantsearch.css/themes/satellite-min.css';
+```
+
+```html CDN
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8.11.0/themes/satellite-min.css">
+```
+</CodeGroup>
+
+### Reset Theme
+
+Minimal reset styles without any theming. Use this as a foundation for custom themes.
+
+<CodeGroup>
+```javascript ES Module
+import 'instantsearch.css/themes/reset.css';
+```
+
+```javascript Minified
+import 'instantsearch.css/themes/reset-min.css';
+```
+
+```html CDN
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8.11.0/themes/reset-min.css">
+```
+</CodeGroup>
+
+<Note>
+  The reset styles are included in both the Algolia and Satellite themes. You don't need to import the reset separately when using a full theme.
+</Note>
+
+## Quick Start
+
+### With InstantSearch.js
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { searchBox, hits } from 'instantsearch.js/es/widgets';
+import 'instantsearch.css/themes/satellite.css';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient: algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey'),
+});
+
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  hits({ container: '#hits' }),
+]);
+
+search.start();
+```
+
+### With React InstantSearch
+
+```jsx
+import { InstantSearch, SearchBox, Hits } from 'react-instantsearch';
+import 'instantsearch.css/themes/algolia.css';
+
+function App() {
+  return (
+    <InstantSearch
+      searchClient={searchClient}
+      indexName="instant_search"
+    >
+      <SearchBox />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+### With Vue InstantSearch
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient" index-name="instant_search">
+    <ais-search-box />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+
+<script>
+import 'instantsearch.css/themes/satellite.css';
+
+export default {
+  data() {
+    return {
+      searchClient: algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey'),
+    };
+  },
+};
+</script>
+```
+
+## Component Styles
+
+In addition to full themes, you can import individual component styles:
+
+### Autocomplete Component
+
+```javascript
+import 'instantsearch.css/components/autocomplete.css';
+// or minified
+import 'instantsearch.css/components/autocomplete-min.css';
+```
+
+### Chat Component
+
+```javascript
+import 'instantsearch.css/components/chat.css';
+// or minified
+import 'instantsearch.css/components/chat-min.css';
+```
+
+## Styled Widgets
+
+All InstantSearch widgets have CSS classes that work with InstantSearch.css:
+
+<CardGroup cols={3}>
+  <Card title="Search">
+    - SearchBox
+    - Autocomplete
+  </Card>
+  <Card title="Results">
+    - Hits
+    - InfiniteHits
+    - Stats
+  </Card>
+  <Card title="Filtering">
+    - RefinementList
+    - Menu
+    - HierarchicalMenu
+    - RangeSlider
+    - RangeInput
+    - ToggleRefinement
+    - NumericMenu
+    - RatingMenu
+  </Card>
+  <Card title="Navigation">
+    - Pagination
+    - Breadcrumb
+  </Card>
+  <Card title="Metadata">
+    - PoweredBy
+    - CurrentRefinements
+    - ClearRefinements
+  </Card>
+  <Card title="Advanced">
+    - DynamicWidgets
+    - GeoSearch
+    - Panel
+    - RelevantSort
+    - SortBy
+  </Card>
+</CardGroup>
+
+## Dark Mode Support
+
+InstantSearch.css includes built-in dark mode support:
+
+```html
+<!-- Enable dark mode by adding data-theme attribute -->
+<html data-theme="dark">
+  <!-- your app -->
+</html>
+```
+
+```html
+<!-- Or use a CSS class -->
+<div class="dark">
+  <!-- your search UI -->
+</div>
+```
+
+Dark mode color scheme:
+- Text: `rgb(255, 255, 255)`
+- Primary: `rgb(110, 160, 255)`
+- Background: `rgb(38, 38, 38)`
+- Border: `rgb(100, 100, 100)`
+
+## Browser Support
+
+InstantSearch.css supports the last two versions of major browsers:
+- Chrome
+- Edge
+- Firefox
+- Safari
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Themes" href="/tools/styling/custom-themes" icon="palette">
+    Learn how to create custom themes using CSS variables
+  </Card>
+  <Card title="CSS Classes" href="/tools/styling/css-classes" icon="list">
+    Explore the complete CSS class reference
+  </Card>
+</CardGroup>

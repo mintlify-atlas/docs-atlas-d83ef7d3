@@ -1,0 +1,207 @@
+---
+title: queryRuleCustomData
+---
+
+Displays custom data from Algolia Query Rules, allowing you to show banners, redirects, or custom content based on search context.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { queryRuleCustomData } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  queryRuleCustomData({
+    container: '#custom-data'
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to use for the widget.
+  
+  <Expandable title="properties">
+    <ParamField path="default" type="string | function">
+      Template to use for rendering the custom data. Receives `{ items }` where items is an array of custom data objects.
+      
+      Default: Displays JSON stringified data.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before passing them to the templates.
+  
+  ```typescript
+  (items: any[]) => any[]
+  ```
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class to add to the root element.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Display banner from custom data
+
+```javascript
+queryRuleCustomData({
+  container: '#custom-data',
+  templates: {
+    default({ items }) {
+      if (!items.length) {
+        return '';
+      }
+
+      return items.map(item => `
+        <div class="banner">
+          <img src="${item.banner}" alt="${item.title}" />
+          <h3>${item.title}</h3>
+          <p>${item.description}</p>
+        </div>
+      `).join('');
+    }
+  }
+});
+```
+
+### Display promotional message
+
+```javascript
+queryRuleCustomData({
+  container: '#custom-data',
+  templates: {
+    default({ items }) {
+      return items.map(data => {
+        if (data.type === 'promotion') {
+          return `
+            <div class="promotion">
+              <strong>${data.title}</strong>
+              <p>${data.message}</p>
+              <a href="${data.link}">Learn more</a>
+            </div>
+          `;
+        }
+        return '';
+      }).join('');
+    }
+  }
+});
+```
+
+### Redirect based on custom data
+
+```javascript
+queryRuleCustomData({
+  container: '#custom-data',
+  templates: {
+    default({ items }) {
+      items.forEach(item => {
+        if (item.redirect) {
+          window.location.href = item.redirect;
+        }
+      });
+      return '';
+    }
+  }
+});
+```
+
+### Transform items
+
+```javascript
+queryRuleCustomData({
+  container: '#custom-data',
+  transformItems(items) {
+    return items.filter(item => item.enabled !== false);
+  },
+  templates: {
+    default({ items }) {
+      return items.map(item => `
+        <div class="custom-content">
+          ${item.html}
+        </div>
+      `).join('');
+    }
+  }
+});
+```
+
+### Multiple content types
+
+```javascript
+queryRuleCustomData({
+  container: '#custom-data',
+  templates: {
+    default({ items }) {
+      return items.map(item => {
+        switch (item.type) {
+          case 'banner':
+            return `<div class="banner"><img src="${item.imageUrl}" /></div>`;
+          case 'message':
+            return `<div class="message">${item.text}</div>`;
+          case 'video':
+            return `<video src="${item.videoUrl}" controls></video>`;
+          default:
+            return '';
+        }
+      }).join('');
+    }
+  }
+});
+```
+
+## Setting up Query Rules
+
+In your Algolia dashboard:
+
+1. Go to Rules section
+2. Create a new rule
+3. Set a condition (e.g., query contains "iphone")
+4. Add custom data in the consequence:
+
+```json
+{
+  "userData": {
+    "type": "banner",
+    "title": "iPhone Sale",
+    "banner": "https://example.com/banner.jpg",
+    "description": "Get 20% off all iPhones"
+  }
+}
+```
+
+## HTML output
+
+```html
+<div class="ais-QueryRuleCustomData">
+  <!-- Custom content based on template -->
+</div>
+```
+
+## Notes
+
+- Only displays when Query Rules return custom data.
+- The widget is hidden when no custom data is available.
+- Custom data comes from the `userData` field in Query Rules consequences.
+- Perfect for banners, promotions, redirects, and merchandising.

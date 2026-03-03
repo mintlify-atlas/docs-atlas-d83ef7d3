@@ -1,0 +1,748 @@
+---
+title: 'Search state'
+description: 'Learn about search state management in InstantSearch, including UiState structure, state synchronization, and programmatic control.'
+keywords: ['ui state', 'search state', 'state management', 'uistate', 'routing']
+---
+
+Search state in InstantSearch represents the current state of your search UI. It includes the query, active filters, pagination, and all other user interactions with search widgets.
+
+## Understanding UiState
+
+The `UiState` is a plain JavaScript object that represents the complete state of your search interface. It's defined in `/home/daytona/workspace/source/packages/instantsearch.js/src/types/ui-state.ts:42-44`:
+
+```typescript
+type UiState = {
+  [indexId: string]: IndexUiState;
+};
+```
+
+Each index in your application has its own state:
+
+```typescript
+type IndexUiState = Partial<{
+  query: string;                           // Search query
+  page: number;                            // Current page
+  sortBy: string;                          // Index to sort by
+  hitsPerPage: number;                     // Results per page
+  refinementList: {                        // Multi-select facets
+    [attribute: string]: string[];
+  };
+  menu: {                                  // Single-select facets
+    [attribute: string]: string;
+  };
+  hierarchicalMenu: {                      // Hierarchical facets
+    [attribute: string]: string[];
+  };
+  range: {                                 // Numeric ranges
+    [attribute: string]: string;
+  };
+  toggle: {                                // Boolean filters
+    [attribute: string]: boolean;
+  };
+  ratingMenu: {                            // Rating filters
+    [attribute: string]: number;
+  };
+  geoSearch: {                             // Geographic search
+    boundingBox: string;
+  };
+  configure: {                             // Custom parameters
+    [key: string]: any;
+  };
+  // ... and more
+}>;
+```
+
+## Reading the current state
+
+Access the current UI state using the `getUiState()` method:
+
+<CodeGroup>
+
+```javascript JavaScript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+// After search.start()
+const currentState = search.getUiState();
+
+console.log(currentState);
+// {
+//   products: {
+//     query: 'laptop',
+//     page: 2,
+//     refinementList: {
+//       brand: ['Apple', 'Dell']
+//     }
+//   }
+// }
+```
+
+```tsx React
+import { useInstantSearch } from 'react-instantsearch';
+
+function StateDisplay() {
+  const { uiState } = useInstantSearch();
+  
+  return (
+    <div>
+      <pre>{JSON.stringify(uiState, null, 2)}</pre>
+    </div>
+  );
+}
+```
+
+```vue Vue
+<template>
+  <div>
+    <pre>{{ JSON.stringify($root.instantsearch.helper.state, null, 2) }}</pre>
+  </div>
+</template>
+```
+
+</CodeGroup>
+
+## Setting the state
+
+Update the UI state programmatically using `setUiState()`:
+
+### Direct state setting
+
+```javascript
+search.setUiState({
+  products: {
+    query: 'laptop',
+    refinementList: {
+      brand: ['Apple']
+    }
+  }
+});
+```
+
+### Functional updates
+
+Use a function for updates based on the previous state:
+
+```javascript
+search.setUiState((prevState) => ({
+  ...prevState,
+  products: {
+    ...prevState.products,
+    page: (prevState.products.page || 1) + 1,
+  }
+}));
+```
+
+### React example
+
+```tsx
+import { useInstantSearch } from 'react-instantsearch';
+
+function SearchControls() {
+  const { setUiState } = useInstantSearch();
+  
+  const clearSearch = () => {
+    setUiState((prevState) => ({
+      ...prevState,
+      products: {
+        query: '',
+      }
+    }));
+  };
+  
+  return <button onClick={clearSearch}>Clear Search</button>;
+}
+```
+
+## State structure by widget
+
+Different widgets contribute different parts to the UI state. Here's what each major widget type stores:
+
+<AccordionGroup>
+  <Accordion title="SearchBox">
+    ```typescript
+    {
+      query: string;  // The search query
+    }
+    ```
+    
+    Example:
+    ```javascript
+    { query: 'laptop' }
+    ```
+  </Accordion>
+  
+  <Accordion title="RefinementList">
+    ```typescript
+    {
+      refinementList: {
+        [attribute: string]: string[];
+      };
+    }
+    ```
+    
+    Example:
+    ```javascript
+    {
+      refinementList: {
+        brand: ['Apple', 'Samsung'],
+        color: ['Black']
+      }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Menu">
+    ```typescript
+    {
+      menu: {
+        [attribute: string]: string;
+      };
+    }
+    ```
+    
+    Example:
+    ```javascript
+    {
+      menu: {
+        category: 'Electronics'
+      }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="HierarchicalMenu">
+    ```typescript
+    {
+      hierarchicalMenu: {
+        [attribute: string]: string[];
+      };
+    }
+    ```
+    
+    Example:
+    ```javascript
+    {
+      hierarchicalMenu: {
+        categories: ['Electronics', 'Computers', 'Laptops']
+      }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Range (RangeSlider/RangeInput)">
+    ```typescript
+    {
+      range: {
+        [attribute: string]: string;
+      };
+    }
+    ```
+    
+    Example:
+    ```javascript
+    {
+      range: {
+        price: '10:500'
+      }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Pagination">
+    ```typescript
+    {
+      page: number;  // 1-indexed
+    }
+    ```
+    
+    Example:
+    ```javascript
+    { page: 2 }
+    ```
+  </Accordion>
+  
+  <Accordion title="HitsPerPage">
+    ```typescript
+    {
+      hitsPerPage: number;
+    }
+    ```
+    
+    Example:
+    ```javascript
+    { hitsPerPage: 20 }
+    ```
+  </Accordion>
+  
+  <Accordion title="SortBy">
+    ```typescript
+    {
+      sortBy: string;  // Index name
+    }
+    ```
+    
+    Example:
+    ```javascript
+    { sortBy: 'products_price_asc' }
+    ```
+  </Accordion>
+  
+  <Accordion title="ToggleRefinement">
+    ```typescript
+    {
+      toggle: {
+        [attribute: string]: boolean;
+      };
+    }
+    ```
+    
+    Example:
+    ```javascript
+    {
+      toggle: {
+        free_shipping: true,
+        on_sale: true
+      }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="RatingMenu">
+    ```typescript
+    {
+      ratingMenu: {
+        [attribute: string]: number;
+      };
+    }
+    ```
+    
+    Example:
+    ```javascript
+    {
+      ratingMenu: {
+        rating: 4
+      }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="GeoSearch">
+    ```typescript
+    {
+      geoSearch: {
+        boundingBox: string;
+      };
+    }
+    ```
+    
+    Example:
+    ```javascript
+    {
+      geoSearch: {
+        boundingBox: '48.8566,2.3522,48.8566,2.3522'
+      }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Configure">
+    ```typescript
+    {
+      configure: {
+        [parameter: string]: any;
+      };
+    }
+    ```
+    
+    Example:
+    ```javascript
+    {
+      configure: {
+        aroundLatLng: '48.8566, 2.3522',
+        aroundRadius: 5000
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Initial UI state
+
+Set an initial state when creating the InstantSearch instance:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  initialUiState: {
+    products: {
+      query: 'laptop',
+      refinementList: {
+        brand: ['Apple'],
+      },
+      page: 1,
+    },
+  },
+});
+```
+
+<Warning>
+  When using routing, `initialUiState` will be overwritten by URL parameters. The URL state takes precedence.
+</Warning>
+
+## Controlled state with `onStateChange`
+
+For complete control over state changes, use the `onStateChange` callback. This makes the instance "controlled":
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  onStateChange({ uiState, setUiState }) {
+    // Intercept and modify state changes
+    console.log('State changing to:', uiState);
+    
+    // You can validate or transform the state
+    const modifiedState = {
+      ...uiState,
+      products: {
+        ...uiState.products,
+        // Force a maximum page
+        page: Math.min(uiState.products.page || 1, 100),
+      },
+    };
+    
+    // You MUST call setUiState for the state to update
+    setUiState(modifiedState);
+  },
+});
+```
+
+<Info>
+  When using `onStateChange`, you become responsible for calling `setUiState`. The state will not update automatically.
+</Info>
+
+## Multi-index state
+
+When using multiple indices, each index has its own state under its index ID:
+
+```javascript
+const uiState = {
+  products: {
+    query: 'laptop',
+    page: 1,
+  },
+  categories: {
+    query: 'electronics',
+    refinementList: {
+      type: ['featured'],
+    },
+  },
+};
+```
+
+Example with index widgets:
+
+```javascript
+import { index } from 'instantsearch.js/es/widgets';
+
+search.addWidgets([
+  index({ indexName: 'products' }).addWidgets([
+    searchBox({ container: '#products-search' }),
+  ]),
+  
+  index({ indexName: 'categories' }).addWidgets([
+    searchBox({ container: '#categories-search' }),
+  ]),
+]);
+
+// Access state for specific index
+const productsState = search.getUiState().products;
+```
+
+## State synchronization
+
+InstantSearch keeps UI state synchronized with search parameters:
+
+<Steps>
+  <Step title="User interaction">
+    User interacts with a widget (e.g., types in SearchBox).
+  </Step>
+  
+  <Step title="Widget updates state">
+    Widget calls its refine function, updating the helper's search parameters.
+  </Step>
+  
+  <Step title="State to UiState">
+    Widgets' `getWidgetUiState` methods convert search parameters to UI state.
+  </Step>
+  
+  <Step title="Search triggered">
+    InstantSearch triggers a new search with updated parameters.
+  </Step>
+  
+  <Step title="Results rendered">
+    Widgets receive results and re-render.
+  </Step>
+</Steps>
+
+## Widget state methods
+
+Widgets implement two methods for state synchronization:
+
+### getWidgetUiState
+
+Converts search parameters to UI state (used for routing):
+
+```typescript
+getWidgetUiState(
+  uiState: IndexUiState,
+  { searchParameters }
+): IndexUiState {
+  const query = searchParameters.query || '';
+  if (query === '') return uiState;
+  
+  return {
+    ...uiState,
+    query,
+  };
+}
+```
+
+### getWidgetSearchParameters
+
+Converts UI state to search parameters (used when loading from URL):
+
+```typescript
+getWidgetSearchParameters(
+  searchParameters: SearchParameters,
+  { uiState }
+): SearchParameters {
+  return searchParameters.setQueryParameter(
+    'query',
+    uiState.query || ''
+  );
+}
+```
+
+Example from SearchBox connector (from `/home/daytona/workspace/source/packages/instantsearch.js/src/connectors/search-box/connectSearchBox.ts:156-171`):
+
+```typescript
+getWidgetUiState(uiState, { searchParameters }) {
+  const query = searchParameters.query || '';
+  if (query === '' || (uiState && uiState.query === query)) {
+    return uiState;
+  }
+  return {
+    ...uiState,
+    query,
+  };
+},
+
+getWidgetSearchParameters(searchParameters, { uiState }) {
+  return searchParameters.setQueryParameter('query', uiState.query || '');
+}
+```
+
+## State persistence
+
+UI state can be persisted in several ways:
+
+### URL (Routing)
+
+The most common approach - state is automatically synced with the URL:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: true,
+});
+```
+
+See the [routing documentation](/concepts/routing) for details.
+
+### Local Storage
+
+Save and restore state from localStorage:
+
+```javascript
+// Save state on change
+search.on('render', () => {
+  const state = search.getUiState();
+  localStorage.setItem('searchState', JSON.stringify(state));
+});
+
+// Restore on initialization
+const savedState = localStorage.getItem('searchState');
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  initialUiState: savedState ? JSON.parse(savedState) : {},
+});
+```
+
+### Server state
+
+For server-side rendering, state is serialized and hydrated:
+
+```javascript
+// Server
+const serverState = await getServerState(<App />, { renderToString });
+
+// Client
+<InstantSearchSSRProvider {...serverState}>
+  <App />
+</InstantSearchSSRProvider>
+```
+
+See the [SSR documentation](/concepts/server-side-rendering) for details.
+
+## Debugging state
+
+Monitor state changes for debugging:
+
+```javascript
+// Log all state changes
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  onStateChange({ uiState, setUiState }) {
+    console.log('State changing:', uiState);
+    setUiState(uiState);
+  },
+});
+
+// Or listen to render events
+search.on('render', () => {
+  console.log('Current state:', search.getUiState());
+});
+```
+
+React DevTools integration:
+
+```tsx
+import { useInstantSearch } from 'react-instantsearch';
+
+function DebugState() {
+  const { uiState, setUiState } = useInstantSearch();
+  
+  // State is visible in React DevTools
+  return null;
+}
+```
+
+## Best practices
+
+<CardGroup cols={2}>
+  <Card title="Use functional updates" icon="function">
+    When updating state based on previous state, use the functional form of `setUiState` to avoid race conditions.
+    
+    ```javascript
+    setUiState(prev => ({
+      ...prev,
+      products: { ...prev.products, page: 2 }
+    }));
+    ```
+  </Card>
+  
+  <Card title="Avoid direct state mutation" icon="ban">
+    Never mutate the state object directly. Always create new objects.
+    
+    ```javascript
+    // ❌ Bad
+    const state = search.getUiState();
+    state.products.page = 2;
+    
+    // ✅ Good
+    search.setUiState(prev => ({
+      ...prev,
+      products: { ...prev.products, page: 2 }
+    }));
+    ```
+  </Card>
+  
+  <Card title="Initialize with meaningful defaults" icon="play">
+    Use `initialUiState` to set up a good default search experience.
+    
+    ```javascript
+    initialUiState: {
+      products: {
+        hitsPerPage: 20,
+        sortBy: 'products_popular'
+      }
+    }
+    ```
+  </Card>
+  
+  <Card title="Type your state" icon="code">
+    In TypeScript, define custom UI state types for better type safety.
+    
+    ```typescript
+    type MyUiState = {
+      products: {
+        query?: string;
+        refinementList?: {
+          brand?: string[];
+        };
+      };
+    };
+    ```
+  </Card>
+</CardGroup>
+
+## Common patterns
+
+### Reset all refinements
+
+```javascript
+function resetSearch() {
+  search.setUiState((prevState) => ({
+    ...prevState,
+    products: {
+      query: prevState.products.query, // Keep the query
+    },
+  }));
+}
+```
+
+### Load a saved search
+
+```javascript
+function loadSavedSearch(savedState) {
+  search.setUiState({
+    products: savedState,
+  });
+}
+```
+
+### Sync state between instances
+
+```javascript
+const search1 = instantsearch({ /* ... */ });
+const search2 = instantsearch({ /* ... */ });
+
+search1.on('render', () => {
+  const state = search1.getUiState();
+  search2.setUiState(state);
+});
+```
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="Routing" icon="route" href="/concepts/routing">
+    Synchronize state with URLs
+  </Card>
+  <Card title="InstantSearch instance" icon="magnifying-glass" href="/concepts/instantsearch-instance">
+    Learn about the main instance
+  </Card>
+  <Card title="Widgets" icon="puzzle-piece" href="/concepts/widgets">
+    Understand the widget system
+  </Card>
+  <Card title="Server-side rendering" icon="server" href="/concepts/server-side-rendering">
+    State management in SSR
+  </Card>
+</CardGroup>

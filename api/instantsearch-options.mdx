@@ -1,0 +1,466 @@
+---
+title: InstantSearchOptions
+description: Configuration options for the InstantSearch instance
+---
+
+The `InstantSearchOptions` type defines all configuration options available when creating an InstantSearch instance.
+
+## Type Signature
+
+```typescript
+type InstantSearchOptions<
+  TUiState extends UiState = UiState,
+  TRouteState = TUiState
+> = {
+  indexName?: string;
+  compositionID?: string;
+  searchClient: SearchClient | CompositionClient;
+  numberLocale?: string;
+  searchFunction?: (helper: AlgoliaSearchHelper) => void;
+  onStateChange?: (params: {
+    uiState: TUiState;
+    setUiState: (
+      uiState: TUiState | ((previousUiState: TUiState) => TUiState)
+    ) => void;
+  }) => void;
+  initialUiState?: TUiState;
+  stalledSearchDelay?: number;
+  routing?: RouterProps<TUiState, TRouteState> | boolean;
+  insights?: InsightsProps | boolean;
+  insightsClient?: AlgoliaInsightsClient;
+  future?: {
+    preserveSharedStateOnUnmount?: boolean;
+    persistHierarchicalRootCount?: boolean;
+  };
+}
+```
+
+## Required Options
+
+<ParamField path="searchClient" type="SearchClient | CompositionClient" required>
+  The search client to plug to InstantSearch.js. This is the only required option.
+
+  **Using Algolia's default search client:**
+
+  ```javascript
+  import algoliasearch from 'algoliasearch/lite';
+
+  const searchClient = algoliasearch(
+    'YourApplicationID',
+    'YourSearchOnlyAPIKey'
+  );
+
+  instantsearch({
+    indexName: 'products',
+    searchClient
+  });
+  ```
+
+  **Using a custom search client:**
+
+  ```javascript
+  const customSearchClient = {
+    search(requests) {
+      // Fetch and return search results based on requests
+      return fetch('/api/search', {
+        method: 'POST',
+        body: JSON.stringify({ requests })
+      }).then(res => res.json());
+    },
+    searchForFacetValues(requests) {
+      // Fetch and return facet values based on requests
+      return fetch('/api/facets', {
+        method: 'POST',
+        body: JSON.stringify({ requests })
+      }).then(res => res.json());
+    }
+  };
+
+  instantsearch({
+    indexName: 'products',
+    searchClient: customSearchClient
+  });
+  ```
+</ParamField>
+
+## Index Configuration
+
+<ParamField path="indexName" type="string">
+  The name of the main index. If no `indexName` is provided, you must manually add an index widget.
+
+  ```javascript
+  instantsearch({
+    indexName: 'products',
+    searchClient
+  });
+  ```
+</ParamField>
+
+<ParamField path="compositionID" type="string">
+  The objectID of the composition. If this is provided, the composition API will be used for search.
+
+  <Warning>
+    Multi-index search is not supported when using `compositionID`.
+  </Warning>
+
+  ```javascript
+  instantsearch({
+    compositionID: 'my_composition_id',
+    searchClient
+  });
+  ```
+</ParamField>
+
+## State Management
+
+<ParamField path="initialUiState" type="TUiState">
+  Injects an initial UI state to the InstantSearch instance. Use this option to provide an initial state to widgets.
+
+  <Note>
+    The state is only used for the first search. To unconditionally pass additional parameters to the Algolia API, use the `configure` widget.
+  </Note>
+
+  ```javascript
+  instantsearch({
+    indexName: 'products',
+    searchClient,
+    initialUiState: {
+      products: {
+        query: 'laptop',
+        page: 1,
+        refinementList: {
+          brand: ['Apple', 'Samsung']
+        }
+      }
+    }
+  });
+  ```
+</ParamField>
+
+<ParamField path="onStateChange" type="function">
+  Function called when the state changes. Using this function makes the instance controlled, meaning you become responsible for updating the UI state with `setUiState`.
+
+  **Parameters:**
+  - `uiState` (`TUiState`) - The next UI state
+  - `setUiState` (`function`) - Function to update the UI state
+
+  ```javascript
+  instantsearch({
+    indexName: 'products',
+    searchClient,
+    onStateChange({ uiState, setUiState }) {
+      // Log state changes
+      console.log('State changed:', uiState);
+      
+      // Apply custom transformations
+      const transformedState = {
+        ...uiState,
+        products: {
+          ...uiState.products,
+          // Add custom logic here
+        }
+      };
+      
+      // Update the UI state
+      setUiState(transformedState);
+    }
+  });
+  ```
+</ParamField>
+
+## Routing
+
+<ParamField path="routing" type="RouterProps<TUiState, TRouteState> | boolean" default="false">
+  Router configuration used to save the UI state into the URL or any other client-side persistence. Pass `true` to use default URL options.
+
+  **Simple routing (boolean):**
+
+  ```javascript
+  instantsearch({
+    indexName: 'products',
+    searchClient,
+    routing: true
+  });
+  ```
+
+  **Advanced routing configuration:**
+
+  ```javascript
+  instantsearch({
+    indexName: 'products',
+    searchClient,
+    routing: {
+      router: instantsearch.routers.history(),
+      stateMapping: instantsearch.stateMappings.simple()
+    }
+  });
+  ```
+
+  See the [routing guide](/guides/routing) for more details.
+</ParamField>
+
+## Insights and Analytics
+
+<ParamField path="insights" type="InsightsProps | boolean" default="false">
+  Enables the Insights middleware and loads the Insights library if not already loaded.
+
+  The Insights middleware automatically sends view and click events, and lets you set up custom events.
+
+  **Simple insights (boolean):**
+
+  ```javascript
+  instantsearch({
+    indexName: 'products',
+    searchClient,
+    insights: true
+  });
+  ```
+
+  **Advanced insights configuration:**
+
+  ```javascript
+  instantsearch({
+    indexName: 'products',
+    searchClient,
+    insights: {
+      insightsClient: window.aa,
+      insightsInitParams: {
+        useCookie: true,
+        cookieDuration: 30 * 24 * 60 * 60 * 1000 // 30 days
+      }
+    }
+  });
+  ```
+</ParamField>
+
+<ParamField path="insightsClient" type="AlgoliaInsightsClient">
+  <Warning>
+    **Deprecated.** This property is still supported in 4.x releases, but not further. Use the `insights` middleware instead.
+  </Warning>
+
+  The instance of search-insights to use for sending insights events inside widgets.
+
+  See the [migration guide](https://www.algolia.com/doc/guides/getting-insights-and-analytics/search-analytics/click-through-and-conversions/how-to/send-click-and-conversion-events-with-instantsearch/js/) for more information.
+</ParamField>
+
+## UI Customization
+
+<ParamField path="numberLocale" type="string">
+  The locale used to display numbers. This will be passed to `Number.prototype.toLocaleString()`.
+
+  ```javascript
+  instantsearch({
+    indexName: 'products',
+    searchClient,
+    numberLocale: 'fr-FR' // Format numbers using French locale
+  });
+  ```
+
+  **Example output:**
+  - `en-US`: 1,234.56
+  - `fr-FR`: 1 234,56
+  - `de-DE`: 1.234,56
+</ParamField>
+
+## Search Behavior
+
+<ParamField path="stalledSearchDelay" type="number" default="200">
+  Time in milliseconds before a search is considered stalled. When a search exceeds this delay, the `status` property changes to `"stalled"`.
+
+  ```javascript
+  instantsearch({
+    indexName: 'products',
+    searchClient,
+    stalledSearchDelay: 500 // Wait 500ms before considering search stalled
+  });
+
+  search.on('render', () => {
+    if (search.status === 'stalled') {
+      console.log('Search is taking longer than expected');
+    }
+  });
+  ```
+</ParamField>
+
+<ParamField path="searchFunction" type="(helper: AlgoliaSearchHelper) => void">
+  <Warning>
+    **Deprecated.** Use `onStateChange` instead.
+  </Warning>
+
+  A hook that will be called each time a search needs to be done. You're responsible for calling `helper.search()`.
+
+  This option allows you to avoid doing searches at page load, for example.
+
+  ```javascript
+  instantsearch({
+    indexName: 'products',
+    searchClient,
+    searchFunction(helper) {
+      const query = helper.state.query;
+      
+      if (query === '') {
+        // Don't search if query is empty
+        return;
+      }
+      
+      helper.search();
+    }
+  });
+  ```
+</ParamField>
+
+## Future Flags
+
+<ParamField path="future" type="object">
+  Options for opting into future breaking changes before the next major version.
+
+  <ParamField path="future.preserveSharedStateOnUnmount" type="boolean" default="false">
+    Changes the way `dispose` is used in the InstantSearch lifecycle.
+
+    - If `false` (default): Each widget unmounting will remove its state, even if there are multiple widgets reading that UI state.
+    - If `true`: Each widget unmounting will only remove its own state if it's the last of its type. This allows dynamically adding and removing widgets without losing their state.
+
+    ```javascript
+    instantsearch({
+      indexName: 'products',
+      searchClient,
+      future: {
+        preserveSharedStateOnUnmount: true
+      }
+    });
+    ```
+
+    <Note>
+      This will become the default behavior in the next major version.
+    </Note>
+  </ParamField>
+
+  <ParamField path="future.persistHierarchicalRootCount" type="boolean" default="false">
+    Changes the way root levels of hierarchical facets have their count displayed.
+
+    - If `false` (default): The count of the refined root level is updated to match the count of the actively refined parent level.
+    - If `true`: The count of the root level stays the same as the count of all children levels.
+
+    ```javascript
+    instantsearch({
+      indexName: 'products',
+      searchClient,
+      future: {
+        persistHierarchicalRootCount: true
+      }
+    });
+    ```
+
+    <Note>
+      This will become the default behavior in the next major version.
+    </Note>
+  </ParamField>
+</ParamField>
+
+## Complete Example
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import algoliasearch from 'algoliasearch/lite';
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+const search = instantsearch({
+  // Index configuration
+  indexName: 'products',
+  searchClient,
+
+  // State management
+  initialUiState: {
+    products: {
+      query: 'laptop',
+      refinementList: {
+        brand: ['Apple']
+      }
+    }
+  },
+  onStateChange({ uiState, setUiState }) {
+    // Track state changes
+    console.log('State:', uiState);
+    setUiState(uiState);
+  },
+
+  // Routing
+  routing: {
+    router: instantsearch.routers.history(),
+    stateMapping: instantsearch.stateMappings.simple()
+  },
+
+  // Insights
+  insights: {
+    insightsClient: window.aa,
+    insightsInitParams: {
+      useCookie: true
+    }
+  },
+
+  // UI customization
+  numberLocale: 'en-US',
+  stalledSearchDelay: 300,
+
+  // Future flags
+  future: {
+    preserveSharedStateOnUnmount: true,
+    persistHierarchicalRootCount: false
+  }
+});
+
+search.start();
+```
+
+## TypeScript Example
+
+```typescript
+import instantsearch from 'instantsearch.js';
+import algoliasearch from 'algoliasearch/lite';
+import type { InstantSearchOptions, UiState } from 'instantsearch.js';
+
+interface ProductsUiState extends UiState {
+  products: {
+    query?: string;
+    page?: number;
+    refinementList?: {
+      brand?: string[];
+      category?: string[];
+    };
+    range?: {
+      price?: {
+        min?: number;
+        max?: number;
+      };
+    };
+  };
+}
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+const options: InstantSearchOptions<ProductsUiState> = {
+  indexName: 'products',
+  searchClient,
+  initialUiState: {
+    products: {
+      query: '',
+      refinementList: {
+        brand: []
+      }
+    }
+  },
+  routing: true,
+  insights: true
+};
+
+const search = instantsearch<ProductsUiState>(options);
+search.start();
+```

@@ -1,0 +1,433 @@
+---
+title: Middlewares
+description: Extend InstantSearch with custom behavior and integrations
+---
+
+Middlewares allow you to extend InstantSearch with custom behavior, analytics tracking, and third-party integrations. They hook into the search lifecycle to observe or modify the search flow.
+
+## Available Middlewares
+
+<CardGroup cols={2}>
+  <Card title="createInsightsMiddleware" icon="chart-line">
+    Integrate Algolia Insights for click and conversion analytics
+  </Card>
+  <Card title="createRouterMiddleware" icon="route">
+    Advanced routing customization
+  </Card>
+  <Card title="createMetadataMiddleware" icon="tag">
+    Add metadata to search requests
+  </Card>
+</CardGroup>
+
+## createInsightsMiddleware
+
+The Insights middleware integrates Algolia Insights to track user interactions and enable personalization features.
+
+### Usage
+
+```javascript
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+import instantsearch from 'instantsearch.js';
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: window.aa,
+});
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+search.use(insightsMiddleware);
+```
+
+### Options
+
+<ParamField path="insightsClient" type="Function">
+  The Algolia Insights client instance. If not provided, the middleware will look for `window.aa`.
+  
+  ```javascript
+  import aa from 'search-insights';
+  
+  createInsightsMiddleware({
+    insightsClient: aa,
+  })
+  ```
+</ParamField>
+
+<ParamField path="insightsInitParams" type="object">
+  Configuration passed to `aa('init', ...)`.
+  
+  <Expandable title="Init Parameters">
+    <ParamField path="useCookie" type="boolean" default="true">
+      Whether to use cookies for anonymous user tracking.
+    </ParamField>
+    
+    <ParamField path="cookieDuration" type="number" default="15552000000">
+      Cookie duration in milliseconds (default: 6 months).
+    </ParamField>
+    
+    <ParamField path="userToken" type="string">
+      User identifier for authenticated users.
+    </ParamField>
+  </Expandable>
+  
+  ```javascript
+  createInsightsMiddleware({
+    insightsClient: window.aa,
+    insightsInitParams: {
+      useCookie: true,
+      userToken: 'user-123',
+    },
+  })
+  ```
+</ParamField>
+
+<ParamField path="onEvent" type="Function">
+  Callback function called before sending events to Insights.
+  
+  ```javascript
+  createInsightsMiddleware({
+    insightsClient: window.aa,
+    onEvent: (event, insightsClient) => {
+      console.log('Sending event:', event);
+      // Optionally send to custom analytics
+      insightsClient(event.insightsMethod, event.payload);
+    },
+  })
+  ```
+</ParamField>
+
+### Examples
+
+#### Basic Insights Integration
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+import { searchBox, hits } from 'instantsearch.js/es/widgets';
+
+// Load Insights library
+!function(e,a,t,n,s,i,c){e.AlgoliaAnalyticsObject=s,e[s]=e[s]||function(){
+(e[s].queue=e[s].queue||[]).push(arguments)},i=a.createElement(t),c=a.getElementsByTagName(t)[0],
+i.async=1,i.src=n,c.parentNode.insertBefore(i,c)
+}(window,document,"script","https://cdn.jsdelivr.net/npm/search-insights@2/dist/search-insights.min.js","aa");
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: window.aa,
+});
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+search.use(insightsMiddleware);
+
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  hits({ container: '#hits' }),
+]);
+
+search.start();
+```
+
+#### Authenticated Users
+
+```javascript
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+
+const userId = getCurrentUserId(); // Your auth logic
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: window.aa,
+  insightsInitParams: {
+    userToken: userId,
+    useCookie: false, // Don't use cookies for authenticated users
+  },
+});
+
+search.use(insightsMiddleware);
+```
+
+#### Custom Event Handling
+
+```javascript
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: window.aa,
+  onEvent: (event, insightsClient) => {
+    // Send to Algolia Insights
+    insightsClient(event.insightsMethod, event.payload);
+    
+    // Also send to Google Analytics
+    if (event.insightsMethod === 'clickedObjectIDsAfterSearch') {
+      gtag('event', 'select_item', {
+        items: event.payload.objectIDs.map(id => ({ id })),
+      });
+    }
+    
+    // Or send to custom analytics
+    fetch('/api/analytics', {
+      method: 'POST',
+      body: JSON.stringify(event),
+    });
+  },
+});
+
+search.use(insightsMiddleware);
+```
+
+#### Personalization Setup
+
+```javascript
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+import { configure } from 'instantsearch.js/es/widgets';
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: window.aa,
+  insightsInitParams: {
+    useCookie: true,
+  },
+});
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+search.use(insightsMiddleware);
+
+// Enable personalization
+search.addWidgets([
+  configure({
+    enablePersonalization: true,
+    userToken: 'user-123', // Synced automatically by middleware
+  }),
+]);
+```
+
+## createRouterMiddleware
+
+Advanced middleware for custom routing behavior.
+
+```javascript
+import { createRouterMiddleware } from 'instantsearch.js/es/middlewares';
+
+const routerMiddleware = createRouterMiddleware({
+  router: customRouter,
+  stateMapping: customStateMapping,
+});
+
+search.use(routerMiddleware);
+```
+
+<Note>
+  Most use cases are covered by the `routing` option in `instantsearch()`. Use this middleware only for advanced customization.
+</Note>
+
+## createMetadataMiddleware
+
+Add custom metadata to search requests.
+
+```javascript
+import { createMetadataMiddleware } from 'instantsearch.js/es/middlewares';
+
+const metadataMiddleware = createMetadataMiddleware({
+  userAgents: [{
+    name: 'my-app',
+    version: '1.0.0',
+  }],
+});
+
+search.use(metadataMiddleware);
+```
+
+## Custom Middleware
+
+You can create custom middlewares to hook into the search lifecycle:
+
+```javascript
+const customMiddleware = ({ instantSearchInstance }) => {
+  return {
+    onStateChange({ uiState }) {
+      console.log('State changed:', uiState);
+    },
+    subscribe() {
+      console.log('Middleware subscribed');
+    },
+    started() {
+      console.log('Search started');
+    },
+    unsubscribe() {
+      console.log('Middleware unsubscribed');
+    },
+  };
+};
+
+search.use(customMiddleware);
+```
+
+### Middleware Lifecycle Hooks
+
+<ParamField path="onStateChange" type="Function">
+  Called when the UI state changes.
+  
+  ```javascript
+  onStateChange({ uiState, setUiState }) {
+    console.log('Current state:', uiState);
+    // Optionally modify state
+    setUiState(uiState);
+  }
+  ```
+</ParamField>
+
+<ParamField path="subscribe" type="Function">
+  Called when the middleware is added to InstantSearch.
+  
+  ```javascript
+  subscribe() {
+    console.log('Middleware initialized');
+  }
+  ```
+</ParamField>
+
+<ParamField path="started" type="Function">
+  Called when InstantSearch is started.
+  
+  ```javascript
+  started() {
+    console.log('Search is ready');
+  }
+  ```
+</ParamField>
+
+<ParamField path="unsubscribe" type="Function">
+  Called when the middleware is removed or InstantSearch is disposed.
+  
+  ```javascript
+  unsubscribe() {
+    console.log('Cleanup');
+  }
+  ```
+</ParamField>
+
+## Middleware Examples
+
+### Analytics Tracking
+
+```javascript
+const analyticsMiddleware = ({ instantSearchInstance }) => {
+  return {
+    onStateChange({ uiState }) {
+      // Track search queries
+      if (uiState.products?.query) {
+        gtag('event', 'search', {
+          search_term: uiState.products.query,
+        });
+      }
+      
+      // Track filter changes
+      if (uiState.products?.refinementList) {
+        gtag('event', 'filter', {
+          filters: JSON.stringify(uiState.products.refinementList),
+        });
+      }
+    },
+  };
+};
+
+search.use(analyticsMiddleware);
+```
+
+### State Persistence
+
+```javascript
+const persistenceMiddleware = () => {
+  return {
+    onStateChange({ uiState }) {
+      // Save to localStorage
+      localStorage.setItem('searchState', JSON.stringify(uiState));
+    },
+    started() {
+      // Restore from localStorage
+      const savedState = localStorage.getItem('searchState');
+      if (savedState) {
+        search.setUiState(JSON.parse(savedState));
+      }
+    },
+  };
+};
+
+search.use(persistenceMiddleware);
+```
+
+### Debug Logger
+
+```javascript
+const debugMiddleware = ({ instantSearchInstance }) => {
+  return {
+    subscribe() {
+      instantSearchInstance.on('render', () => {
+        console.log('UI rendered');
+      });
+      
+      instantSearchInstance.mainHelper.on('result', ({ results }) => {
+        console.log('Search results:', results);
+      });
+    },
+    
+    onStateChange({ uiState }) {
+      console.log('State changed:', uiState);
+    },
+  };
+};
+
+search.use(debugMiddleware);
+```
+
+## Using Middlewares
+
+### Add Middleware
+
+```javascript
+const middleware = createInsightsMiddleware({ insightsClient: aa });
+search.use(middleware);
+```
+
+### Remove Middleware
+
+```javascript
+search.unuse(middleware);
+```
+
+### Multiple Middlewares
+
+```javascript
+const insightsMiddleware = createInsightsMiddleware({ insightsClient: aa });
+const analyticsMiddleware = createAnalyticsMiddleware();
+
+search.use(insightsMiddleware, analyticsMiddleware);
+```
+
+## Middleware Type
+
+```typescript
+type Middleware = (options: {
+  instantSearchInstance: InstantSearch;
+}) => {
+  onStateChange?(options: {
+    uiState: UiState;
+    setUiState: (uiState: UiState) => void;
+  }): void;
+  subscribe?(): void;
+  started?(): void;
+  unsubscribe?(): void;
+};
+```
+
+## Related
+
+- [InstantSearch.js API](/api/instantsearch-js/overview)
+- [Insights Events Guide](/guides/insights-events)

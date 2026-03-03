@@ -1,0 +1,171 @@
+---
+title: 'React Hooks Overview'
+description: 'Build custom search UI with React InstantSearch hooks'
+---
+
+React InstantSearch provides hooks that let you build custom search components with full control over the rendering.
+
+## Core Hooks
+
+<CardGroup cols={2}>
+  <Card title="useInstantSearch" icon="magnifying-glass" href="/api/react/hooks/use-instant-search">
+    Access the InstantSearch instance and search state
+  </Card>
+  <Card title="useSearchBox" icon="input-text" href="/api/react/hooks/use-search-box">
+    Build a custom search box
+  </Card>
+  <Card title="useHits" icon="list" href="/api/react/hooks/use-hits">
+    Access search results
+  </Card>
+  <Card title="useInfiniteHits" icon="arrow-down" href="/api/react/hooks/use-infinite-hits">
+    Build infinite scroll for results
+  </Card>
+  <Card title="useRefinementList" icon="filter" href="/api/react/hooks/use-refinement-list">
+    Build custom refinement lists
+  </Card>
+  <Card title="useMenu" icon="bars" href="/api/react/hooks/use-menu">
+    Build custom menu navigation
+  </Card>
+  <Card title="usePagination" icon="page" href="/api/react/hooks/use-pagination">
+    Build custom pagination
+  </Card>
+</CardGroup>
+
+## Installation
+
+```bash
+npm install react-instantsearch
+```
+
+## Basic Usage
+
+```jsx
+import { InstantSearch } from 'react-instantsearch';
+import { useSearchBox, useHits } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey');
+
+function CustomSearchBox() {
+  const { query, refine } = useSearchBox();
+
+  return (
+    <input
+      type="search"
+      value={query}
+      onChange={(e) => refine(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+}
+
+function CustomHits() {
+  const { items } = useHits();
+
+  return (
+    <div>
+      {items.map((item) => (
+        <div key={item.objectID}>
+          <h3>{item.name}</h3>
+          <p>{item.description}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <CustomSearchBox />
+      <CustomHits />
+    </InstantSearch>
+  );
+}
+```
+
+## Why Use Hooks?
+
+Hooks give you full control over your search UI:
+
+- **Custom Rendering**: Build components that match your design system
+- **Direct Access**: Get direct access to search state and functions
+- **Composability**: Combine multiple hooks in a single component
+- **TypeScript Support**: Full type safety for your search UI
+
+## Available Hooks
+
+### State Management
+
+- **useInstantSearch**: Access the InstantSearch instance, UI state, and global search state
+
+### Search Box
+
+- **useSearchBox**: Build custom search inputs with query management
+
+### Results
+
+- **useHits**: Display paginated search results
+- **useInfiniteHits**: Build infinite scroll results
+
+### Refinements
+
+- **useRefinementList**: Multi-select faceted filters
+- **useMenu**: Single-select faceted navigation
+- **useToggleRefinement**: Boolean filters
+- **useNumericMenu**: Numeric range filters
+- **useRangeInput**: Custom range inputs
+- **useRangeSlider**: Range slider filters
+
+### Navigation
+
+- **usePagination**: Page-based navigation
+- **useBreadcrumb**: Hierarchical navigation breadcrumbs
+- **useHierarchicalMenu**: Hierarchical menu navigation
+
+### Sorting & Configuration
+
+- **useSortBy**: Index sorting
+- **useConfigure**: Dynamic search parameter configuration
+
+### Metadata
+
+- **useStats**: Search statistics
+- **useCurrentRefinements**: Active filters
+
+## TypeScript Support
+
+All hooks support TypeScript with generic type parameters:
+
+```tsx
+import { useHits } from 'react-instantsearch';
+
+interface Product {
+  objectID: string;
+  name: string;
+  price: number;
+  image: string;
+}
+
+function ProductHits() {
+  const { items } = useHits<Product>();
+
+  return (
+    <div>
+      {items.map((item) => (
+        <div key={item.objectID}>
+          <img src={item.image} alt={item.name} />
+          <h3>{item.name}</h3>
+          <p>${item.price}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Learn More
+
+- [Building Custom Widgets Guide](/guides/building-custom-widgets)
+- [InstantSearch Components](/api/react/overview)
+- [TypeScript Guide](/guides/typescript)

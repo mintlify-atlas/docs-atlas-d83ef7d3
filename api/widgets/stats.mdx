@@ -1,0 +1,96 @@
+---
+title: stats
+---
+
+Displays useful insights about the current search results, including the number of hits and processing time.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { stats } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  stats({
+    container: '#stats'
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to use for the widget.
+  
+  <Expandable title="properties">
+    <ParamField path="text" type="string | function">
+      Template for the stats text. Receives `nbHits`, `nbSortedHits`, `areHitsSorted`, `nbPages`, `page`, `processingTimeMS`, `query`, `hitsPerPage`, and boolean helpers: `hasManyResults`, `hasNoResults`, `hasOneResult`, `hasNoSortedResults`, `hasOneSortedResults`, `hasManySortedResults`.
+      
+      Default: Displays results count and processing time.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class to add to the root element.
+    </ParamField>
+    
+    <ParamField path="text" type="string | string[]">
+      CSS class to add to the text span element.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Custom template
+
+```javascript
+stats({
+  container: '#stats',
+  templates: {
+    text({ nbHits, processingTimeMS, nbSortedHits, areHitsSorted }) {
+      return `Found ${nbHits.toLocaleString()} results in ${processingTimeMS}ms`;
+    }
+  }
+});
+```
+
+### With sorted results
+
+```javascript
+stats({
+  container: '#stats',
+  templates: {
+    text(props) {
+      if (props.areHitsSorted) {
+        return `${props.nbSortedHits} relevant results (out of ${props.nbHits})`;
+      }
+      return `${props.nbHits} results`;
+    }
+  }
+});
+```
+
+## HTML output
+
+```html
+<div class="ais-Stats">
+  <span class="ais-Stats-text">1,000 results found in 2ms</span>
+</div>
+```

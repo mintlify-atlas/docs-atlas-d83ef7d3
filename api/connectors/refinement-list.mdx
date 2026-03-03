@@ -1,0 +1,144 @@
+---
+title: "connectRefinementList"
+description: "Build a custom widget for multi-select faceted filtering"
+---
+
+The **RefinementList** connector provides the logic to build a custom widget that lets users filter results based on facet values with multi-select capability.
+
+<Note>
+  The attribute passed as `attribute` must be present in **attributesForFaceting** on the Algolia dashboard or configured via the API.
+</Note>
+
+## Usage
+
+```javascript
+import { connectRefinementList } from 'instantsearch.js/es/connectors';
+
+const customRefinementList = connectRefinementList(
+  (renderOptions, isFirstRender) => {
+    const { items, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <ul>
+        ${items.map(item => `
+          <li>
+            <input 
+              type="checkbox" 
+              value="${item.value}"
+              ${item.isRefined ? 'checked' : ''}
+            />
+            ${item.label} (${item.count})
+          </li>
+        `).join('')}
+      </ul>
+    `;
+    
+    container.querySelectorAll('input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        refine(e.target.value);
+      });
+    });
+  }
+);
+
+search.addWidgets([
+  customRefinementList({
+    container: document.querySelector('#refinement-list'),
+    attribute: 'brand',
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="attribute" type="string" required>
+  The name of the attribute in the records.
+</ParamField>
+
+<ParamField path="operator" type="'and' | 'or'" default="'or'">
+  How the filters are combined together.
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  The max number of items to display.
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to display a button that expands the number of items.
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  The max number of items to display when showing more items.
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | function" default="['isRefined', 'count:desc', 'name:asc']">
+  How to sort refinements. Possible values: `count`, `isRefined`, `name:asc`, `name:desc`.
+  
+  You can also use a sort function that behaves like the standard JavaScript [compareFunction](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Syntax).
+</ParamField>
+
+<ParamField path="escapeFacetValues" type="boolean" default="true">
+  Escapes the content of the facet values.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<RefinementListItem>">
+  The list of filtering values returned from Algolia API.
+  
+  Each item has:
+  - `value`: The value of the refinement list item
+  - `label`: Human-readable value of the item
+  - `highlighted`: Human-readable highlighted value
+  - `count`: Number of matched results after refinement is applied
+  - `isRefined`: Indicates if the list item is refined
+</ParamField>
+
+<ParamField path="refine" type="(value: string) => void">
+  Toggles the selected refinement.
+</ParamField>
+
+<ParamField path="searchForItems" type="(query: string) => void">
+  Searches for values inside the list.
+</ParamField>
+
+<ParamField path="isFromSearch" type="boolean">
+  `true` if the values are from an index search.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  `true` if a refinement can be applied.
+</ParamField>
+
+<ParamField path="isShowingMore" type="boolean">
+  `true` if the menu is displaying all items.
+</ParamField>
+
+<ParamField path="toggleShowMore" type="() => void">
+  Toggles the number of values displayed between `limit` and `showMoreLimit`.
+</ParamField>
+
+<ParamField path="canToggleShowMore" type="boolean">
+  `true` if the toggleShowMore button can be activated.
+</ParamField>
+
+<ParamField path="hasExhaustiveItems" type="boolean">
+  Indicates whether the results are exhaustive (complete).
+</ParamField>
+
+<ParamField path="createURL" type="(value: string) => string">
+  Creates the URL for the next state for a selected refinement.
+</ParamField>
+
+<ParamField path="sendEvent" type="function">
+  Sends an event to the Insights middleware.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

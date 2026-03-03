@@ -1,0 +1,492 @@
+---
+title: CSS Class Reference
+description: Complete reference of CSS classes for InstantSearch widgets
+---
+
+All InstantSearch widgets use BEM-style CSS class names with the `ais-` prefix.
+
+## Class Naming Convention
+
+InstantSearch.css follows the BEM (Block Element Modifier) methodology:
+
+- **Block**: `.ais-WidgetName`
+- **Element**: `.ais-WidgetName-element`
+- **Modifier**: `.ais-WidgetName--modifier`
+- **State**: `.ais-WidgetName-element--state`
+
+## Core Widgets
+
+### SearchBox
+
+The search input field widget.
+
+```css
+.ais-SearchBox { } /* Container */
+.ais-SearchBox-form { } /* Form element */
+.ais-SearchBox-input { } /* Input field */
+.ais-SearchBox-submit { } /* Submit button */
+.ais-SearchBox-submitIcon { } /* Submit icon */
+.ais-SearchBox-reset { } /* Reset button */
+.ais-SearchBox-resetIcon { } /* Reset icon */
+.ais-SearchBox-loadingIndicator { } /* Loading spinner */
+.ais-SearchBox-loadingIcon { } /* Loading icon */
+```
+
+### Hits
+
+Display search results.
+
+```css
+.ais-Hits { } /* Container */
+.ais-Hits-list { } /* Results list */
+.ais-Hits-item { } /* Individual result */
+```
+
+### InfiniteHits
+
+Infinite scrolling search results.
+
+```css
+.ais-InfiniteHits { } /* Container */
+.ais-InfiniteHits-list { } /* Results list */
+.ais-InfiniteHits-item { } /* Individual result */
+.ais-InfiniteHits-loadPrevious { } /* Load previous button */
+.ais-InfiniteHits-loadMore { } /* Load more button */
+.ais-InfiniteHits-loadPrevious--disabled { } /* Disabled state */
+.ais-InfiniteHits-loadMore--disabled { } /* Disabled state */
+```
+
+## Filtering Widgets
+
+### RefinementList
+
+Checkbox-based facet filtering.
+
+```css
+.ais-RefinementList { } /* Container */
+.ais-RefinementList-searchBox { } /* Search box in list */
+.ais-RefinementList-list { } /* List container */
+.ais-RefinementList-item { } /* Individual item */
+.ais-RefinementList-item--selected { } /* Selected item */
+.ais-RefinementList-label { } /* Checkbox label */
+.ais-RefinementList-checkbox { } /* Checkbox input */
+.ais-RefinementList-labelText { } /* Label text */
+.ais-RefinementList-count { } /* Result count */
+.ais-RefinementList-showMore { } /* Show more button */
+.ais-RefinementList-showMore--disabled { } /* Disabled state */
+```
+
+### Menu
+
+Single-select facet filtering.
+
+```css
+.ais-Menu { } /* Container */
+.ais-Menu-list { } /* List container */
+.ais-Menu-item { } /* Individual item */
+.ais-Menu-item--selected { } /* Selected item */
+.ais-Menu-link { } /* Link element */
+.ais-Menu-label { } /* Label text */
+.ais-Menu-count { } /* Result count */
+.ais-Menu-showMore { } /* Show more button */
+.ais-Menu-showMore--disabled { } /* Disabled state */
+```
+
+### HierarchicalMenu
+
+Nested facet filtering.
+
+```css
+.ais-HierarchicalMenu { } /* Container */
+.ais-HierarchicalMenu-list { } /* List container */
+.ais-HierarchicalMenu-list--child { } /* Child list */
+.ais-HierarchicalMenu-item { } /* Individual item */
+.ais-HierarchicalMenu-item--parent { } /* Parent item */
+.ais-HierarchicalMenu-item--selected { } /* Selected item */
+.ais-HierarchicalMenu-link { } /* Link element */
+.ais-HierarchicalMenu-label { } /* Label text */
+.ais-HierarchicalMenu-count { } /* Result count */
+.ais-HierarchicalMenu-showMore { } /* Show more button */
+```
+
+### RangeSlider
+
+Numeric range slider.
+
+```css
+.ais-RangeSlider { } /* Container */
+.ais-RangeSlider-handle { } /* Slider handle */
+.ais-RangeSlider-tooltip { } /* Value tooltip */
+.ais-RangeSlider-value { } /* Value display */
+.ais-RangeSlider-marker { } /* Range marker */
+```
+
+### RangeInput
+
+Numeric range text inputs.
+
+```css
+.ais-RangeInput { } /* Container */
+.ais-RangeInput-form { } /* Form element */
+.ais-RangeInput-input { } /* Input field */
+.ais-RangeInput-input--min { } /* Min input */
+.ais-RangeInput-input--max { } /* Max input */
+.ais-RangeInput-separator { } /* Separator between inputs */
+.ais-RangeInput-submit { } /* Submit button */
+```
+
+### ToggleRefinement
+
+Boolean toggle filter.
+
+```css
+.ais-ToggleRefinement { } /* Container */
+.ais-ToggleRefinement-label { } /* Label element */
+.ais-ToggleRefinement-checkbox { } /* Checkbox input */
+.ais-ToggleRefinement-labelText { } /* Label text */
+.ais-ToggleRefinement-count { } /* Result count */
+```
+
+### NumericMenu
+
+Predefined numeric range filtering.
+
+```css
+.ais-NumericMenu { } /* Container */
+.ais-NumericMenu-list { } /* List container */
+.ais-NumericMenu-item { } /* Individual item */
+.ais-NumericMenu-item--selected { } /* Selected item */
+.ais-NumericMenu-label { } /* Label element */
+.ais-NumericMenu-radio { } /* Radio input */
+.ais-NumericMenu-labelText { } /* Label text */
+```
+
+### RatingMenu
+
+Star rating filter.
+
+```css
+.ais-RatingMenu { } /* Container */
+.ais-RatingMenu-list { } /* List container */
+.ais-RatingMenu-item { } /* Individual item */
+.ais-RatingMenu-item--selected { } /* Selected item */
+.ais-RatingMenu-item--disabled { } /* Disabled item */
+.ais-RatingMenu-link { } /* Link element */
+.ais-RatingMenu-starIcon { } /* Star icon */
+.ais-RatingMenu-starIcon--full { } /* Filled star */
+.ais-RatingMenu-starIcon--empty { } /* Empty star */
+.ais-RatingMenu-label { } /* Label text */
+.ais-RatingMenu-count { } /* Result count */
+```
+
+## Navigation Widgets
+
+### Pagination
+
+Page navigation.
+
+```css
+.ais-Pagination { } /* Container */
+.ais-Pagination-list { } /* List container */
+.ais-Pagination-item { } /* Individual item */
+.ais-Pagination-item--disabled { } /* Disabled item */
+.ais-Pagination-item--selected { } /* Current page */
+.ais-Pagination-item--firstPage { } /* First page item */
+.ais-Pagination-item--previousPage { } /* Previous item */
+.ais-Pagination-item--nextPage { } /* Next item */
+.ais-Pagination-item--lastPage { } /* Last page item */
+.ais-Pagination-item--page { } /* Page number item */
+.ais-Pagination-link { } /* Link element */
+```
+
+### Breadcrumb
+
+Hierarchical navigation trail.
+
+```css
+.ais-Breadcrumb { } /* Container */
+.ais-Breadcrumb-list { } /* List container */
+.ais-Breadcrumb-item { } /* Individual item */
+.ais-Breadcrumb-item--selected { } /* Current item */
+.ais-Breadcrumb-link { } /* Link element */
+.ais-Breadcrumb-separator { } /* Item separator */
+```
+
+## Metadata Widgets
+
+### Stats
+
+Search statistics.
+
+```css
+.ais-Stats { } /* Container */
+.ais-Stats-text { } /* Text content */
+```
+
+### CurrentRefinements
+
+Display active filters.
+
+```css
+.ais-CurrentRefinements { } /* Container */
+.ais-CurrentRefinements-list { } /* List container */
+.ais-CurrentRefinements-item { } /* Individual refinement */
+.ais-CurrentRefinements-label { } /* Refinement label */
+.ais-CurrentRefinements-category { } /* Category container */
+.ais-CurrentRefinements-categoryLabel { } /* Category label */
+.ais-CurrentRefinements-delete { } /* Delete button */
+```
+
+### ClearRefinements
+
+Clear all filters button.
+
+```css
+.ais-ClearRefinements { } /* Container */
+.ais-ClearRefinements-button { } /* Button element */
+.ais-ClearRefinements-button--disabled { } /* Disabled state */
+```
+
+### PoweredBy
+
+Algolia branding.
+
+```css
+.ais-PoweredBy { } /* Container */
+.ais-PoweredBy-text { } /* Text */
+.ais-PoweredBy-logo { } /* Logo */
+```
+
+## Advanced Widgets
+
+### SortBy
+
+Index selector dropdown.
+
+```css
+.ais-SortBy { } /* Container */
+.ais-SortBy-select { } /* Select dropdown */
+```
+
+### HitsPerPage / ResultsPerPage
+
+Results per page selector.
+
+```css
+.ais-HitsPerPage { } /* Container */
+.ais-HitsPerPage-select { } /* Select dropdown */
+```
+
+### Panel
+
+Wrapper for widget panels.
+
+```css
+.ais-Panel { } /* Container */
+.ais-Panel-header { } /* Header */
+.ais-Panel-body { } /* Body */
+.ais-Panel-footer { } /* Footer */
+.ais-Panel--noRefinement { } /* Hidden when no results */
+.ais-Panel--collapsed { } /* Collapsed state */
+```
+
+### DynamicWidgets
+
+Auto-generated facets.
+
+```css
+.ais-DynamicWidgets { } /* Container */
+```
+
+### RelevantSort
+
+Relevance toggle.
+
+```css
+.ais-RelevantSort { } /* Container */
+.ais-RelevantSort-text { } /* Text */
+.ais-RelevantSort-button { } /* Button */
+```
+
+### GeoSearch
+
+Map-based search.
+
+```css
+.ais-GeoSearch { } /* Container */
+.ais-GeoSearch-map { } /* Map container */
+.ais-GeoSearch-control { } /* Control panel */
+.ais-GeoSearch-label { } /* Control label */
+.ais-GeoSearch-input { } /* Control input */
+.ais-GeoSearch-redo { } /* Redo search button */
+.ais-GeoSearch-reset { } /* Reset button */
+.ais-GeoSearch-redo--disabled { } /* Disabled redo */
+```
+
+## AI & E-commerce Widgets
+
+### FrequentlyBoughtTogether
+
+Product recommendations.
+
+```css
+.ais-FrequentlyBoughtTogether { } /* Container */
+.ais-FrequentlyBoughtTogether-list { } /* List */
+.ais-FrequentlyBoughtTogether-item { } /* Item */
+```
+
+### RelatedProducts
+
+Related product recommendations.
+
+```css
+.ais-RelatedProducts { } /* Container */
+.ais-RelatedProducts-list { } /* List */
+.ais-RelatedProducts-item { } /* Item */
+```
+
+### LookingSimilar
+
+Similar items.
+
+```css
+.ais-LookingSimilar { } /* Container */
+.ais-LookingSimilar-list { } /* List */
+.ais-LookingSimilar-item { } /* Item */
+```
+
+### TrendingItems
+
+Trending products.
+
+```css
+.ais-TrendingItems { } /* Container */
+.ais-TrendingItems-list { } /* List */
+.ais-TrendingItems-item { } /* Item */
+```
+
+## Component Classes
+
+### Autocomplete
+
+Autocomplete search input.
+
+```css
+.ais-Autocomplete { } /* Container */
+```
+
+### Carousel
+
+Carousel for recommendations.
+
+```css
+.ais-Carousel { } /* Container */
+.ais-Carousel-list { } /* Item list */
+.ais-Carousel-item { } /* Individual item */
+.ais-Carousel-navigation { } /* Navigation buttons */
+```
+
+## Custom Styling Examples
+
+### Customize SearchBox
+
+```css
+.ais-SearchBox-form {
+  background: white;
+  border: 2px solid var(--ais-primary-color-rgb);
+  border-radius: var(--ais-border-radius-md);
+  padding: 0.5rem;
+}
+
+.ais-SearchBox-input {
+  font-size: 1.125rem;
+  color: var(--ais-text-color-rgb);
+}
+
+.ais-SearchBox-submit {
+  background: rgb(var(--ais-primary-color-rgb));
+  border-radius: var(--ais-border-radius-sm);
+}
+```
+
+### Style Refinement Lists
+
+```css
+.ais-RefinementList-item--selected {
+  background: rgba(var(--ais-primary-color-rgb), 0.1);
+  border-left: 3px solid rgb(var(--ais-primary-color-rgb));
+}
+
+.ais-RefinementList-count {
+  background: rgba(var(--ais-muted-color-rgb), 0.2);
+  border-radius: var(--ais-border-radius-full);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+```
+
+### Customize Hits
+
+```css
+.ais-Hits-item {
+  border: 1px solid rgba(var(--ais-border-color-rgb), 0.5);
+  border-radius: var(--ais-border-radius-md);
+  padding: var(--ais-spacing);
+  transition: all var(--ais-transition-duration) var(--ais-transition-timing-function);
+}
+
+.ais-Hits-item:hover {
+  box-shadow: var(--ais-shadow-lg);
+  transform: translateY(-2px);
+}
+```
+
+## Best Practices
+
+<Card title="Use CSS specificity wisely" icon="code">
+  Override styles using the same or higher specificity:
+  
+  ```css
+  /* ✓ Good */
+  .ais-SearchBox-input {
+    border-color: blue;
+  }
+  
+  /* ✗ Avoid !important */
+  .ais-SearchBox-input {
+    border-color: blue !important;
+  }
+  ```
+</Card>
+
+<Card title="Leverage CSS variables" icon="palette">
+  Use CSS variables for consistent theming:
+  
+  ```css
+  .ais-Hits-item {
+    border-color: rgb(var(--ais-border-color-rgb));
+    background: rgb(var(--ais-background-color-rgb));
+  }
+  ```
+</Card>
+
+<Card title="Target states" icon="toggle-on">
+  Style different widget states:
+  
+  ```css
+  .ais-RefinementList-item--selected { }
+  .ais-Pagination-item--disabled { }
+  .ais-Panel--collapsed { }
+  ```
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Themes" href="/tools/styling/custom-themes" icon="palette">
+    Create custom themes with CSS variables
+  </Card>
+  <Card title="InstantSearch.css" href="/tools/styling/instantsearch-css" icon="paintbrush">
+    Learn about themes and installation
+  </Card>
+</CardGroup>

@@ -1,0 +1,458 @@
+---
+title: Media Search Example
+description: Build an infinite-scrolling media search interface with image results and advanced filtering
+---
+
+This example demonstrates a media-focused search experience optimized for browsing articles and images with infinite scroll, date-based filtering, and category navigation.
+
+## Overview
+
+The media search example features:
+
+- **Infinite scroll** for seamless browsing
+- **Image-heavy results** with article previews
+- **Date range filtering** for time-based search
+- **Category and author filters**
+- **Responsive card layout**
+- **Selected topics display**
+
+<Frame>
+  <img src="/images/examples/media-demo.png" alt="Media search interface" />
+</Frame>
+
+## Implementation
+
+### JavaScript Example
+
+<Tabs>
+  <Tab title="Search Setup">
+    
+Initialize the search with blog/media index:
+
+```typescript
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import instantsearch from 'instantsearch.js';
+import { singleIndex } from 'instantsearch.js/es/lib/stateMappings';
+
+const searchClient = algoliasearch(
+  '1QDAWL72TQ',
+  '47700f55d95d23f5a57744b9a027ea83'
+);
+
+const search = instantsearch({
+  searchClient,
+  indexName: 'PROD_algolia_blog',
+  routing: {
+    stateMapping: singleIndex('PROD_algolia_blog'),
+  },
+  insights: true,
+});
+```
+
+  </Tab>
+  <Tab title="Infinite Hits Widget">
+    
+Implement infinite scrolling with custom article cards:
+
+```typescript
+import { connectInfiniteHits } from 'instantsearch.js/es/connectors';
+import { formatDistanceToNow } from 'date-fns';
+
+const infiniteHits = connectInfiniteHits(
+  ({ items, showMore, isLastPage, widgetParams }) => {
+    const container = document.querySelector(widgetParams.container);
+    
+    // Render article cards
+    const html = items.map(hit => {
+      const author = hit.coauthors?.[0];
+      const date = formatDistanceToNow(
+        hit.created_at_timestamp * 1000,
+        { addSuffix: true }
+      );
+      
+      return `
+        <article class="card">
+          <div class="card-image">
+            <img src="${hit.cloudinary_url}" alt="${hit.title}" />
+          </div>
+          <div class="card-content">
+            <header>
+              <span class="card-subject">${hit.primary_category.title}</span>
+              • <span class="card-timestamp">${date}</span>
+              <h1 class="card-title">
+                ${highlightedTitle}
+              </h1>
+            </header>
+            <p class="card-description">
+              ${snippetContent}
+            </p>
+            <footer>
+              ${author ? `
+                <div class="card-author">
+                  <img src="${author.avatar_url}" />
+                  <span>${author.nickname}</span>
+                </div>
+              ` : ''}
+            </footer>
+          </div>
+        </article>
+      `;
+    }).join('');
+    
+    container.innerHTML = html;
+    
+    // Implement intersection observer for infinite scroll
+    if (!isLastPage) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            showMore();
+          }
+        });
+      });
+      
+      observer.observe(
+        container.querySelector('.load-more-trigger')
+      );
+    }
+  }
+);
+
+const articles = infiniteHits({
+  container: '[data-widget="hits"]',
+  showPrevious: true,
+});
+```
+
+  </Tab>
+  <Tab title="Date Filtering">
+    
+Add date range filters for time-based browsing:
+
+```typescript
+import { menu } from 'instantsearch.js/es/widgets';
+
+const createDates = (options) => {
+  return menu({
+    ...options,
+    attribute: 'published_at_timestamp',
+    transformItems(items) {
+      return items.map(item => ({
+        ...item,
+        label: formatDateRange(item.value),
+      }));
+    },
+  });
+};
+
+const dateRanges = [
+  { label: 'Last 24 hours', value: Date.now() - 86400000 },
+  { label: 'Last 7 days', value: Date.now() - 604800000 },
+  { label: 'Last 30 days', value: Date.now() - 2592000000 },
+  { label: 'Last year', value: Date.now() - 31536000000 },
+];
+
+search.addWidgets([
+  createDates({
+    container: '[data-widget="dates-desktop"]',
+    header: 'Date',
+  }),
+]);
+```
+
+  </Tab>
+</Tabs>
+
+## Key Features
+
+### Infinite Scroll
+
+Seamlessly load more results as users scroll:
+
+```javascript
+const infiniteHits = connectInfiniteHits(
+  ({ items, showMore, isLastPage, widgetParams }) => {
+    const container = document.querySelector(widgetParams.container);
+    
+    // Intersection Observer for auto-loading
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !isLastPage) {
+          showMore();
+        }
+      });
+    });
+    
+    const loadMoreTrigger = document.createElement('div');
+    container.appendChild(loadMoreTrigger);
+    observer.observe(loadMoreTrigger);
+  }
+);
+```
+
+### Category Hierarchies
+
+Navigate through hierarchical categories:
+
+```javascript
+import { hierarchicalMenu } from 'instantsearch.js/es/widgets';
+
+hierarchicalMenu({
+  container: '#categories',
+  attributes: [
+    'categories.lvl0',
+    'categories.lvl1',
+    'categories.lvl2',
+  ],
+  showMore: true,
+})
+```
+
+### Author Refinement
+
+Filter by article authors:
+
+```javascript
+import { refinementList } from 'instantsearch.js/es/widgets';
+
+refinementList({
+  container: '#authors',
+  attribute: 'coauthors.nickname',
+  searchable: true,
+  showMore: true,
+  limit: 5,
+  showMoreLimit: 20,
+})
+```
+
+### Selected Topics
+
+Display currently selected topic filters:
+
+```javascript
+import { currentRefinements } from 'instantsearch.js/es/widgets';
+
+currentRefinements({
+  container: '#selected-topics',
+  includedAttributes: ['topics'],
+  transformItems(items) {
+    return items.map(item => ({
+      ...item,
+      label: item.label.replace('topics: ', ''),
+    }));
+  },
+})
+```
+
+## Article Card Template
+
+Create rich article previews with images and metadata:
+
+```typescript
+function createArticleCard(hit) {
+  const author = hit.coauthors?.[0];
+  const date = formatDistanceToNow(
+    hit.created_at_timestamp * 1000,
+    { addSuffix: true }
+  ).replace('about ', '');
+  
+  return `
+    <article class="card">
+      <a href="/blog/${hit.primary_category.slug}/${hit.slug}">
+        <div class="card-image">
+          <img 
+            src="${hit.cloudinary_url}" 
+            alt="${hit.title}"
+            loading="lazy"
+          />
+        </div>
+        
+        <div class="card-content">
+          <header>
+            <span class="card-category">
+              ${hit.primary_category.title}
+            </span>
+            <span class="card-date">${date}</span>
+            
+            <h2 class="card-title">
+              ${highlightedTitle(hit)}
+            </h2>
+          </header>
+          
+          <p class="card-excerpt">
+            ${snippetContent(hit)}
+          </p>
+          
+          ${author ? `
+            <footer class="card-footer">
+              <img 
+                src="${author.avatar_url}" 
+                alt="${author.nickname}"
+                class="author-avatar"
+              />
+              <div class="author-info">
+                <span class="author-name">${author.nickname}</span>
+                <span class="author-title">${author.job_title}</span>
+              </div>
+            </footer>
+          ` : ''}
+        </div>
+      </a>
+    </article>
+  `;
+}
+```
+
+## Date Filtering Utilities
+
+Implement human-readable date ranges:
+
+```typescript
+const dateRanges = [
+  {
+    label: 'Last 24 hours',
+    start: Date.now() - (24 * 60 * 60 * 1000),
+    end: Date.now(),
+  },
+  {
+    label: 'Last 7 days',
+    start: Date.now() - (7 * 24 * 60 * 60 * 1000),
+    end: Date.now(),
+  },
+  {
+    label: 'Last 30 days',
+    start: Date.now() - (30 * 24 * 60 * 60 * 1000),
+    end: Date.now(),
+  },
+  {
+    label: 'Last year',
+    start: Date.now() - (365 * 24 * 60 * 60 * 1000),
+    end: Date.now(),
+  },
+];
+
+function createDateMenu() {
+  return menu({
+    container: '#dates',
+    attribute: 'published_at_timestamp',
+    limit: 10,
+    transformItems(items) {
+      return dateRanges.map(range => ({
+        label: range.label,
+        value: `${range.start}:${range.end}`,
+        count: items.reduce((count, item) => {
+          const timestamp = parseInt(item.value);
+          return timestamp >= range.start && timestamp <= range.end
+            ? count + item.count
+            : count;
+        }, 0),
+      }));
+    },
+  });
+}
+```
+
+## Responsive Layout
+
+Adapt the layout for different screen sizes:
+
+```css
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .card-image {
+    aspect-ratio: 16 / 9;
+  }
+}
+```
+
+## Performance Optimization
+
+### Lazy Loading Images
+
+```html
+<img 
+  src="${hit.cloudinary_url}" 
+  alt="${hit.title}"
+  loading="lazy"
+  decoding="async"
+/>
+```
+
+### Windowing for Large Lists
+
+For very long lists, consider implementing virtual scrolling:
+
+```javascript
+import { connectInfiniteHits } from 'instantsearch.js/es/connectors';
+
+const virtualInfiniteHits = connectInfiniteHits(
+  ({ items, showMore }) => {
+    // Only render visible items
+    const visibleItems = items.slice(
+      scrollTop / itemHeight,
+      (scrollTop + viewportHeight) / itemHeight
+    );
+    
+    renderItems(visibleItems);
+  }
+);
+```
+
+## Running the Example
+
+```bash
+cd examples/js/media
+yarn install
+yarn start
+```
+
+Open http://localhost:3000 to view the example.
+
+## Customization Tips
+
+<AccordionGroup>
+  <Accordion title="Adjust card layout">
+    Modify the grid columns and card design to match your content type (videos, images, documents).
+  </Accordion>
+  
+  <Accordion title="Add more metadata">
+    Include additional fields like reading time, view count, or custom taxonomies in the card template.
+  </Accordion>
+  
+  <Accordion title="Implement favorites">
+    Add a favorites feature using Algolia Insights to track user preferences.
+  </Accordion>
+  
+  <Accordion title="Customize date ranges">
+    Adjust the date range options to match your content publication patterns.
+  </Accordion>
+</AccordionGroup>
+
+## Related Examples
+
+- [E-Commerce Search](/examples/e-commerce) - Similar filtering patterns
+- [Multi-Index Search](/examples/multi-index) - Search across media types
+- [Routing](/examples/routing) - Shareable filtered searches
+
+## Source Code
+
+<CardGroup cols={2}>
+  <Card title="JavaScript" icon="js" href="https://github.com/algolia/instantsearch/tree/master/examples/js/media">
+    View source on GitHub
+  </Card>
+  <Card title="Vue" icon="vuejs" href="https://github.com/algolia/instantsearch/tree/master/examples/vue/media">
+    View source on GitHub
+  </Card>
+</CardGroup>

@@ -1,0 +1,740 @@
+---
+title: "Basic Usage"
+description: "Complete guide to InstantSearch.js widgets and patterns"
+---
+
+InstantSearch.js provides a comprehensive set of widgets to build search interfaces. All widgets follow a consistent API pattern.
+
+## Widget API Pattern
+
+Every widget is a function that accepts an options object:
+
+```javascript
+widgetName({
+  container: '#selector',
+  // widget-specific options
+})
+```
+
+Widgets must be added before calling `search.start()`:
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { searchBox, hits } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({ /* options */ });
+
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  hits({ container: '#hits' }),
+]);
+
+search.start();
+```
+
+## Search Widgets
+
+### searchBox
+
+A search input with submit and reset buttons:
+
+```javascript
+import { searchBox } from 'instantsearch.js/es/widgets';
+
+searchBox({
+  container: '#searchbox',
+  placeholder: 'Search for products...',
+  autofocus: true,
+  searchAsYouType: true,
+  showReset: true,
+  showSubmit: true,
+  showLoadingIndicator: true,
+  queryHook: (query, search) => {
+    // Modify query before searching (e.g., debouncing)
+    search(query);
+  },
+  templates: {
+    submit: ({ html }) => html`<span>🔍</span>`,
+    reset: ({ html }) => html`<span>✕</span>`,
+    loadingIndicator: ({ html }) => html`<span>⏳</span>`,
+  },
+  cssClasses: {
+    root: 'my-SearchBox',
+    form: 'my-SearchBox-form',
+    input: 'my-SearchBox-input',
+  },
+})
+```
+
+**Key Options:**
+- `searchAsYouType` (default: `true`) - Search as user types vs. on submit only
+- `queryHook` - Transform query before search (useful for debouncing)
+- `autofocus` - Focus input on page load
+
+### hits
+
+Display search results:
+
+```javascript
+import { hits } from 'instantsearch.js/es/widgets';
+
+hits({
+  container: '#hits',
+  templates: {
+    item: (hit, { html, components, sendEvent }) => html`
+      <article>
+        <img src="${hit.image}" alt="${hit.name}" />
+        <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+        <p>${components.Snippet({ hit, attribute: 'description' })}</p>
+        <span class="price">$${hit.price}</span>
+        <button
+          onClick="${() => sendEvent('click', hit, 'Product Clicked')}"
+        >
+          View Details
+        </button>
+      </article>
+    `,
+    empty: ({ html }) => html`
+      <div class="no-results">
+        <p>No results found</p>
+      </div>
+    `,
+  },
+  transformItems: (items) =>
+    items.map((item) => ({
+      ...item,
+      price: (item.price / 100).toFixed(2), // Convert cents to dollars
+    })),
+  cssClasses: {
+    root: 'my-Hits',
+    list: 'my-Hits-list',
+    item: 'my-Hits-item',
+    emptyRoot: 'my-Hits--empty',
+  },
+})
+```
+
+**Template Parameters:**
+- `html` - Tagged template function for rendering
+- `components` - Highlight, Snippet, and other helper components
+- `sendEvent` - Function to track insights events
+
+### infiniteHits
+
+Load more results with infinite scrolling:
+
+```javascript
+import { infiniteHits } from 'instantsearch.js/es/widgets';
+
+infiniteHits({
+  container: '#infinite-hits',
+  showPrevious: true,
+  templates: {
+    item: (hit, { html, components }) => html`
+      <article>
+        <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+      </article>
+    `,
+    showPreviousText: ({ html }) => html`<span>← Show previous</span>`,
+    showMoreText: ({ html }) => html`<span>Show more →</span>`,
+  },
+  transformItems: (items) => items,
+})
+```
+
+### configure
+
+Set search parameters without UI:
+
+```javascript
+import { configure } from 'instantsearch.js/es/widgets';
+
+configure({
+  hitsPerPage: 20,
+  attributesToSnippet: ['description:50'],
+  snippetEllipsisText: '...',
+  removeWordsIfNoResults: 'allOptional',
+  distinct: 1,
+  enablePersonalization: true,
+  clickAnalytics: true,
+  analytics: true,
+  analyticsTags: ['desktop', 'search-page'],
+})
+```
+
+Accepts any [search parameter](https://www.algolia.com/doc/api-reference/search-api-parameters/) from the Algolia API.
+
+## Filtering Widgets
+
+### refinementList
+
+Faceted search filters with checkboxes:
+
+```javascript
+import { refinementList } from 'instantsearch.js/es/widgets';
+
+refinementList({
+  container: '#brand',
+  attribute: 'brand',
+  searchable: true,
+  searchablePlaceholder: 'Search brands...',
+  searchableIsAlwaysActive: true,
+  showMore: true,
+  showMoreLimit: 20,
+  limit: 10,
+  operator: 'or', // or 'and'
+  sortBy: ['name:asc'], // or ['count:desc', 'name:asc']
+  templates: {
+    searchableNoResults: ({ html }) => html`<p>No brands found</p>`,
+    showMoreText: ({ isShowingMore, html }) => html`
+      <span>${isShowingMore ? 'Show less' : 'Show more'}</span>
+    `,
+    item: ({ label, count, isRefined, html }) => html`
+      <label>
+        <input type="checkbox" checked="${isRefined}" />
+        <span>${label} (${count})</span>
+      </label>
+    `,
+  },
+  transformItems: (items) =>
+    items.map((item) => ({
+      ...item,
+      label: item.label.toUpperCase(),
+    })),
+  cssClasses: {
+    searchableInput: 'my-RefinementList-searchBox',
+    showMore: 'my-RefinementList-showMore',
+  },
+})
+```
+
+**Key Options:**
+- `attribute` - Index attribute to filter on
+- `operator` - `"or"` (default) or `"and"` for combining values
+- `searchable` - Add search within facets
+- `showMore` - Enable "Show more" button
+
+### hierarchicalMenu
+
+Multi-level categorization:
+
+```javascript
+import { hierarchicalMenu } from 'instantsearch.js/es/widgets';
+
+hierarchicalMenu({
+  container: '#categories',
+  attributes: [
+    'hierarchicalCategories.lvl0',
+    'hierarchicalCategories.lvl1',
+    'hierarchicalCategories.lvl2',
+  ],
+  separator: ' > ',
+  rootPath: null,
+  showParentLevel: true,
+  limit: 10,
+  showMore: true,
+  showMoreLimit: 20,
+  sortBy: ['name:asc'],
+  templates: {
+    item: ({ label, count, html }) => html`
+      <span>${label} <small>(${count})</small></span>
+    `,
+  },
+})
+```
+
+### menu
+
+Single-select filter:
+
+```javascript
+import { menu } from 'instantsearch.js/es/widgets';
+
+menu({
+  container: '#category',
+  attribute: 'category',
+  limit: 10,
+  showMore: true,
+  showMoreLimit: 20,
+  sortBy: ['name:asc'],
+  templates: {
+    item: ({ label, count, isRefined, html }) => html`
+      <span class="${isRefined ? 'selected' : ''}">
+        ${label} (${count})
+      </span>
+    `,
+  },
+})
+```
+
+### rangeInput
+
+Numeric range filter with min/max inputs:
+
+```javascript
+import { rangeInput } from 'instantsearch.js/es/widgets';
+
+rangeInput({
+  container: '#price',
+  attribute: 'price',
+  min: 0,
+  max: 1000,
+  precision: 2,
+  templates: {
+    separatorText: ({ html }) => html`<span>to</span>`,
+    submitText: ({ html }) => html`<span>Apply</span>`,
+  },
+})
+```
+
+### rangeSlider
+
+Numeric range filter with slider:
+
+```javascript
+import { rangeSlider } from 'instantsearch.js/es/widgets';
+
+rangeSlider({
+  container: '#price-slider',
+  attribute: 'price',
+  min: 0,
+  max: 1000,
+  step: 10,
+  pips: true,
+  precision: 2,
+  tooltips: true,
+})
+```
+
+<Note>
+The `rangeSlider` widget requires the `nouislider` library:
+```bash
+npm install nouislider
+```
+</Note>
+
+### toggleRefinement
+
+Boolean on/off filter:
+
+```javascript
+import { toggleRefinement } from 'instantsearch.js/es/widgets';
+
+toggleRefinement({
+  container: '#free-shipping',
+  attribute: 'free_shipping',
+  on: true,
+  off: false,
+  templates: {
+    labelText: ({ isRefined, html }) => html`
+      <span>Free shipping ${isRefined ? '✓' : ''}</span>
+    `,
+  },
+})
+```
+
+### ratingMenu
+
+Star rating filter:
+
+```javascript
+import { ratingMenu } from 'instantsearch.js/es/widgets';
+
+ratingMenu({
+  container: '#rating',
+  attribute: 'rating',
+  max: 5,
+  templates: {
+    item: ({ stars, html }) => html`<span>${stars}</span>`,
+  },
+})
+```
+
+### numericMenu
+
+Predefined numeric ranges:
+
+```javascript
+import { numericMenu } from 'instantsearch.js/es/widgets';
+
+numericMenu({
+  container: '#price-ranges',
+  attribute: 'price',
+  items: [
+    { label: 'All' },
+    { label: 'Under $25', end: 25 },
+    { label: '$25 - $100', start: 25, end: 100 },
+    { label: '$100 - $500', start: 100, end: 500 },
+    { label: '$500 & above', start: 500 },
+  ],
+})
+```
+
+## Refinement Management
+
+### currentRefinements
+
+Display active filters:
+
+```javascript
+import { currentRefinements } from 'instantsearch.js/es/widgets';
+
+currentRefinements({
+  container: '#current-refinements',
+  excludedAttributes: ['query'],
+  includedAttributes: [], // Include only these attributes
+  transformItems: (items) =>
+    items.filter((item) => item.attribute !== 'internal_field'),
+  cssClasses: {
+    root: 'my-CurrentRefinements',
+    list: 'my-CurrentRefinements-list',
+    item: 'my-CurrentRefinements-item',
+  },
+})
+```
+
+### clearRefinements
+
+Clear all or specific filters:
+
+```javascript
+import { clearRefinements } from 'instantsearch.js/es/widgets';
+
+clearRefinements({
+  container: '#clear-refinements',
+  excludedAttributes: ['category'], // Don't clear these
+  includedAttributes: [], // Only clear these
+  templates: {
+    resetLabel: ({ hasRefinements, html }) => html`
+      <span>Clear ${hasRefinements ? 'all' : 'filters'}</span>
+    `,
+  },
+})
+```
+
+## Navigation Widgets
+
+### pagination
+
+Navigate between result pages:
+
+```javascript
+import { pagination } from 'instantsearch.js/es/widgets';
+
+pagination({
+  container: '#pagination',
+  totalPages: 20,
+  padding: 3,
+  showFirst: true,
+  showPrevious: true,
+  showNext: true,
+  showLast: true,
+  scrollTo: '#searchbox', // Scroll to element on page change
+  templates: {
+    first: ({ html }) => html`<span>‹‹</span>`,
+    previous: ({ html }) => html`<span>‹</span>`,
+    next: ({ html }) => html`<span>›</span>`,
+    last: ({ html }) => html`<span>››</span>`,
+    page: ({ page, html }) => html`<span>${page}</span>`,
+  },
+})
+```
+
+### breadcrumb
+
+Show hierarchical navigation path:
+
+```javascript
+import { breadcrumb } from 'instantsearch.js/es/widgets';
+
+breadcrumb({
+  container: '#breadcrumb',
+  attributes: [
+    'hierarchicalCategories.lvl0',
+    'hierarchicalCategories.lvl1',
+    'hierarchicalCategories.lvl2',
+  ],
+  separator: ' / ',
+  rootPath: null,
+  transformItems: (items) => items,
+  templates: {
+    home: ({ html }) => html`<span>Home</span>`,
+    separator: ({ html }) => html`<span>/</span>`,
+  },
+})
+```
+
+## Utility Widgets
+
+### stats
+
+Display search statistics:
+
+```javascript
+import { stats } from 'instantsearch.js/es/widgets';
+
+stats({
+  container: '#stats',
+  templates: {
+    text: ({ nbHits, processingTimeMS, query, html }) => html`
+      <span>
+        ${nbHits.toLocaleString()} results found in ${processingTimeMS}ms
+        ${query ? `for "<strong>${query}</strong>"` : ''}
+      </span>
+    `,
+  },
+})
+```
+
+### sortBy
+
+Switch between index replicas:
+
+```javascript
+import { sortBy } from 'instantsearch.js/es/widgets';
+
+sortBy({
+  container: '#sort-by',
+  items: [
+    { label: 'Relevance', value: 'products' },
+    { label: 'Price (asc)', value: 'products_price_asc' },
+    { label: 'Price (desc)', value: 'products_price_desc' },
+    { label: 'Most popular', value: 'products_popularity_desc' },
+  ],
+})
+```
+
+### hitsPerPage
+
+Select results per page:
+
+```javascript
+import { hitsPerPage } from 'instantsearch.js/es/widgets';
+
+hitsPerPage({
+  container: '#hits-per-page',
+  items: [
+    { label: '12 hits per page', value: 12, default: true },
+    { label: '24 hits per page', value: 24 },
+    { label: '48 hits per page', value: 48 },
+  ],
+})
+```
+
+### poweredBy
+
+Show "Search by Algolia" logo:
+
+```javascript
+import { poweredBy } from 'instantsearch.js/es/widgets';
+
+poweredBy({
+  container: '#powered-by',
+  theme: 'light', // or 'dark'
+})
+```
+
+## Advanced Widgets
+
+### panel
+
+Wrap any widget with a header/footer:
+
+```javascript
+import { panel, refinementList } from 'instantsearch.js/es/widgets';
+
+panel({
+  templates: {
+    header: ({ html }) => html`<h3>Brands</h3>`,
+    footer: ({ html }) => html`<p>Select brands to filter</p>`,
+  },
+  hidden: ({ results }) => results.nbHits === 0,
+  collapsed: ({ state }) => !state.query,
+  cssClasses: {
+    root: 'my-Panel',
+    header: 'my-Panel-header',
+    body: 'my-Panel-body',
+    footer: 'my-Panel-footer',
+  },
+})(refinementList)({
+  container: '#brand-list',
+  attribute: 'brand',
+})
+```
+
+### index
+
+Query multiple indices:
+
+```javascript
+import { index, hits, configure } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  
+  // Main index
+  hits({ container: '#products' }),
+  
+  // Secondary index
+  index({ indexName: 'categories' })
+    .addWidgets([
+      configure({ hitsPerPage: 3 }),
+      hits({ container: '#categories' }),
+    ]),
+]);
+
+search.start();
+```
+
+### dynamicWidgets
+
+Automatically render facets based on search results:
+
+```javascript
+import { dynamicWidgets, refinementList, menu } from 'instantsearch.js/es/widgets';
+
+dynamicWidgets({
+  container: '#dynamic-widgets',
+  widgets: [
+    (container) => refinementList({ container, attribute: 'brand' }),
+    (container) => menu({ container, attribute: 'category' }),
+    (container) => refinementList({ container, attribute: 'color' }),
+  ],
+  fallbackWidget: ({ container, attribute }) =>
+    refinementList({ container, attribute }),
+})
+```
+
+## AI-Powered Widgets
+
+### chat
+
+Conversational search interface:
+
+```javascript
+import { chat } from 'instantsearch.js/es/widgets';
+import { carousel } from 'instantsearch.js/es/templates';
+
+chat({
+  container: '#chat',
+  agentId: 'your-agent-id',
+  templates: {
+    item: (item, { html }) => html`
+      <article>
+        <img src="${item.image}" />
+        <h3>${item.name}</h3>
+      </article>
+    `,
+    layout: carousel(),
+  },
+})
+```
+
+### filterSuggestions
+
+AI-powered filter recommendations:
+
+```javascript
+import { filterSuggestions } from 'instantsearch.js/es/widgets';
+
+filterSuggestions({
+  container: '#filter-suggestions',
+  agentId: 'your-agent-id',
+  attributes: ['brand', 'categories', 'color'],
+  templates: {
+    header: ({ html }) => html`<h3>Suggested Filters</h3>`,
+  },
+})
+```
+
+## Recommendation Widgets
+
+### trendingItems
+
+Show trending products:
+
+```javascript
+import { trendingItems } from 'instantsearch.js/es/widgets';
+import { carousel } from 'instantsearch.js/es/templates';
+
+trendingItems({
+  container: '#trending',
+  limit: 6,
+  templates: {
+    item: (item, { html }) => html`
+      <article>
+        <img src="${item.image}" />
+        <h3>${item.name}</h3>
+        <span>$${item.price}</span>
+      </article>
+    `,
+    layout: carousel(),
+  },
+})
+```
+
+### relatedProducts
+
+Show related products based on objectID:
+
+```javascript
+import { relatedProducts } from 'instantsearch.js/es/widgets';
+
+relatedProducts({
+  container: '#related-products',
+  objectIDs: ['product-123'],
+  limit: 4,
+  templates: {
+    item: (item, { html }) => html`
+      <article>
+        <img src="${item.image}" />
+        <h3>${item.name}</h3>
+      </article>
+    `,
+  },
+})
+```
+
+### frequentlyBoughtTogether
+
+Show products frequently bought together:
+
+```javascript
+import { frequentlyBoughtTogether } from 'instantsearch.js/es/widgets';
+
+frequentlyBoughtTogether({
+  container: '#frequently-bought-together',
+  objectIDs: ['product-123'],
+  limit: 4,
+  templates: {
+    item: (item, { html }) => html`
+      <article>
+        <img src="${item.image}" />
+        <h3>${item.name}</h3>
+      </article>
+    `,
+  },
+})
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Customization" icon="palette" href="/vanilla/customization">
+    Customize templates and create custom widgets
+  </Card>
+  <Card title="Styling" icon="paintbrush" href="/vanilla/styling">
+    Style your search interface with CSS
+  </Card>
+  <Card title="Routing" icon="link" href="/guides/routing">
+    Synchronize search state with URLs
+  </Card>
+  <Card title="Custom Widgets" icon="wrench" href="/guides/custom-widgets">
+    Build your own widgets with connectors
+  </Card>
+</CardGroup>

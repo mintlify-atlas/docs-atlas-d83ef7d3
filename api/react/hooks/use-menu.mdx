@@ -1,0 +1,505 @@
+---
+title: 'useMenu'
+description: 'Build custom single-select menu components'
+---
+
+The `useMenu` hook provides the logic to build custom menu (single-select facet) components.
+
+## Import
+
+```jsx
+import { useMenu } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="attribute" type="string" required>
+  The attribute to create the menu for.
+
+  ```jsx
+  const { items, refine } = useMenu({ attribute: 'category' });
+  ```
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Maximum number of items to display.
+
+  ```jsx
+  const { items } = useMenu({ 
+    attribute: 'category', 
+    limit: 5 
+  });
+  ```
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to enable the "show more" functionality.
+
+  ```jsx
+  const { toggleShowMore } = useMenu({ 
+    attribute: 'category', 
+    showMore: true,
+    showMoreLimit: 20
+  });
+  ```
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  Maximum number of items to display when "show more" is active.
+
+  ```jsx
+  const hook = useMenu({ 
+    attribute: 'category', 
+    showMore: true,
+    showMoreLimit: 50
+  });
+  ```
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | (a, b) => number">
+  How to sort the menu items.
+
+  ```jsx
+  // Predefined sort orders
+  const hook = useMenu({ 
+    attribute: 'category',
+    sortBy: ['name:asc']
+  });
+
+  // Custom sort function
+  const hook2 = useMenu({ 
+    attribute: 'category',
+    sortBy: (a, b) => b.count - a.count
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: MenuItem[]) => MenuItem[]">
+  Function to transform the items.
+
+  ```jsx
+  const { items } = useMenu({
+    attribute: 'category',
+    transformItems: (items) => 
+      items.map((item) => ({
+        ...item,
+        label: item.label.toUpperCase()
+      }))
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="MenuItem[]">
+  The list of menu items.
+
+  ```jsx
+  const { items } = useMenu({ attribute: 'category' });
+  
+  items.forEach((item) => {
+    console.log(item.value);      // "Electronics"
+    console.log(item.label);      // "Electronics"
+    console.log(item.count);      // 142
+    console.log(item.isRefined);  // true/false
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(value: string) => void">
+  Function to select a menu item. Selecting an already selected item deselects it.
+
+  ```jsx
+  const { refine } = useMenu({ attribute: 'category' });
+  refine('Electronics'); // Select "Electronics"
+  refine('Electronics'); // Deselect "Electronics"
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether refinements can be applied.
+
+  ```jsx
+  const { canRefine } = useMenu({ attribute: 'category' });
+  if (!canRefine) {
+    return <p>No categories available</p>;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="isShowingMore" type="boolean">
+  Whether "show more" is currently active.
+
+  ```jsx
+  const { isShowingMore } = useMenu({ 
+    attribute: 'category',
+    showMore: true 
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="toggleShowMore" type="() => void">
+  Function to toggle between showing more/less items.
+
+  ```jsx
+  const { toggleShowMore } = useMenu({ 
+    attribute: 'category',
+    showMore: true 
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="canToggleShowMore" type="boolean">
+  Whether the "show more" toggle is available.
+
+  ```jsx
+  const { canToggleShowMore } = useMenu({ 
+    attribute: 'category',
+    showMore: true 
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="createURL" type="(value: string) => string">
+  Function to create a URL for a menu item.
+
+  ```jsx
+  const { createURL } = useMenu({ attribute: 'category' });
+  const url = createURL('Electronics');
+  ```
+</ResponseField>
+
+<ResponseField name="sendEvent" type="SendEventForFacet">
+  Function to send Insights events.
+
+  ```jsx
+  const { sendEvent } = useMenu({ attribute: 'category' });
+  sendEvent('click', 'Electronics', 'Category Selected');
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Menu
+
+```jsx
+import { useMenu } from 'react-instantsearch';
+
+function CategoryMenu() {
+  const { items, refine } = useMenu({ attribute: 'category' });
+
+  return (
+    <div>
+      <h3>Categories</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <button
+              onClick={() => refine(item.value)}
+              style={{ fontWeight: item.isRefined ? 'bold' : 'normal' }}
+            >
+              {item.label} ({item.count})
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### Radio Button Style
+
+```jsx
+import { useMenu } from 'react-instantsearch';
+
+function RadioMenu() {
+  const { items, refine } = useMenu({ attribute: 'category' });
+
+  return (
+    <div>
+      <h3>Category</h3>
+      <div>
+        {items.map((item) => (
+          <label key={item.value} style={{ display: 'block' }}>
+            <input
+              type="radio"
+              name="category"
+              checked={item.isRefined}
+              onChange={() => refine(item.value)}
+            />
+            {item.label} ({item.count})
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Dropdown Menu
+
+```jsx
+import { useMenu } from 'react-instantsearch';
+
+function DropdownMenu() {
+  const { items, refine } = useMenu({ attribute: 'category' });
+  const selectedItem = items.find((item) => item.isRefined);
+
+  return (
+    <div>
+      <label htmlFor="category-select">Category:</label>
+      <select
+        id="category-select"
+        value={selectedItem?.value || ''}
+        onChange={(e) => refine(e.target.value)}
+      >
+        <option value="">All Categories</option>
+        {items.map((item) => (
+          <option key={item.value} value={item.value}>
+            {item.label} ({item.count})
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+```
+
+### With Show More
+
+```jsx
+import { useMenu } from 'react-instantsearch';
+
+function ExpandableMenu() {
+  const { 
+    items, 
+    refine, 
+    toggleShowMore, 
+    isShowingMore, 
+    canToggleShowMore 
+  } = useMenu({ 
+    attribute: 'category',
+    limit: 5,
+    showMore: true,
+    showMoreLimit: 15
+  });
+
+  return (
+    <div>
+      <h3>Categories</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <button
+              onClick={() => refine(item.value)}
+              style={{ fontWeight: item.isRefined ? 'bold' : 'normal' }}
+            >
+              {item.label} ({item.count})
+            </button>
+          </li>
+        ))}
+      </ul>
+      {canToggleShowMore && (
+        <button onClick={toggleShowMore}>
+          {isShowingMore ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### Card Style Menu
+
+```jsx
+import { useMenu } from 'react-instantsearch';
+
+function CardMenu() {
+  const { items, refine } = useMenu({ attribute: 'category' });
+
+  return (
+    <div>
+      <h3>Browse by Category</h3>
+      <div className="category-cards">
+        {items.map((item) => (
+          <div
+            key={item.value}
+            className={`category-card ${item.isRefined ? 'selected' : ''}`}
+            onClick={() => refine(item.value)}
+          >
+            <h4>{item.label}</h4>
+            <p>{item.count} items</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### With Icons
+
+```jsx
+import { useMenu } from 'react-instantsearch';
+
+const categoryIcons = {
+  Electronics: '💻',
+  Clothing: '👕',
+  Books: '📚',
+  Home: '🏠',
+};
+
+function IconMenu() {
+  const { items, refine } = useMenu({ attribute: 'category' });
+
+  return (
+    <div>
+      <h3>Categories</h3>
+      <div className="icon-menu">
+        {items.map((item) => (
+          <button
+            key={item.value}
+            onClick={() => refine(item.value)}
+            className={item.isRefined ? 'active' : ''}
+          >
+            <span className="icon">{categoryIcons[item.value]}</span>
+            <span className="label">{item.label}</span>
+            <span className="count">{item.count}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### With Empty State
+
+```jsx
+import { useMenu } from 'react-instantsearch';
+
+function MenuWithEmptyState() {
+  const { items, refine, canRefine } = useMenu({ attribute: 'category' });
+
+  if (!canRefine) {
+    return (
+      <div>
+        <h3>Categories</h3>
+        <p>No categories available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h3>Categories</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <button
+              onClick={() => refine(item.value)}
+              style={{ fontWeight: item.isRefined ? 'bold' : 'normal' }}
+            >
+              {item.label} ({item.count})
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### Sorted Alphabetically
+
+```jsx
+import { useMenu } from 'react-instantsearch';
+
+function AlphabeticalMenu() {
+  const { items, refine } = useMenu({ 
+    attribute: 'category',
+    sortBy: ['name:asc']
+  });
+
+  return (
+    <div>
+      <h3>Categories (A-Z)</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <button
+              onClick={() => refine(item.value)}
+              style={{ fontWeight: item.isRefined ? 'bold' : 'normal' }}
+            >
+              {item.label} ({item.count})
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### With Link Navigation
+
+```jsx
+import { useMenu } from 'react-instantsearch';
+import Link from 'next/link';
+
+function LinkMenu() {
+  const { items, refine, createURL } = useMenu({ attribute: 'category' });
+
+  return (
+    <div>
+      <h3>Categories</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <Link 
+              href={createURL(item.value)}
+              onClick={(e) => {
+                e.preventDefault();
+                refine(item.value);
+              }}
+              style={{ fontWeight: item.isRefined ? 'bold' : 'normal' }}
+            >
+              {item.label} ({item.count})
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useMenu } from 'react-instantsearch';
+import type { UseMenuProps } from 'react-instantsearch';
+
+function CategoryMenu(props: UseMenuProps) {
+  const { items, refine } = useMenu(props);
+
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={item.value}>
+          <button onClick={() => refine(item.value)}>
+            {item.label}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Related
+
+- [Menu Widget](/api/react/widgets/menu)
+- [useRefinementList Hook](/api/react/hooks/use-refinement-list)
+- [useHierarchicalMenu Hook](/api/react/hooks/use-hierarchical-menu)

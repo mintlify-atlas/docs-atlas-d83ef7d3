@@ -1,0 +1,291 @@
+---
+title: lookingSimilar
+---
+
+Displays visually similar products using Algolia's Recommend API with visual AI.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { lookingSimilar } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  lookingSimilar({
+    container: '#looking-similar',
+    objectIDs: ['product-1']
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="objectIDs" type="string[]" required>
+  Array of objectIDs of the items to get visually similar products for.
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Number of recommendations to retrieve.
+</ParamField>
+
+<ParamField path="threshold" type="number">
+  Threshold for the recommendations confidence score (between 0 and 100).
+</ParamField>
+
+<ParamField path="queryParameters" type="object">
+  Additional search parameters to send to the Algolia API.
+</ParamField>
+
+<ParamField path="fallbackParameters" type="object">
+  Search parameters to use when not enough recommendations are available.
+</ParamField>
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags from items string values.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```typescript
+  (items: Hit[], { results: RecommendResponse }) => Hit[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to use for the widget.
+  
+  <Expandable title="properties">
+    <ParamField path="item" type="string | function">
+      Template for each similar item. Receives the hit data.
+    </ParamField>
+    
+    <ParamField path="empty" type="string | function">
+      Template to display when there are no results.
+    </ParamField>
+    
+    <ParamField path="header" type="string | function">
+      Template for the widget header. Receives `{ items, cssClasses }`.
+    </ParamField>
+    
+    <ParamField path="layout" type="function">
+      Template to wrap all items. Receives `{ items, templates, cssClasses }`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    
+    <ParamField path="emptyRoot" type="string | string[]">
+      CSS class for the root when there are no results.
+    </ParamField>
+    
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Basic usage
+
+```javascript
+lookingSimilar({
+  container: '#looking-similar',
+  objectIDs: ['product-123'],
+  limit: 6,
+  templates: {
+    item(hit, { html }) {
+      return html`
+        <div>
+          <img src="${hit.image}" alt="${hit.name}" />
+          <h3>${hit.name}</h3>
+          <p>$${hit.price}</p>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### With header
+
+```javascript
+lookingSimilar({
+  container: '#looking-similar',
+  objectIDs: ['product-123'],
+  templates: {
+    header: 'Visually Similar Products',
+    item(hit) {
+      return `
+        <article class="similar-product">
+          <img src="${hit.image}" />
+          <h4>${hit.name}</h4>
+          <span class="price">$${hit.price}</span>
+        </article>
+      `;
+    }
+  }
+});
+```
+
+### Image-focused display
+
+```javascript
+lookingSimilar({
+  container: '#looking-similar',
+  objectIDs: ['product-123'],
+  limit: 8,
+  templates: {
+    header({ items }) {
+      return `<h2>Similar Styles (${items.length})</h2>`;
+    },
+    item(hit) {
+      return `
+        <a href="/product/${hit.objectID}" class="similar-item">
+          <div class="image-wrapper">
+            <img src="${hit.image}" alt="${hit.name}" />
+          </div>
+          <div class="info">
+            <span class="name">${hit.name}</span>
+            <span class="price">$${hit.price}</span>
+          </div>
+        </a>
+      `;
+    }
+  }
+});
+```
+
+### With empty state
+
+```javascript
+lookingSimilar({
+  container: '#looking-similar',
+  objectIDs: ['product-123'],
+  templates: {
+    item(hit) {
+      return `<div class="product">${hit.name}</div>`;
+    },
+    empty() {
+      return '<p>No similar items found.</p>';
+    }
+  }
+});
+```
+
+### Fashion use case
+
+```javascript
+lookingSimilar({
+  container: '#looking-similar',
+  objectIDs: ['outfit-123'],
+  limit: 4,
+  templates: {
+    header: 'Shop Similar Looks',
+    item(hit, { html, components }) {
+      return html`
+        <div class="fashion-item">
+          <img src="${hit.image}" />
+          <div class="details">
+            <h4>${components.Highlight({ hit, attribute: 'name' })}</h4>
+            <p class="brand">${hit.brand}</p>
+            <p class="price">$${hit.price}</p>
+            <span class="badge">${hit.discount ? 'Sale' : ''}</span>
+          </div>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### With threshold for quality
+
+```javascript
+lookingSimilar({
+  container: '#looking-similar',
+  objectIDs: ['product-123'],
+  threshold: 75, // Only show highly similar items
+  limit: 6,
+  templates: {
+    item(hit) {
+      return `
+        <div class="similar-product">
+          <img src="${hit.image}" />
+          <span>${hit.name}</span>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### Transform to add badges
+
+```javascript
+lookingSimilar({
+  container: '#looking-similar',
+  objectIDs: ['product-123'],
+  transformItems(items) {
+    return items.map(item => ({
+      ...item,
+      similarity: 'High match' // Add custom badge
+    }));
+  },
+  templates: {
+    item(hit) {
+      return `
+        <div>
+          <span class="badge">${hit.similarity}</span>
+          <img src="${hit.image}" />
+          <h4>${hit.name}</h4>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+## HTML output
+
+```html
+<div class="ais-LookingSimilar">
+  <ol class="ais-LookingSimilar-list">
+    <li class="ais-LookingSimilar-item">
+      <!-- Item template content -->
+    </li>
+    <!-- More items -->
+  </ol>
+</div>
+```
+
+## Notes
+
+- Requires Algolia Recommend with Visual AI to be enabled.
+- The widget uses AI to find visually similar products.
+- Perfect for fashion, home decor, and visual-first catalogs.
+- Recommendations are based on image similarity, not attributes.
+- Great for "Shop the Look" and "Similar Styles" features.

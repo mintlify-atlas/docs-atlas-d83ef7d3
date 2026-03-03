@@ -1,0 +1,203 @@
+---
+title: panel
+---
+
+Wraps other widgets in a consistent panel design with optional header, footer, and collapsible functionality.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { panel, refinementList } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+const panelRefinementList = panel({
+  templates: {
+    header: 'Brand'
+  }
+})(refinementList);
+
+search.addWidgets([
+  panelRefinementList({
+    container: '#brands',
+    attribute: 'brand'
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="templates" type="object">
+  Templates to use for the widget.
+  
+  <Expandable title="properties">
+    <ParamField path="header" type="string | function">
+      Template to use for the header. Receives the render state of the wrapped widget.
+    </ParamField>
+    
+    <ParamField path="footer" type="string | function">
+      Template to use for the footer. Receives the render state of the wrapped widget.
+    </ParamField>
+    
+    <ParamField path="collapseButtonText" type="function">
+      Template for the collapse button text. Receives `{ collapsed: boolean }`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="hidden" type="function">
+  Function called on each render to determine if the panel should be hidden. Receives the render options of the wrapped widget.
+  
+  ```typescript
+  (options: RenderOptions) => boolean
+  ```
+</ParamField>
+
+<ParamField path="collapsed" type="function">
+  Function called on each render to determine if the panel should be collapsed. When provided, makes the panel collapsible.
+  
+  ```typescript
+  (options: RenderOptions) => boolean
+  ```
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class to add to the root element.
+    </ParamField>
+    
+    <ParamField path="noRefinementRoot" type="string | string[]">
+      CSS class to add to the root element when there are no refinements.
+    </ParamField>
+    
+    <ParamField path="collapsibleRoot" type="string | string[]">
+      CSS class to add when the panel is collapsible.
+    </ParamField>
+    
+    <ParamField path="collapsedRoot" type="string | string[]">
+      CSS class to add when the panel is collapsed.
+    </ParamField>
+    
+    <ParamField path="collapseButton" type="string | string[]">
+      CSS class to add to the collapse button.
+    </ParamField>
+    
+    <ParamField path="collapseIcon" type="string | string[]">
+      CSS class to add to the collapse icon.
+    </ParamField>
+    
+    <ParamField path="header" type="string | string[]">
+      CSS class to add to the header.
+    </ParamField>
+    
+    <ParamField path="body" type="string | string[]">
+      CSS class to add to the body.
+    </ParamField>
+    
+    <ParamField path="footer" type="string | string[]">
+      CSS class to add to the footer.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Simple header
+
+```javascript
+const panelRefinementList = panel({
+  templates: {
+    header: 'Categories'
+  }
+})(refinementList);
+
+panelRefinementList({
+  container: '#categories',
+  attribute: 'category'
+});
+```
+
+### Dynamic header with count
+
+```javascript
+const panelRefinementList = panel({
+  templates: {
+    header({ items }) {
+      return `Brand (${items.length})`;
+    }
+  }
+})(refinementList);
+```
+
+### Collapsible panel
+
+```javascript
+const panelRefinementList = panel({
+  templates: {
+    header: 'Filters'
+  },
+  collapsed: ({ results }) => !results || results.nbHits === 0
+})(refinementList);
+```
+
+### Hidden when no refinements
+
+```javascript
+const panelRefinementList = panel({
+  templates: {
+    header: 'Available Colors'
+  },
+  hidden: ({ items }) => items.length === 0
+})(refinementList);
+```
+
+### With header and footer
+
+```javascript
+const panelHits = panel({
+  templates: {
+    header: 'Products',
+    footer({ nbHits }) {
+      return `<small>Showing ${nbHits} products</small>`;
+    }
+  }
+})(hits);
+```
+
+## HTML output
+
+```html
+<div class="ais-Panel">
+  <div class="ais-Panel-header">
+    Brand
+  </div>
+  <div class="ais-Panel-body">
+    <!-- Wrapped widget content -->
+  </div>
+</div>
+```
+
+### Collapsible panel HTML
+
+```html
+<div class="ais-Panel ais-Panel--collapsible">
+  <div class="ais-Panel-header">
+    <button class="ais-Panel-collapseButton">
+      <svg class="ais-Panel-collapseIcon">...</svg>
+    </button>
+    Brand
+  </div>
+  <div class="ais-Panel-body">
+    <!-- Wrapped widget content -->
+  </div>
+</div>
+```

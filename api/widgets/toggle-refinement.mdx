@@ -1,0 +1,175 @@
+---
+title: toggleRefinement
+description: Toggle a boolean filter on or off
+---
+
+The toggleRefinement widget creates a checkbox that toggles a facet filter on or off. It's ideal for boolean filters like "Free shipping", "In stock", or "On sale".
+
+## Usage
+
+```javascript
+const toggleRefinement = instantsearch.widgets.toggleRefinement({
+  container: '#free-shipping',
+  attribute: 'free_shipping',
+  on: true,
+});
+
+search.addWidget(toggleRefinement);
+```
+
+## Examples
+
+### Basic Toggle
+
+```javascript
+instantsearch.widgets.toggleRefinement({
+  container: '#free-shipping',
+  attribute: 'free_shipping',
+  templates: {
+    labelText: 'Free shipping',
+  },
+});
+```
+
+### Toggle with Custom Values
+
+```javascript
+instantsearch.widgets.toggleRefinement({
+  container: '#availability',
+  attribute: 'available',
+  on: 'yes',
+  off: 'no',
+  templates: {
+    labelText: 'In stock only',
+  },
+});
+```
+
+### Toggle with Dynamic Label
+
+```javascript
+instantsearch.widgets.toggleRefinement({
+  container: '#on-sale',
+  attribute: 'on_sale',
+  templates: {
+    labelText({ isRefined }) {
+      return isRefined ? 'Showing sale items' : 'Show sale items only';
+    },
+  },
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="attribute" type="string" required>
+  The name of the attribute to filter on. Must be declared as an attribute for faceting.
+</ParamField>
+
+<ParamField path="on" type="any" default="true">
+  The value to filter on when the toggle is checked.
+</ParamField>
+
+<ParamField path="off" type="any">
+  The value to filter on when the toggle is unchecked. When not provided, the filter is simply removed when unchecked.
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="labelText" type="Template">
+      Template for the label text.
+      
+      Receives:
+      - `isRefined`: Whether the toggle is checked
+      - `count`: Number of results with the "on" value
+      - `onFacetValue`: Information about the "on" facet value
+      - `offFacetValue`: Information about the "off" facet value
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="label" type="string | string[]">
+      CSS class for the label element.
+    </ParamField>
+    <ParamField path="checkbox" type="string | string[]">
+      CSS class for the checkbox.
+    </ParamField>
+    <ParamField path="labelText" type="string | string[]">
+      CSS class for the label text.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-ToggleRefinement">
+  <label class="ais-ToggleRefinement-label">
+    <input
+      class="ais-ToggleRefinement-checkbox"
+      type="checkbox"
+      checked
+    />
+    <span class="ais-ToggleRefinement-labelText">Free shipping</span>
+  </label>
+</div>
+```
+
+## Use Cases
+
+### Boolean Filters
+
+```javascript
+instantsearch.widgets.toggleRefinement({
+  container: '#free-shipping',
+  attribute: 'free_shipping',
+  templates: {
+    labelText: 'Free shipping',
+  },
+});
+```
+
+### String Value Filters
+
+```javascript
+instantsearch.widgets.toggleRefinement({
+  container: '#brand-filter',
+  attribute: 'brand',
+  on: 'Apple',
+  templates: {
+    labelText: 'Apple products only',
+  },
+});
+```
+
+### Toggle Between Two Values
+
+```javascript
+instantsearch.widgets.toggleRefinement({
+  container: '#condition',
+  attribute: 'condition',
+  on: 'new',
+  off: 'used',
+  templates: {
+    labelText: 'New items only',
+  },
+});
+```
+
+## Requirements
+
+<Warning>
+  The attribute must be declared as an **attribute for faceting** in your Algolia index settings.
+</Warning>

@@ -1,0 +1,278 @@
+---
+title: Available Templates
+description: Explore the InstantSearch templates for different frameworks and platforms
+---
+
+The `create-instantsearch-app` CLI supports multiple templates across web and mobile platforms.
+
+## Web Templates
+
+### InstantSearch.js
+
+Vanilla JavaScript template using InstantSearch.js.
+
+<ParamField path="Template name" type="string">
+  `InstantSearch.js`
+</ParamField>
+
+<ParamField path="Library" type="string">
+  instantsearch.js
+</ParamField>
+
+<ParamField path="Supported versions" type="string">
+  >= 3.0.0 < 5.0.0
+</ParamField>
+
+**Features:**
+- Pure JavaScript, no framework required
+- Parcel bundler for development
+- TypeScript support
+- ESLint and Prettier configured
+- Dynamic Widgets (>= 4.30)
+- Insights support (>= 4.55)
+- Autocomplete integration (>= 4.52)
+
+```bash
+npx create-instantsearch-app my-app --template "InstantSearch.js"
+```
+
+### React InstantSearch
+
+React template using React InstantSearch.
+
+<ParamField path="Template name" type="string">
+  `React InstantSearch`
+</ParamField>
+
+<ParamField path="Library" type="string">
+  react-instantsearch
+</ParamField>
+
+<ParamField path="Supported versions" type="string">
+  >= 7.0.0 < 8.0.0
+</ParamField>
+
+**Features:**
+- React 18+ support
+- Parcel bundler for development
+- ESLint and Prettier configured
+- Dynamic Widgets (>= 7.0)
+- Insights support (>= 7.0)
+
+```bash
+npx create-instantsearch-app my-app --template "React InstantSearch"
+```
+
+### Vue InstantSearch
+
+Vue 2 template using Vue InstantSearch.
+
+<ParamField path="Template name" type="string">
+  `Vue InstantSearch`
+</ParamField>
+
+<ParamField path="Library" type="string">
+  vue-instantsearch
+</ParamField>
+
+<ParamField path="Supported versions" type="string">
+  >= 3.0.0 < 5.0.0
+</ParamField>
+
+**Features:**
+- Vue 2 framework
+- Parcel bundler for development
+- ESLint and Prettier configured
+- Dynamic Widgets (>= 4.2.0)
+- Insights support (>= 4.9.0)
+
+```bash
+npx create-instantsearch-app my-app --template "Vue InstantSearch"
+```
+
+### Vue InstantSearch with Vue 3
+
+Vue 3 template using Vue InstantSearch.
+
+<ParamField path="Template name" type="string">
+  `Vue InstantSearch with Vue 3`
+</ParamField>
+
+<ParamField path="Library" type="string">
+  vue-instantsearch
+</ParamField>
+
+<ParamField path="Supported versions" type="string">
+  >= 4.0.0 < 5.0.0
+</ParamField>
+
+**Features:**
+- Vue 3 framework with Composition API
+- Parcel bundler for development
+- ESLint and Prettier configured
+- Dynamic Widgets support
+- Insights support
+
+```bash
+npx create-instantsearch-app my-app --template "Vue InstantSearch with Vue 3"
+```
+
+### Autocomplete
+
+Standalone Autocomplete template using Autocomplete.js.
+
+<ParamField path="Template name" type="string">
+  `Autocomplete`
+</ParamField>
+
+**Features:**
+- Autocomplete.js library
+- Query Suggestions plugin
+- Recent Searches plugin
+- Parcel bundler
+
+```bash
+npx create-instantsearch-app my-app --template "Autocomplete"
+```
+
+## Mobile Templates
+
+### React InstantSearch Native
+
+React Native template for mobile apps.
+
+<ParamField path="Template name" type="string">
+  `React InstantSearch Native`
+</ParamField>
+
+**Features:**
+- React Native framework
+- Expo for development
+- iOS and Android support
+- TypeScript support
+
+```bash
+npx create-instantsearch-app my-app --template "React InstantSearch Native"
+```
+
+### InstantSearch iOS
+
+Native iOS template using InstantSearch iOS.
+
+<ParamField path="Template name" type="string">
+  `InstantSearch iOS`
+</ParamField>
+
+**Features:**
+- Swift-based
+- Xcode project structure
+- CocoaPods for dependencies
+- Native iOS widgets
+
+```bash
+npx create-instantsearch-app my-app --template "InstantSearch iOS"
+```
+
+### InstantSearch Android
+
+Native Android template using InstantSearch Android.
+
+<ParamField path="Template name" type="string">
+  `InstantSearch Android`
+</ParamField>
+
+**Features:**
+- Kotlin-based
+- Gradle build system
+- Android Studio compatible
+- Native Android widgets
+
+```bash
+npx create-instantsearch-app my-app --template "InstantSearch Android"
+```
+
+## Advanced Templates
+
+### JavaScript Client
+
+Low-level template using only the Algolia JavaScript client.
+
+<ParamField path="Template name" type="string">
+  `JavaScript Client`
+</ParamField>
+
+**Use case:** Build custom search UIs without InstantSearch widgets
+
+```bash
+npx create-instantsearch-app my-app --template "JavaScript Client"
+```
+
+### JavaScript Helper
+
+Template using the Algolia Search Helper.
+
+<ParamField path="Template name" type="string">
+  `JavaScript Helper`
+</ParamField>
+
+**Use case:** More control than widgets, easier than the raw client
+
+```bash
+npx create-instantsearch-app my-app --template "JavaScript Helper"
+```
+
+### InstantSearch.js widget
+
+Template for creating custom InstantSearch.js widgets.
+
+<ParamField path="Template name" type="string">
+  `InstantSearch.js widget`
+</ParamField>
+
+**Use case:** Build and publish custom widgets to npm
+
+```bash
+npx create-instantsearch-app my-widget --template "InstantSearch.js widget"
+```
+
+## Template Features Comparison
+
+| Template | Dynamic Widgets | Insights | Autocomplete |
+|----------|----------------|----------|-------------|
+| InstantSearch.js | >= 4.30 | >= 4.55 | >= 4.52 |
+| React InstantSearch | >= 7.0 | >= 7.0 | - |
+| Vue InstantSearch | >= 4.2.0 | >= 4.9.0 | - |
+| Vue InstantSearch (Vue 3) | >= 4.2.0 | >= 4.9.0 | - |
+| Autocomplete | N/A | N/A | Built-in |
+| React InstantSearch Native | - | - | - |
+
+<Note>
+  **Dynamic Widgets** automatically renders filters based on your index configuration.
+  
+  **Insights** enables event tracking for analytics and personalization.
+  
+  **Autocomplete** provides enhanced search input with suggestions.
+</Note>
+
+## Choosing a Template
+
+<CardGroup cols={2}>
+  <Card title="For simple projects" icon="code">
+    Use **InstantSearch.js** for lightweight, framework-free search
+  </Card>
+  <Card title="For React apps" icon="react">
+    Use **React InstantSearch** for seamless React integration
+  </Card>
+  <Card title="For Vue 2 apps" icon="vuejs">
+    Use **Vue InstantSearch** for Vue 2 projects
+  </Card>
+  <Card title="For Vue 3 apps" icon="vuejs">
+    Use **Vue InstantSearch with Vue 3** for modern Vue
+  </Card>
+  <Card title="For mobile apps" icon="mobile">
+    Use **React InstantSearch Native**, **iOS**, or **Android** templates
+  </Card>
+  <Card title="For custom widgets" icon="puzzle-piece">
+    Use **InstantSearch.js widget** template
+  </Card>
+</CardGroup>

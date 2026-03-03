@@ -1,0 +1,702 @@
+---
+title: Custom Connectors
+description: Build reusable business logic for widgets with custom connectors
+---
+
+Connectors separate business logic from rendering, enabling you to build reusable search components that work with any UI framework or rendering library.
+
+## Overview
+
+A connector is a function that takes a rendering function and returns a widget factory. This pattern lets you:
+
+- **Reuse logic** across different UI implementations
+- **Test business logic** independently from rendering
+- **Support multiple frameworks** with the same core logic
+- **Build custom widgets** with clean separation of concerns
+
+## Basic Connector Structure
+
+```javascript
+function connectMyWidget(renderFn, unmountFn = () => {}) {
+  return (widgetParams = {}) => {
+    // Widget implementation
+    return {
+      $$type: 'ais.myWidget',
+      
+      init(initOptions) {
+        renderFn(
+          {
+            // Render state
+            ...this.getWidgetRenderState(initOptions),
+            instantSearchInstance: initOptions.instantSearchInstance,
+          },
+          true // isFirstRender
+        );
+      },
+      
+      render(renderOptions) {
+        renderFn(
+          {
+            ...this.getWidgetRenderState(renderOptions),
+            instantSearchInstance: renderOptions.instantSearchInstance,
+          },
+          false // isFirstRender
+        );
+      },
+      
+      getWidgetRenderState({ results, state, helper }) {
+        // Return data for rendering
+        return {
+          items: results?.hits || [],
+          widgetParams,
+        };
+      },
+      
+      dispose() {
+        unmountFn();
+      },
+    };
+  };
+}
+```
+
+## Simple Connector Example
+
+Let's create a connector for a hit counter:
+
+```javascript
+function connectHitCount(renderFn, unmountFn = () => {}) {
+  return (widgetParams = {}) => {
+    return {
+      $$type: 'custom.hitCount',
+      
+      init(initOptions) {
+        renderFn(
+          {
+            nbHits: 0,
+            widgetParams,
+            instantSearchInstance: initOptions.instantSearchInstance,
+          },
+          true
+        );
+      },
+      
+      render(renderOptions) {
+        const { results } = renderOptions;
+        
+        renderFn(
+          {
+            nbHits: results.nbHits,
+            widgetParams,
+            instantSearchInstance: renderOptions.instantSearchInstance,
+          },
+          false
+        );
+      },
+      
+      dispose() {
+        unmountFn();
+      },
+    };
+  };
+}
+
+// Usage with vanilla JS
+const renderHitCount = ({ nbHits, widgetParams }, isFirstRender) => {
+  const { container } = widgetParams;
+  
+  if (isFirstRender) {
+    const div = document.createElement('div');
+    div.id = 'hit-count';
+    document.querySelector(container).appendChild(div);
+  }
+  
+  document.querySelector('#hit-count').innerHTML = `
+    <p><strong>${nbHits.toLocaleString()}</strong> results</p>
+  `;
+};
+
+const hitCountWidget = connectHitCount(renderHitCount);
+
+search.addWidgets([
+  hitCountWidget({ container: '#stats' }),
+]);
+```
+
+## Connector with Interactions
+
+Create a connector that supports user interactions:
+
+```javascript
+function connectSearchBox(renderFn, unmountFn = () => {}) {
+  return (widgetParams = {}) => {
+    let helper;
+    let query = '';
+    
+    return {
+      $$type: 'custom.searchBox',
+      
+      init(initOptions) {
+        helper = initOptions.helper;
+        query = helper.state.query || '';
+        
+        renderFn(
+          {
+            query,
+            refine: (newQuery) => {
+              query = newQuery;
+              helper.setQuery(query).search();
+            },
+            clear: () => {
+              query = '';
+              helper.setQuery('').search();
+            },
+            widgetParams,
+            instantSearchInstance: initOptions.instantSearchInstance,
+          },
+          true
+        );
+      },
+      
+      render(renderOptions) {
+        query = renderOptions.state.query || '';
+        
+        renderFn(
+          {
+            query,
+            refine: (newQuery) => {
+              query = newQuery;
+              helper.setQuery(query).search();
+            },
+            clear: () => {
+              query = '';
+              helper.setQuery('').search();
+            },
+            widgetParams,
+            instantSearchInstance: renderOptions.instantSearchInstance,
+          },
+          false
+        );
+      },
+      
+      getWidgetUiState(uiState, { searchParameters }) {
+        const query = searchParameters.query || '';
+        
+        if (!query) {
+          return uiState;
+        }
+        
+        return {
+          ...uiState,
+          query,
+        };
+      },
+      
+      getWidgetSearchParameters(searchParameters, { uiState }) {
+        return searchParameters.setQuery(uiState.query || '');
+      },
+      
+      dispose() {
+        unmountFn();
+      },
+    };
+  };
+}
+
+// Render function
+const renderSearchBox = (renderOptions, isFirstRender) => {
+  const { query, refine, clear, widgetParams } = renderOptions;
+  const { container } = widgetParams;
+  
+  if (isFirstRender) {
+    const input = document.createElement('input');
+    input.id = 'search-input';
+    input.type = 'text';
+    input.placeholder = 'Search...';
+    
+    const button = document.createElement('button');
+    button.id = 'clear-button';
+    button.textContent = 'Clear';
+    
+    const containerNode = document.querySelector(container);
+    containerNode.appendChild(input);
+    containerNode.appendChild(button);
+    
+    input.addEventListener('input', (event) => {
+      refine(event.target.value);
+    });
+    
+    button.addEventListener('click', () => {
+      clear();
+      input.value = '';
+    });
+  }
+  
+  document.querySelector('#search-input').value = query;
+};
+
+const searchBoxWidget = connectSearchBox(renderSearchBox);
+
+search.addWidgets([
+  searchBoxWidget({ container: '#searchbox' }),
+]);
+```
+
+## Advanced Connector: Facet Refinement
+
+Build a full-featured facet connector:
+
+```javascript
+import { checkRendering, createDocumentationMessageGenerator } from 'instantsearch.js/es/lib/utils';
+
+const withUsage = createDocumentationMessageGenerator({
+  name: 'custom-facet',
+  connector: true,
+});
+
+function connectCustomFacet(renderFn, unmountFn = () => {}) {
+  checkRendering(renderFn, withUsage());
+  
+  return (widgetParams = {}) => {
+    const {
+      attribute,
+      limit = 10,
+      sortBy = ['isRefined', 'count:desc', 'name:asc'],
+    } = widgetParams;
+    
+    if (!attribute) {
+      throw new Error(withUsage('The `attribute` option is required.'));
+    }
+    
+    return {
+      $$type: 'custom.facet',
+      
+      init(initOptions) {
+        renderFn(
+          {
+            ...this.getWidgetRenderState(initOptions),
+            instantSearchInstance: initOptions.instantSearchInstance,
+          },
+          true
+        );
+      },
+      
+      render(renderOptions) {
+        renderFn(
+          {
+            ...this.getWidgetRenderState(renderOptions),
+            instantSearchInstance: renderOptions.instantSearchInstance,
+          },
+          false
+        );
+      },
+      
+      getWidgetRenderState({ results, helper, state }) {
+        if (!results) {
+          return {
+            items: [],
+            refine: () => {},
+            createURL: () => '#',
+            widgetParams,
+          };
+        }
+        
+        const facetValues = results.getFacetValues(attribute, { sortBy }) || [];
+        const items = facetValues.slice(0, limit);
+        
+        return {
+          items,
+          refine: (value) => {
+            helper.toggleFacetRefinement(attribute, value).search();
+          },
+          createURL: (value) => {
+            const nextState = helper.state.toggleFacetRefinement(attribute, value);
+            return helper.instantSearchInstance._createURL({ [helper.state.index]: nextState });
+          },
+          canToggleShowMore: facetValues.length > limit,
+          isShowingMore: false,
+          toggleShowMore: () => {},
+          widgetParams,
+        };
+      },
+      
+      getWidgetSearchParameters(searchParameters) {
+        return searchParameters.addDisjunctiveFacet(attribute);
+      },
+      
+      getWidgetUiState(uiState, { searchParameters }) {
+        const values = searchParameters.getDisjunctiveRefinements(attribute);
+        
+        if (!values.length) {
+          return uiState;
+        }
+        
+        return {
+          ...uiState,
+          refinementList: {
+            ...uiState.refinementList,
+            [attribute]: values,
+          },
+        };
+      },
+      
+      dispose({ state }) {
+        unmountFn();
+        return state.removeDisjunctiveFacet(attribute);
+      },
+    };
+  };
+}
+```
+
+## Real-World Example: Stats Connector
+
+Here's how the actual `connectStats` is implemented in InstantSearch:
+
+```typescript
+// Simplified from src/connectors/stats/connectStats.ts
+function connectStats(renderFn, unmountFn = noop) {
+  checkRendering(renderFn, withUsage());
+  
+  return (widgetParams) => {
+    return {
+      $$type: 'ais.stats',
+      
+      init(initOptions) {
+        renderFn(
+          {
+            ...this.getWidgetRenderState(initOptions),
+            instantSearchInstance: initOptions.instantSearchInstance,
+          },
+          true
+        );
+      },
+      
+      render(renderOptions) {
+        renderFn(
+          {
+            ...this.getWidgetRenderState(renderOptions),
+            instantSearchInstance: renderOptions.instantSearchInstance,
+          },
+          false
+        );
+      },
+      
+      getRenderState(renderState, renderOptions) {
+        return {
+          ...renderState,
+          stats: this.getWidgetRenderState(renderOptions),
+        };
+      },
+      
+      getWidgetRenderState({ results, state }) {
+        if (!results) {
+          return {
+            hitsPerPage: state.hitsPerPage,
+            nbHits: 0,
+            nbSortedHits: undefined,
+            areHitsSorted: false,
+            nbPages: 0,
+            page: state.page || 0,
+            processingTimeMS: -1,
+            query: state.query || '',
+            widgetParams,
+          };
+        }
+        
+        return {
+          hitsPerPage: results.hitsPerPage,
+          nbHits: results.nbHits,
+          nbSortedHits: results.nbSortedHits,
+          areHitsSorted: results.appliedRelevancyStrictness !== undefined &&
+            results.appliedRelevancyStrictness > 0 &&
+            results.nbSortedHits !== results.nbHits,
+          nbPages: results.nbPages,
+          page: results.page,
+          processingTimeMS: results.processingTimeMS,
+          query: results.query,
+          widgetParams,
+        };
+      },
+      
+      dispose() {
+        unmountFn();
+      },
+    };
+  };
+}
+```
+
+## Using with React
+
+Connectors work seamlessly with React:
+
+```jsx
+import { connectSearchBox } from 'instantsearch.js/es/connectors';
+import { useConnector } from 'react-instantsearch';
+
+function CustomSearchBox(props) {
+  const { query, refine, clear } = useConnector(connectSearchBox, props);
+  
+  return (
+    <div>
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => refine(e.target.value)}
+        placeholder="Search..."
+      />
+      <button onClick={clear}>Clear</button>
+    </div>
+  );
+}
+```
+
+## Using with Vue
+
+```vue
+<template>
+  <div>
+    <input
+      :value="state.query"
+      @input="state.refine($event.target.value)"
+      placeholder="Search..."
+    />
+    <button @click="state.clear()">Clear</button>
+  </div>
+</template>
+
+<script>
+import { connectSearchBox } from 'instantsearch.js/es/connectors';
+
+export default {
+  data() {
+    return {
+      state: {},
+    };
+  },
+  created() {
+    const renderSearchBox = (renderOptions) => {
+      this.state = renderOptions;
+    };
+    
+    const makeWidget = connectSearchBox(renderSearchBox);
+    this.widget = makeWidget({});
+    
+    this.$root.instantsearch.addWidgets([this.widget]);
+  },
+  beforeDestroy() {
+    this.$root.instantsearch.removeWidgets([this.widget]);
+  },
+};
+</script>
+```
+
+## Connector Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Validate Parameters" icon="check-circle">
+    Check required parameters and provide helpful error messages.
+  </Card>
+  <Card title="Handle First Render" icon="play">
+    Use `isFirstRender` to set up event listeners only once.
+  </Card>
+  <Card title="Provide Render State" icon="database">
+    Return all necessary data from `getWidgetRenderState`.
+  </Card>
+  <Card title="Clean Up" icon="broom">
+    Always call `unmountFn` in the `dispose` method.
+  </Card>
+</CardGroup>
+
+## Helper Utilities
+
+Use InstantSearch utilities in your connectors:
+
+```javascript
+import {
+  checkRendering,
+  createDocumentationMessageGenerator,
+  noop,
+  warning,
+} from 'instantsearch.js/es/lib/utils';
+
+const withUsage = createDocumentationMessageGenerator({
+  name: 'my-connector',
+  connector: true,
+});
+
+function connectMyWidget(renderFn, unmountFn = noop) {
+  // Validate render function
+  checkRendering(renderFn, withUsage());
+  
+  return (widgetParams = {}) => {
+    const { attribute } = widgetParams;
+    
+    // Validate parameters
+    if (!attribute) {
+      throw new Error(withUsage('The `attribute` option is required.'));
+    }
+    
+    // Warn about deprecated options
+    warning(
+      !widgetParams.deprecated,
+      withUsage('The `deprecated` option is no longer supported.')
+    );
+    
+    return {
+      // Widget implementation
+    };
+  };
+}
+```
+
+## Testing Connectors
+
+Connectors are easy to test because they separate logic from rendering:
+
+```javascript
+import { connectCustomFacet } from './connectors';
+
+describe('connectCustomFacet', () => {
+  it('provides items to render function', () => {
+    const renderFn = jest.fn();
+    const makeWidget = connectCustomFacet(renderFn);
+    const widget = makeWidget({ attribute: 'brand' });
+    
+    widget.render({
+      results: {
+        getFacetValues: () => [
+          { name: 'Apple', count: 100, isRefined: false },
+          { name: 'Samsung', count: 80, isRefined: false },
+        ],
+      },
+      state: {},
+      helper: {
+        toggleFacetRefinement: jest.fn(),
+      },
+    });
+    
+    expect(renderFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: expect.arrayContaining([
+          expect.objectContaining({ name: 'Apple' }),
+        ]),
+      }),
+      false
+    );
+  });
+});
+```
+
+## Complete Example
+
+```javascript
+import { checkRendering, createDocumentationMessageGenerator, noop } from 'instantsearch.js/es/lib/utils';
+
+const withUsage = createDocumentationMessageGenerator({
+  name: 'toggle',
+  connector: true,
+});
+
+function connectToggle(renderFn, unmountFn = noop) {
+  checkRendering(renderFn, withUsage());
+  
+  return (widgetParams = {}) => {
+    const { attribute, on = true, off } = widgetParams;
+    
+    if (!attribute) {
+      throw new Error(withUsage('The `attribute` option is required.'));
+    }
+    
+    return {
+      $$type: 'custom.toggle',
+      
+      init(initOptions) {
+        renderFn(
+          {
+            ...this.getWidgetRenderState(initOptions),
+            instantSearchInstance: initOptions.instantSearchInstance,
+          },
+          true
+        );
+      },
+      
+      render(renderOptions) {
+        renderFn(
+          {
+            ...this.getWidgetRenderState(renderOptions),
+            instantSearchInstance: renderOptions.instantSearchInstance,
+          },
+          false
+        );
+      },
+      
+      getWidgetRenderState({ helper, results, state }) {
+        const isRefined = state.isDisjunctiveFacetRefined(attribute, on);
+        const onFacetValue = results?.getFacetByName?.(attribute)?.data?.[on];
+        const offFacetValue = off !== undefined
+          ? results?.getFacetByName?.(attribute)?.data?.[off]
+          : undefined;
+        
+        return {
+          value: {
+            name: attribute,
+            isRefined,
+            count: results
+              ? isRefined
+                ? offFacetValue?.count || null
+                : onFacetValue?.count || 0
+              : null,
+            onFacetValue,
+            offFacetValue,
+          },
+          refine: () => {
+            helper.toggleFacetRefinement(attribute, on).search();
+          },
+          createURL: () => {
+            const nextState = state.toggleFacetRefinement(attribute, on);
+            return helper.instantSearchInstance._createURL({
+              [state.index]: nextState,
+            });
+          },
+          widgetParams,
+        };
+      },
+      
+      getWidgetSearchParameters(searchParameters) {
+        return searchParameters.addDisjunctiveFacet(attribute);
+      },
+      
+      getWidgetUiState(uiState, { searchParameters }) {
+        const isRefined = searchParameters.isDisjunctiveFacetRefined(attribute, on);
+        
+        if (!isRefined) {
+          return uiState;
+        }
+        
+        return {
+          ...uiState,
+          toggle: {
+            ...uiState.toggle,
+            [attribute]: isRefined,
+          },
+        };
+      },
+      
+      dispose({ state }) {
+        unmountFn();
+        return state.removeDisjunctiveFacet(attribute);
+      },
+    };
+  };
+}
+
+export default connectToggle;
+```
+
+## Related Resources
+
+- [Custom Widgets guide](/guides/custom-widgets)
+- [Connector API Reference](/api-reference/connector)
+- [Built-in Connectors](/connectors/overview)

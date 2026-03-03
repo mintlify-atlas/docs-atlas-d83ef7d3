@@ -1,0 +1,83 @@
+---
+title: "connectSearchBox"
+description: "Build a custom search box widget for entering search queries"
+---
+
+The **SearchBox** connector provides the logic to build a custom widget that lets users search for a query.
+
+## Usage
+
+```javascript
+import { connectSearchBox } from 'instantsearch.js/es/connectors';
+
+const customSearchBox = connectSearchBox(
+  (renderOptions, isFirstRender) => {
+    const { query, refine, clear, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <input 
+        type="search" 
+        value="${query}"
+        placeholder="Search..."
+      />
+      <button>Clear</button>
+    `;
+    
+    container.querySelector('input').addEventListener('input', (e) => {
+      refine(e.target.value);
+    });
+    
+    container.querySelector('button').addEventListener('click', () => {
+      clear();
+    });
+  }
+);
+
+search.addWidgets([
+  customSearchBox({
+    container: document.querySelector('#search-box'),
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="queryHook" type="(query: string, search: (value: string) => void) => void">
+  A function called every time a new query is set. The first parameter is the query and the second is a function to trigger the search.
+  
+  This can be used to debounce searches:
+  
+  ```javascript
+  queryHook(query, search) {
+    clearTimeout(this.timerId);
+    this.timerId = setTimeout(() => search(query), 300);
+  }
+  ```
+</ParamField>
+
+## Render Options
+
+<ParamField path="query" type="string">
+  The current search query.
+</ParamField>
+
+<ParamField path="refine" type="(value: string) => void">
+  Sets a new query and triggers a search.
+</ParamField>
+
+<ParamField path="clear" type="() => void">
+  Clears the query and performs a search.
+</ParamField>
+
+<ParamField path="isSearchStalled" type="boolean">
+  `true` if the search results take more than a certain time to come back from Algolia servers. 
+  
+  <Warning>
+    This parameter is deprecated. Use `instantSearchInstance.status` instead.
+  </Warning>
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

@@ -1,0 +1,459 @@
+---
+title: 'useRefinementList'
+description: 'Build custom multi-select faceted filters'
+---
+
+The `useRefinementList` hook provides the logic to build custom refinement list (multi-select facet) components.
+
+## Import
+
+```jsx
+import { useRefinementList } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="attribute" type="string" required>
+  The attribute to create the refinement list for.
+
+  ```jsx
+  const { items, refine } = useRefinementList({ attribute: 'brand' });
+  ```
+</ParamField>
+
+<ParamField path="operator" type="'and' | 'or'" default="'or'">
+  How to combine refinements.
+
+  ```jsx
+  // AND: Results must match all selected values
+  const hook = useRefinementList({ 
+    attribute: 'brand', 
+    operator: 'and' 
+  });
+
+  // OR: Results match any selected value
+  const hook2 = useRefinementList({ 
+    attribute: 'color', 
+    operator: 'or' 
+  });
+  ```
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Maximum number of items to display.
+
+  ```jsx
+  const { items } = useRefinementList({ 
+    attribute: 'brand', 
+    limit: 5 
+  });
+  ```
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to enable the "show more" functionality.
+
+  ```jsx
+  const { toggleShowMore, canToggleShowMore } = useRefinementList({ 
+    attribute: 'brand', 
+    showMore: true,
+    showMoreLimit: 20
+  });
+  ```
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  Maximum number of items to display when "show more" is active.
+
+  ```jsx
+  const hook = useRefinementList({ 
+    attribute: 'brand', 
+    showMore: true,
+    showMoreLimit: 50
+  });
+  ```
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | (a, b) => number">
+  How to sort the facet values.
+
+  ```jsx
+  // Predefined sort orders
+  const hook = useRefinementList({ 
+    attribute: 'brand',
+    sortBy: ['isRefined', 'count:desc', 'name:asc']
+  });
+
+  // Custom sort function
+  const hook2 = useRefinementList({ 
+    attribute: 'brand',
+    sortBy: (a, b) => a.name.localeCompare(b.name)
+  });
+  ```
+</ParamField>
+
+<ParamField path="escapeFacetValues" type="boolean" default="true">
+  Whether to escape facet values.
+
+  ```jsx
+  const hook = useRefinementList({ 
+    attribute: 'category',
+    escapeFacetValues: false 
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: RefinementListItem[]) => RefinementListItem[]">
+  Function to transform the items.
+
+  ```jsx
+  const { items } = useRefinementList({
+    attribute: 'brand',
+    transformItems: (items) => 
+      items.filter((item) => item.count > 0)
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="RefinementListItem[]">
+  The list of refinement values.
+
+  ```jsx
+  const { items } = useRefinementList({ attribute: 'brand' });
+  
+  items.forEach((item) => {
+    console.log(item.value);      // "Apple"
+    console.log(item.label);      // "Apple"
+    console.log(item.count);      // 42
+    console.log(item.isRefined);  // true/false
+    console.log(item.highlighted); // "<mark>App</mark>le"
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(value: string) => void">
+  Function to toggle a refinement.
+
+  ```jsx
+  const { refine } = useRefinementList({ attribute: 'brand' });
+  refine('Apple'); // Toggle "Apple" refinement
+  ```
+</ResponseField>
+
+<ResponseField name="searchForItems" type="(query: string) => void">
+  Function to search within facet values.
+
+  ```jsx
+  const { searchForItems } = useRefinementList({ attribute: 'brand' });
+  searchForItems('app'); // Search for brands containing "app"
+  ```
+</ResponseField>
+
+<ResponseField name="isFromSearch" type="boolean">
+  Whether the current items are from a facet search.
+
+  ```jsx
+  const { isFromSearch } = useRefinementList({ attribute: 'brand' });
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether refinements can be applied.
+
+  ```jsx
+  const { canRefine } = useRefinementList({ attribute: 'brand' });
+  ```
+</ResponseField>
+
+<ResponseField name="canToggleShowMore" type="boolean">
+  Whether the "show more" toggle is available.
+
+  ```jsx
+  const { canToggleShowMore } = useRefinementList({ 
+    attribute: 'brand',
+    showMore: true 
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="isShowingMore" type="boolean">
+  Whether "show more" is currently active.
+
+  ```jsx
+  const { isShowingMore } = useRefinementList({ 
+    attribute: 'brand',
+    showMore: true 
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="toggleShowMore" type="() => void">
+  Function to toggle between showing more/less items.
+
+  ```jsx
+  const { toggleShowMore } = useRefinementList({ 
+    attribute: 'brand',
+    showMore: true 
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="hasExhaustiveItems" type="boolean">
+  Whether all possible facet values are displayed.
+
+  ```jsx
+  const { hasExhaustiveItems } = useRefinementList({ attribute: 'brand' });
+  ```
+</ResponseField>
+
+<ResponseField name="createURL" type="(value: string) => string">
+  Function to create a URL for a facet value.
+
+  ```jsx
+  const { createURL } = useRefinementList({ attribute: 'brand' });
+  const url = createURL('Apple');
+  ```
+</ResponseField>
+
+<ResponseField name="sendEvent" type="SendEventForFacet">
+  Function to send Insights events.
+
+  ```jsx
+  const { sendEvent } = useRefinementList({ attribute: 'brand' });
+  sendEvent('click', 'Apple', 'Brand Filter Clicked');
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Refinement List
+
+```jsx
+import { useRefinementList } from 'react-instantsearch';
+
+function BrandFilter() {
+  const { items, refine } = useRefinementList({ attribute: 'brand' });
+
+  return (
+    <div>
+      <h3>Brands</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <label>
+              <input
+                type="checkbox"
+                checked={item.isRefined}
+                onChange={() => refine(item.value)}
+              />
+              {item.label} ({item.count})
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### With Search
+
+```jsx
+import { useRefinementList } from 'react-instantsearch';
+import { useState } from 'react';
+
+function SearchableBrandFilter() {
+  const { items, refine, searchForItems } = useRefinementList({ 
+    attribute: 'brand' 
+  });
+  const [query, setQuery] = useState('');
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setQuery(value);
+    searchForItems(value);
+  };
+
+  return (
+    <div>
+      <h3>Brands</h3>
+      <input
+        type="search"
+        value={query}
+        onChange={handleSearchChange}
+        placeholder="Search brands..."
+      />
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <label>
+              <input
+                type="checkbox"
+                checked={item.isRefined}
+                onChange={() => refine(item.value)}
+              />
+              <span dangerouslySetInnerHTML={{ __html: item.highlighted }} />
+              {' '}({item.count})
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### With Show More
+
+```jsx
+import { useRefinementList } from 'react-instantsearch';
+
+function ExpandableBrandFilter() {
+  const { 
+    items, 
+    refine, 
+    toggleShowMore, 
+    isShowingMore, 
+    canToggleShowMore 
+  } = useRefinementList({ 
+    attribute: 'brand',
+    limit: 5,
+    showMore: true,
+    showMoreLimit: 20
+  });
+
+  return (
+    <div>
+      <h3>Brands</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <label>
+              <input
+                type="checkbox"
+                checked={item.isRefined}
+                onChange={() => refine(item.value)}
+              />
+              {item.label} ({item.count})
+            </label>
+          </li>
+        ))}
+      </ul>
+      {canToggleShowMore && (
+        <button onClick={toggleShowMore}>
+          {isShowingMore ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### Custom Styling
+
+```jsx
+import { useRefinementList } from 'react-instantsearch';
+
+function StyledBrandFilter() {
+  const { items, refine } = useRefinementList({ attribute: 'brand' });
+
+  return (
+    <div className="refinement-list">
+      <h3>Brands</h3>
+      <div className="refinement-items">
+        {items.map((item) => (
+          <button
+            key={item.value}
+            onClick={() => refine(item.value)}
+            className={`refinement-item ${item.isRefined ? 'active' : ''}`}
+          >
+            <span className="label">{item.label}</span>
+            <span className="count">{item.count}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Sorted by Count
+
+```jsx
+import { useRefinementList } from 'react-instantsearch';
+
+function PopularBrandsFilter() {
+  const { items, refine } = useRefinementList({ 
+    attribute: 'brand',
+    sortBy: ['count:desc', 'name:asc'],
+    limit: 10
+  });
+
+  return (
+    <div>
+      <h3>Popular Brands</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <label>
+              <input
+                type="checkbox"
+                checked={item.isRefined}
+                onChange={() => refine(item.value)}
+              />
+              {item.label} ({item.count})
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### With Transform
+
+```jsx
+import { useRefinementList } from 'react-instantsearch';
+
+function FilteredBrandList() {
+  const { items, refine } = useRefinementList({
+    attribute: 'brand',
+    transformItems: (items) => 
+      items
+        .filter((item) => item.count > 5) // Only show brands with >5 items
+        .map((item) => ({
+          ...item,
+          label: item.label.toUpperCase(), // Transform labels
+        })),
+  });
+
+  return (
+    <div>
+      <h3>Brands (5+ items)</h3>
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <label>
+              <input
+                type="checkbox"
+                checked={item.isRefined}
+                onChange={() => refine(item.value)}
+              />
+              {item.label} ({item.count})
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Related
+
+- [RefinementList Widget](/api/react/widgets/refinement-list)
+- [useMenu Hook](/api/react/hooks/use-menu)
+- [useCurrentRefinements Hook](/api/react/hooks/use-current-refinements)

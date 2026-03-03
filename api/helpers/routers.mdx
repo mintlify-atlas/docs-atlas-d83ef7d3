@@ -1,0 +1,441 @@
+---
+title: Routers
+description: URL synchronization utilities for InstantSearch
+---
+
+Routers manage the synchronization between your search UI state and the browser URL. They enable users to share search results, use browser back/forward buttons, and bookmark search states.
+
+## Available Routers
+
+### history
+
+The history router uses the browser's History API (`pushState` and `popstate`) to manage URL synchronization.
+
+```javascript
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+  },
+});
+```
+
+## history() Options
+
+<ParamField path="windowTitle" type="Function">
+  Function that returns the page title based on the route state.
+  
+  ```javascript
+  history({
+    windowTitle(routeState) {
+      const query = routeState.query;
+      return query ? `Search: ${query}` : 'Search';
+    },
+  })
+  ```
+</ParamField>
+
+<ParamField path="writeDelay" type="number" default="400">
+  Time in milliseconds to wait before writing to the URL. This prevents adding too many entries to the browser history.
+  
+  ```javascript
+  history({
+    writeDelay: 300,
+  })
+  ```
+</ParamField>
+
+<ParamField path="createURL" type="Function">
+  Function to create a URL from the route state.
+  
+  <Expandable title="Parameters">
+    <ParamField path="qsModule" type="qs">
+      The `qs` module for query string serialization.
+    </ParamField>
+    <ParamField path="routeState" type="object">
+      The current route state.
+    </ParamField>
+    <ParamField path="location" type="Location">
+      The current browser location.
+    </ParamField>
+  </Expandable>
+  
+  ```javascript
+  history({
+    createURL({ qsModule, routeState, location }) {
+      const { protocol, hostname, port, pathname, hash } = location;
+      const queryString = qsModule.stringify(routeState);
+      const portWithPrefix = port ? `:${port}` : '';
+      
+      if (!queryString) {
+        return `${protocol}//${hostname}${portWithPrefix}${pathname}${hash}`;
+      }
+      
+      return `${protocol}//${hostname}${portWithPrefix}${pathname}?${queryString}${hash}`;
+    },
+  })
+  ```
+</ParamField>
+
+<ParamField path="parseURL" type="Function">
+  Function to parse the URL into route state.
+  
+  <Expandable title="Parameters">
+    <ParamField path="qsModule" type="qs">
+      The `qs` module for query string parsing.
+    </ParamField>
+    <ParamField path="location" type="Location">
+      The current browser location.
+    </ParamField>
+  </Expandable>
+  
+  ```javascript
+  history({
+    parseURL({ qsModule, location }) {
+      return qsModule.parse(location.search.slice(1), {
+        arrayLimit: 99,
+      });
+    },
+  })
+  ```
+</ParamField>
+
+<ParamField path="getLocation" type="Function">
+  Function that returns the current location object. Useful for server-side rendering or testing.
+  
+  ```javascript
+  history({
+    getLocation() {
+      return window.location;
+    },
+  })
+  ```
+</ParamField>
+
+<ParamField path="start" type="Function">
+  Custom function to start listening for URL changes. Advanced use only.
+  
+  ```javascript
+  history({
+    start(onUpdate) {
+      // Custom logic to listen for URL changes
+      window.addEventListener('popstate', onUpdate);
+    },
+  })
+  ```
+</ParamField>
+
+<ParamField path="dispose" type="Function">
+  Custom function to clean up when routing is disposed. Advanced use only.
+  
+  ```javascript
+  history({
+    dispose() {
+      // Custom cleanup logic
+    },
+  })
+  ```
+</ParamField>
+
+<ParamField path="push" type="Function">
+  Custom function to push URL changes. Advanced use only.
+  
+  ```javascript
+  history({
+    push(url) {
+      window.history.pushState(null, '', url);
+    },
+  })
+  ```
+</ParamField>
+
+<ParamField path="cleanUrlOnDispose" type="boolean" default="true">
+  Whether to clean up the URL when InstantSearch is disposed. Setting this to `false` preserves active refinements in the URL when closing modals or unmounting the component.
+  
+  ```javascript
+  history({
+    cleanUrlOnDispose: false,
+  })
+  ```
+</ParamField>
+
+## Router Methods
+
+Router instances provide these methods:
+
+### read()
+
+Reads the current URL and returns the route state.
+
+```javascript
+const router = history();
+const routeState = router.read();
+```
+
+### write(routeState)
+
+Writes the route state to the URL.
+
+```javascript
+router.write({
+  query: 'laptop',
+  refinementList: {
+    brand: ['Apple'],
+  },
+});
+```
+
+### createURL(routeState)
+
+Creates a URL string from the route state.
+
+```javascript
+const url = router.createURL({
+  query: 'phone',
+  page: 2,
+});
+```
+
+### onUpdate(callback)
+
+Registers a callback for URL changes.
+
+```javascript
+router.onUpdate((routeState) => {
+  console.log('URL changed:', routeState);
+});
+```
+
+### dispose()
+
+Cleans up event listeners and optionally cleans the URL.
+
+```javascript
+router.dispose();
+```
+
+## Examples
+
+### Basic History Router
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { history } from 'instantsearch.js/es/lib/routers';
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+    stateMapping: simple(),
+  },
+});
+```
+
+### Custom Window Title
+
+```javascript
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history({
+      windowTitle(routeState) {
+        const query = routeState.query || '';
+        const brand = routeState.refinementList?.brand?.[0] || '';
+        
+        if (query && brand) {
+          return `${query} - ${brand} | My Store`;
+        }
+        if (query) {
+          return `${query} | My Store`;
+        }
+        return 'Search | My Store';
+      },
+    }),
+  },
+});
+```
+
+### Custom URL Structure
+
+```javascript
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history({
+      createURL({ qsModule, routeState, location }) {
+        const baseUrl = `${location.protocol}//${location.hostname}${location.port ? ':' + location.port : ''}`;
+        
+        // Create clean URLs like: /search/laptop/brand-apple/page-2
+        const parts = [];
+        
+        if (routeState.query) {
+          parts.push(routeState.query);
+        }
+        
+        if (routeState.refinementList?.brand?.[0]) {
+          parts.push(`brand-${routeState.refinementList.brand[0]}`);
+        }
+        
+        if (routeState.page && routeState.page > 1) {
+          parts.push(`page-${routeState.page}`);
+        }
+        
+        return `${baseUrl}/search/${parts.join('/')}`;
+      },
+      
+      parseURL({ location }) {
+        // Parse URLs like: /search/laptop/brand-apple/page-2
+        const parts = location.pathname.split('/').filter(Boolean);
+        const routeState = {};
+        
+        if (parts[0] === 'search' && parts[1]) {
+          routeState.query = parts[1];
+        }
+        
+        parts.forEach(part => {
+          if (part.startsWith('brand-')) {
+            routeState.refinementList = {
+              brand: [part.replace('brand-', '')],
+            };
+          }
+          if (part.startsWith('page-')) {
+            routeState.page = parseInt(part.replace('page-', ''), 10);
+          }
+        });
+        
+        return routeState;
+      },
+    }),
+  },
+});
+```
+
+### Faster URL Updates
+
+```javascript
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history({
+      writeDelay: 100, // Update URL faster (default: 400ms)
+    }),
+  },
+});
+```
+
+### Preserve URL on Unmount
+
+```javascript
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history({
+      cleanUrlOnDispose: false, // Keep filters in URL when closing modal
+    }),
+  },
+});
+```
+
+### Server-Side Rendering
+
+```javascript
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history({
+      getLocation() {
+        // Provide location for SSR
+        return typeof window !== 'undefined'
+          ? window.location
+          : new URL('https://example.com/search');
+      },
+    }),
+  },
+});
+```
+
+## Router Type
+
+The router must implement this interface:
+
+```typescript
+interface Router<TRouteState = UiState> {
+  read(): TRouteState;
+  write(routeState: TRouteState): void;
+  createURL(routeState: TRouteState): string;
+  onUpdate(callback: (routeState: TRouteState) => void): void;
+  dispose(): void;
+}
+```
+
+## Custom Router Implementation
+
+You can create a custom router by implementing the Router interface:
+
+```javascript
+const customRouter = {
+  read() {
+    // Read state from custom storage (e.g., localStorage)
+    const state = localStorage.getItem('searchState');
+    return state ? JSON.parse(state) : {};
+  },
+  
+  write(routeState) {
+    // Write state to custom storage
+    localStorage.setItem('searchState', JSON.stringify(routeState));
+  },
+  
+  createURL(routeState) {
+    // Create shareable URL
+    const query = new URLSearchParams(routeState).toString();
+    return `${window.location.pathname}?${query}`;
+  },
+  
+  onUpdate(callback) {
+    // Listen for state changes
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'searchState') {
+        callback(JSON.parse(event.newValue));
+      }
+    });
+  },
+  
+  dispose() {
+    // Cleanup
+    window.removeEventListener('storage', this._onStorageChange);
+  },
+};
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: customRouter,
+  },
+});
+```
+
+## Related
+
+- [State Mappings](/api/helpers/state-mappings) - Transform state to/from URL
+- [Routing Guide](/guides/routing) - Complete routing documentation

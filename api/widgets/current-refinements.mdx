@@ -1,0 +1,202 @@
+---
+title: currentRefinements
+description: Display and remove active refinements
+---
+
+The currentRefinements widget displays a list of all active filters and allows users to remove them individually. It provides a clear overview of the current search context.
+
+## Usage
+
+```javascript
+const currentRefinements = instantsearch.widgets.currentRefinements({
+  container: '#current-refinements',
+});
+
+search.addWidget(currentRefinements);
+```
+
+## Examples
+
+### Basic Current Refinements
+
+```javascript
+instantsearch.widgets.currentRefinements({
+  container: '#current-refinements',
+});
+```
+
+### With Included Attributes
+
+```javascript
+instantsearch.widgets.currentRefinements({
+  container: '#current-refinements',
+  includedAttributes: ['brand', 'category'],
+});
+```
+
+### With Excluded Attributes
+
+```javascript
+instantsearch.widgets.currentRefinements({
+  container: '#current-refinements',
+  excludedAttributes: ['query'],
+});
+```
+
+### With Transform Items
+
+```javascript
+instantsearch.widgets.currentRefinements({
+  container: '#current-refinements',
+  transformItems: (items) =>
+    items.map((item) => ({
+      ...item,
+      label: item.label.toUpperCase(),
+    })),
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="includedAttributes" type="string[]">
+  List of attributes to include. When provided, only refinements from these attributes are displayed.
+</ParamField>
+
+<ParamField path="excludedAttributes" type="string[]">
+  List of attributes to exclude from the display.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+  
+  Each item contains:
+  - `attribute`: The attribute name
+  - `label`: Display label for the attribute
+  - `refinements`: Array of active refinements for this attribute
+  - `refine`: Function to remove refinements
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="noRefinementRoot" type="string | string[]">
+      CSS class when there are no refinements.
+    </ParamField>
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item.
+    </ParamField>
+    <ParamField path="label" type="string | string[]">
+      CSS class for the label.
+    </ParamField>
+    <ParamField path="category" type="string | string[]">
+      CSS class for the category.
+    </ParamField>
+    <ParamField path="categoryLabel" type="string | string[]">
+      CSS class for the category label.
+    </ParamField>
+    <ParamField path="delete" type="string | string[]">
+      CSS class for the delete button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-CurrentRefinements">
+  <ul class="ais-CurrentRefinements-list">
+    <li class="ais-CurrentRefinements-item">
+      <span class="ais-CurrentRefinements-label">Brand:</span>
+      <span class="ais-CurrentRefinements-category">
+        <span class="ais-CurrentRefinements-categoryLabel">Apple</span>
+        <button class="ais-CurrentRefinements-delete" type="button">✕</button>
+      </span>
+      <span class="ais-CurrentRefinements-category">
+        <span class="ais-CurrentRefinements-categoryLabel">Samsung</span>
+        <button class="ais-CurrentRefinements-delete" type="button">✕</button>
+      </span>
+    </li>
+    <li class="ais-CurrentRefinements-item">
+      <span class="ais-CurrentRefinements-label">Price:</span>
+      <span class="ais-CurrentRefinements-category">
+        <span class="ais-CurrentRefinements-categoryLabel">10 - 500</span>
+        <button class="ais-CurrentRefinements-delete" type="button">✕</button>
+      </span>
+    </li>
+  </ul>
+</div>
+```
+
+## Refinement Types
+
+The widget displays different types of refinements:
+
+### Facet Refinements
+
+Shows selected facet values from widgets like refinementList, menu, or hierarchicalMenu.
+
+### Numeric Refinements
+
+Displays numeric ranges from rangeInput, rangeSlider, or numericMenu widgets.
+
+### Query Refinements
+
+Shows the search query from the searchBox widget (unless excluded).
+
+## Customization
+
+You can customize how refinements are displayed:
+
+```javascript
+instantsearch.widgets.currentRefinements({
+  container: '#current-refinements',
+  transformItems: (items) =>
+    items.map((item) => {
+      // Customize the label
+      const label = item.attribute === 'brand' ? 'Brands' : item.label;
+      
+      // Customize refinement display
+      const refinements = item.refinements.map((refinement) => ({
+        ...refinement,
+        label: refinement.label.toUpperCase(),
+      }));
+      
+      return {
+        ...item,
+        label,
+        refinements,
+      };
+    }),
+});
+```
+
+## Combine with clearRefinements
+
+Often used together with the clearRefinements widget:
+
+```javascript
+// Show current refinements
+instantsearch.widgets.currentRefinements({
+  container: '#current-refinements',
+});
+
+// Add clear all button
+instantsearch.widgets.clearRefinements({
+  container: '#clear-refinements',
+});
+```

@@ -1,0 +1,163 @@
+---
+title: breadcrumb
+---
+
+Displays a navigation breadcrumb for hierarchical facets, allowing users to see and modify their current refinement path.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { breadcrumb } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  breadcrumb({
+    container: '#breadcrumb',
+    attributes: [
+      'hierarchicalCategories.lvl0',
+      'hierarchicalCategories.lvl1',
+      'hierarchicalCategories.lvl2'
+    ]
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="attributes" type="string[]" required>
+  Array of attribute names to use for generating the breadcrumb hierarchy.
+</ParamField>
+
+<ParamField path="separator" type="string" default=">">
+  The level separator used in the records.
+</ParamField>
+
+<ParamField path="rootPath" type="string">
+  Prefix path to use if the first level is not the root level.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items passed to the templates.
+  
+  ```typescript
+  (items: BreadcrumbItem[]) => BreadcrumbItem[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to use for the widget.
+  
+  <Expandable title="properties">
+    <ParamField path="home" type="string | function">
+      Label of the breadcrumb's first element.
+      
+      Default: `'Home'`
+    </ParamField>
+    
+    <ParamField path="separator" type="string | function">
+      Symbol used to separate the elements of the breadcrumb.
+      
+      Default: `'>'`
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class to add to the root element.
+    </ParamField>
+    
+    <ParamField path="noRefinementRoot" type="string | string[]">
+      CSS class to add to the root element when there are no refinements.
+    </ParamField>
+    
+    <ParamField path="list" type="string | string[]">
+      CSS class to add to the list element.
+    </ParamField>
+    
+    <ParamField path="item" type="string | string[]">
+      CSS class to add to the items of the list.
+    </ParamField>
+    
+    <ParamField path="selectedItem" type="string | string[]">
+      CSS class to add to the selected item in the list.
+    </ParamField>
+    
+    <ParamField path="separator" type="string | string[]">
+      CSS class to add to the separator.
+    </ParamField>
+    
+    <ParamField path="link" type="string | string[]">
+      CSS class to add to the links in the items.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Custom separator
+
+```javascript
+breadcrumb({
+  container: '#breadcrumb',
+  attributes: [
+    'hierarchicalCategories.lvl0',
+    'hierarchicalCategories.lvl1',
+    'hierarchicalCategories.lvl2'
+  ],
+  templates: {
+    separator: ' / '
+  }
+});
+```
+
+### With root path
+
+```javascript
+breadcrumb({
+  container: '#breadcrumb',
+  attributes: [
+    'hierarchicalCategories.lvl0',
+    'hierarchicalCategories.lvl1',
+    'hierarchicalCategories.lvl2'
+  ],
+  rootPath: 'Products',
+  templates: {
+    home: 'All Products'
+  }
+});
+```
+
+## HTML output
+
+```html
+<div class="ais-Breadcrumb">
+  <ul class="ais-Breadcrumb-list">
+    <li class="ais-Breadcrumb-item">
+      <a class="ais-Breadcrumb-link" href="#">Home</a>
+      <span class="ais-Breadcrumb-separator">></span>
+    </li>
+    <li class="ais-Breadcrumb-item">
+      <a class="ais-Breadcrumb-link" href="#">Appliances</a>
+      <span class="ais-Breadcrumb-separator">></span>
+    </li>
+    <li class="ais-Breadcrumb-item ais-Breadcrumb-item--selected">
+      Dishwashers
+    </li>
+  </ul>
+</div>
+```

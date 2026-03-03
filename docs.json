@@ -1,122 +1,248 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "InstantSearch",
+  "theme": "palm",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#003DFF",
+    "light": "#5468FF",
+    "dark": "#003DFF"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/algolia/instantsearch"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/algolia/instantsearch"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "installation",
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/instantsearch-instance",
+              "concepts/widgets",
+              "concepts/connectors",
+              "concepts/search-state",
+              "concepts/routing",
+              "concepts/server-side-rendering"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Vanilla JavaScript",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "vanilla/getting-started",
+              "vanilla/basic-usage",
+              "vanilla/customization",
+              "vanilla/styling"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "React",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "react/getting-started",
+              "react/basic-usage",
+              "react/hooks",
+              "react/server-components",
+              "react/nextjs-integration"
+            ]
+          },
+          {
+            "group": "Vue",
+            "pages": [
+              "vue/getting-started",
+              "vue/basic-usage",
+              "vue/vue2-vs-vue3",
+              "vue/server-side-rendering"
+            ]
+          },
+          {
+            "group": "Advanced Guides",
+            "pages": [
+              "guides/dynamic-widgets",
+              "guides/routing",
+              "guides/custom-widgets",
+              "guides/custom-connectors",
+              "guides/multiple-indices",
+              "guides/query-rules",
+              "guides/insights-middleware",
+              "guides/ai-features"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "InstantSearch.js",
             "pages": [
-              "api-reference/introduction"
+              "api/instantsearch",
+              "api/instantsearch-options"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Widgets",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/widgets/overview",
+              "api/widgets/search-box",
+              "api/widgets/hits",
+              "api/widgets/infinite-hits",
+              "api/widgets/refinement-list",
+              "api/widgets/hierarchical-menu",
+              "api/widgets/menu",
+              "api/widgets/range-input",
+              "api/widgets/range-slider",
+              "api/widgets/rating-menu",
+              "api/widgets/numeric-menu",
+              "api/widgets/toggle-refinement",
+              "api/widgets/current-refinements",
+              "api/widgets/clear-refinements",
+              "api/widgets/pagination",
+              "api/widgets/hits-per-page",
+              "api/widgets/sort-by",
+              "api/widgets/stats",
+              "api/widgets/breadcrumb",
+              "api/widgets/configure",
+              "api/widgets/panel",
+              "api/widgets/powered-by",
+              "api/widgets/voice-search",
+              "api/widgets/geo-search",
+              "api/widgets/query-rule-context",
+              "api/widgets/query-rule-custom-data",
+              "api/widgets/dynamic-widgets",
+              "api/widgets/related-products",
+              "api/widgets/trending-items",
+              "api/widgets/frequently-bought-together",
+              "api/widgets/looking-similar",
+              "api/widgets/chat",
+              "api/widgets/filter-suggestions"
+            ]
+          },
+          {
+            "group": "Connectors",
+            "pages": [
+              "api/connectors/overview",
+              "api/connectors/search-box",
+              "api/connectors/hits",
+              "api/connectors/infinite-hits",
+              "api/connectors/refinement-list",
+              "api/connectors/hierarchical-menu",
+              "api/connectors/menu",
+              "api/connectors/range",
+              "api/connectors/rating-menu",
+              "api/connectors/numeric-menu",
+              "api/connectors/toggle-refinement",
+              "api/connectors/current-refinements",
+              "api/connectors/clear-refinements",
+              "api/connectors/pagination",
+              "api/connectors/hits-per-page",
+              "api/connectors/sort-by",
+              "api/connectors/stats",
+              "api/connectors/breadcrumb",
+              "api/connectors/configure",
+              "api/connectors/powered-by",
+              "api/connectors/geo-search"
+            ]
+          },
+          {
+            "group": "React Components",
+            "pages": [
+              "api/react/overview",
+              "api/react/instantsearch",
+              "api/react/index",
+              "api/react/configure",
+              "api/react/dynamic-widgets"
+            ]
+          },
+          {
+            "group": "React Hooks",
+            "pages": [
+              "api/react/hooks/overview",
+              "api/react/hooks/use-instant-search",
+              "api/react/hooks/use-search-box",
+              "api/react/hooks/use-hits",
+              "api/react/hooks/use-infinite-hits",
+              "api/react/hooks/use-refinement-list",
+              "api/react/hooks/use-menu",
+              "api/react/hooks/use-pagination"
+            ]
+          },
+          {
+            "group": "Vue Components",
+            "pages": [
+              "api/vue/overview",
+              "api/vue/ais-instant-search",
+              "api/vue/ais-index",
+              "api/vue/ais-configure"
+            ]
+          },
+          {
+            "group": "Helpers & Utilities",
+            "pages": [
+              "api/helpers/overview",
+              "api/helpers/routers",
+              "api/helpers/state-mappings",
+              "api/helpers/middlewares",
+              "api/helpers/templates",
+              "api/helpers/algoliasearch-helper"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Examples",
+        "groups": [
+          {
+            "group": "Examples",
+            "pages": [
+              "examples/overview",
+              "examples/e-commerce",
+              "examples/media-search",
+              "examples/geo-search",
+              "examples/multi-index",
+              "examples/ssr-nextjs",
+              "examples/routing"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Tools",
+        "groups": [
+          {
+            "group": "Create InstantSearch App",
+            "pages": [
+              "tools/create-instantsearch-app/overview",
+              "tools/create-instantsearch-app/usage",
+              "tools/create-instantsearch-app/templates",
+              "tools/create-instantsearch-app/configuration"
+            ]
+          },
+          {
+            "group": "Styling",
+            "pages": [
+              "tools/styling/instantsearch-css",
+              "tools/styling/custom-themes",
+              "tools/styling/css-classes"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

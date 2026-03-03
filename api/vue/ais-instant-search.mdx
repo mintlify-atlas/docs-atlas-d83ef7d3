@@ -1,0 +1,339 @@
+---
+title: ais-instant-search
+description: Root component for Vue InstantSearch that manages the search state and connects to Algolia
+---
+
+`<ais-instant-search>` is the root component that connects your Vue application to Algolia. It manages the search state, handles communication with the Algolia API, and provides context to all child search components.
+
+## Usage
+
+```vue
+<template>
+  <ais-instant-search
+    :search-client="searchClient"
+    index-name="products"
+  >
+    <!-- Your search UI components -->
+  </ais-instant-search>
+</template>
+
+<script>
+import algoliasearch from 'algoliasearch/lite';
+import { AisInstantSearch } from 'vue-instantsearch';
+
+export default {
+  components: { AisInstantSearch },
+  data() {
+    return {
+      searchClient: algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey'),
+    };
+  },
+};
+</script>
+```
+
+## Props
+
+<ParamField path="searchClient" type="SearchClient" required>
+  The Algolia search client created with `algoliasearch()`.
+  
+  ```javascript
+  import algoliasearch from 'algoliasearch/lite';
+  
+  const searchClient = algoliasearch(
+    'YourApplicationID',
+    'YourSearchOnlyAPIKey'
+  );
+  ```
+</ParamField>
+
+<ParamField path="indexName" type="string">
+  The main index name to search into. Optional if you use `ais-index` components.
+</ParamField>
+
+<ParamField path="insightsClient" type="Function">
+  The Algolia Insights client for sending analytics events.
+  
+  ```javascript
+  import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+  ```
+</ParamField>
+
+<ParamField path="routing" type="object | boolean">
+  Configuration for URL routing and browser history synchronization.
+  
+  <Expandable title="Routing Configuration">
+    <ParamField path="router" type="Router">
+      Router instance (e.g., `history()` from `instantsearch.js/es/lib/routers`).
+    </ParamField>
+    
+    <ParamField path="stateMapping" type="StateMapping">
+      State mapping instance for transforming UI state to/from URL.
+    </ParamField>
+  </Expandable>
+  
+  ```javascript
+  import { history } from 'instantsearch.js/es/lib/routers';
+  import { simple } from 'instantsearch.js/es/lib/stateMappings';
+  
+  {
+    router: history(),
+    stateMapping: simple()
+  }
+  ```
+</ParamField>
+
+<ParamField path="stalledSearchDelay" type="number" default="200">
+  Time in milliseconds before a search is considered stalled. The component emits a `stalled` state when searches take longer than this value.
+</ParamField>
+
+<ParamField path="searchFunction" type="Function">
+  A function that will be called instead of the regular search. This is useful for custom search logic or intercepting searches.
+  
+  ```javascript
+  function searchFunction(helper) {
+    // Custom logic before searching
+    if (helper.state.query === '') {
+      return; // Don't search on empty query
+    }
+    helper.search();
+  }
+  ```
+</ParamField>
+
+<ParamField path="onStateChange" type="Function">
+  Callback function called when the search state changes.
+  
+  ```javascript
+  onStateChange({ uiState, setUiState }) {
+    // Custom logic
+    setUiState(uiState);
+  }
+  ```
+</ParamField>
+
+<ParamField path="initialUiState" type="object">
+  Initial UI state of the search. Useful for server-side rendering or setting default filters.
+  
+  ```javascript
+  {
+    indexName: {
+      query: 'initial query',
+      refinementList: {
+        brand: ['Apple', 'Samsung']
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="insights" type="boolean | object">
+  Configuration for enabling Algolia Insights automatic events.
+  
+  ```javascript
+  // Boolean
+  insights: true
+  
+  // Object configuration
+  insights: {
+    insightsInitParams: {
+      useCookie: true
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="middlewares" type="Array<Middleware>">
+  Array of middleware functions to customize InstantSearch behavior.
+  
+  ```javascript
+  import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+  
+  middlewares: [
+    createInsightsMiddleware({ insightsClient })
+  ]
+  ```
+</ParamField>
+
+<ParamField path="future" type="object">
+  Feature flags for upcoming breaking changes.
+  
+  ```javascript
+  future: {
+    preserveSharedStateOnUnmount: false
+  }
+  ```
+</ParamField>
+
+## Slots
+
+<ParamField path="default" type="slot">
+  The default slot contains all your search UI components.
+  
+  ```vue
+  <ais-instant-search :search-client="searchClient" index-name="products">
+    <ais-search-box />
+    <ais-hits />
+  </ais-instant-search>
+  ```
+</ParamField>
+
+## Accessing the InstantSearch Instance
+
+The component creates an `instantSearchInstance` that you can access in child components through Vue's provide/inject mechanism:
+
+```vue
+<script>
+export default {
+  inject: ['$_ais_instantSearchInstance'],
+  mounted() {
+    console.log(this.$_ais_instantSearchInstance);
+  }
+};
+</script>
+```
+
+## CSS Classes
+
+The component renders with these CSS classes:
+
+- `ais-InstantSearch` - Root container class
+
+## Examples
+
+### Basic Setup
+
+```vue
+<template>
+  <ais-instant-search
+    :search-client="searchClient"
+    index-name="products"
+  >
+    <ais-search-box />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+
+<script>
+import algoliasearch from 'algoliasearch/lite';
+import { AisInstantSearch } from 'vue-instantsearch';
+
+export default {
+  components: { AisInstantSearch },
+  data() {
+    return {
+      searchClient: algoliasearch('APP_ID', 'API_KEY'),
+    };
+  },
+};
+</script>
+```
+
+### With URL Routing
+
+```vue
+<template>
+  <ais-instant-search
+    :search-client="searchClient"
+    index-name="products"
+    :routing="routing"
+  >
+    <ais-search-box />
+    <ais-refinement-list attribute="brand" />
+  </ais-instant-search>
+</template>
+
+<script>
+import algoliasearch from 'algoliasearch/lite';
+import { history } from 'instantsearch.js/es/lib/routers';
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+
+export default {
+  data() {
+    return {
+      searchClient: algoliasearch('APP_ID', 'API_KEY'),
+      routing: {
+        router: history(),
+        stateMapping: simple(),
+      },
+    };
+  },
+};
+</script>
+```
+
+### With Initial State
+
+```vue
+<template>
+  <ais-instant-search
+    :search-client="searchClient"
+    index-name="products"
+    :initial-ui-state="initialState"
+  >
+    <ais-search-box />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+
+<script>
+import algoliasearch from 'algoliasearch/lite';
+
+export default {
+  data() {
+    return {
+      searchClient: algoliasearch('APP_ID', 'API_KEY'),
+      initialState: {
+        products: {
+          query: 'phone',
+          refinementList: {
+            brand: ['Apple'],
+          },
+        },
+      },
+    };
+  },
+};
+</script>
+```
+
+### Conditional Search
+
+```vue
+<template>
+  <ais-instant-search
+    :search-client="searchClient"
+    index-name="products"
+    :search-function="searchFunction"
+  >
+    <ais-search-box />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+
+<script>
+import algoliasearch from 'algoliasearch/lite';
+
+export default {
+  data() {
+    return {
+      searchClient: algoliasearch('APP_ID', 'API_KEY'),
+    };
+  },
+  methods: {
+    searchFunction(helper) {
+      // Only search when query has at least 3 characters
+      if (helper.state.query.length < 3) {
+        return;
+      }
+      helper.search();
+    },
+  },
+};
+</script>
+```
+
+## Related Components
+
+- [ais-index](/api/vue/ais-index) - Manage multiple indices
+- [ais-configure](/api/vue/ais-configure) - Configure search parameters

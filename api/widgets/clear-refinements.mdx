@@ -1,0 +1,199 @@
+---
+title: clearRefinements
+description: Clear all active refinements at once
+---
+
+The clearRefinements widget provides a button to remove all active filters at once. It's useful for helping users reset their search and start over.
+
+## Usage
+
+```javascript
+const clearRefinements = instantsearch.widgets.clearRefinements({
+  container: '#clear-refinements',
+});
+
+search.addWidget(clearRefinements);
+```
+
+## Examples
+
+### Basic Clear Button
+
+```javascript
+instantsearch.widgets.clearRefinements({
+  container: '#clear-refinements',
+});
+```
+
+### With Included Attributes
+
+```javascript
+instantsearch.widgets.clearRefinements({
+  container: '#clear-filters',
+  includedAttributes: ['brand', 'category', 'price'],
+});
+```
+
+### With Excluded Attributes
+
+```javascript
+instantsearch.widgets.clearRefinements({
+  container: '#clear-refinements',
+  excludedAttributes: ['query'],
+});
+```
+
+### With Custom Template
+
+```javascript
+instantsearch.widgets.clearRefinements({
+  container: '#clear-refinements',
+  templates: {
+    resetLabel({ hasRefinements }) {
+      return hasRefinements ? 'Clear all filters' : 'No filters applied';
+    },
+  },
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="includedAttributes" type="string[]">
+  List of attributes to clear. When provided, only refinements from these attributes are cleared.
+</ParamField>
+
+<ParamField path="excludedAttributes" type="string[]">
+  List of attributes to exclude from being cleared. Useful to preserve certain filters like the search query.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before clearing.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="resetLabel" type="Template" default="'Clear refinements'">
+      Template for the button label.
+      
+      Receives:
+      - `hasRefinements`: Whether there are active refinements
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="button" type="string | string[]">
+      CSS class for the button.
+    </ParamField>
+    <ParamField path="disabledButton" type="string | string[]">
+      CSS class for the disabled button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-ClearRefinements">
+  <button class="ais-ClearRefinements-button" type="button">
+    Clear refinements
+  </button>
+</div>
+```
+
+When disabled (no refinements):
+
+```html
+<div class="ais-ClearRefinements">
+  <button
+    class="ais-ClearRefinements-button ais-ClearRefinements-button--disabled"
+    type="button"
+    disabled
+  >
+    Clear refinements
+  </button>
+</div>
+```
+
+## Use Cases
+
+### Clear All Except Query
+
+```javascript
+instantsearch.widgets.clearRefinements({
+  container: '#clear-filters',
+  excludedAttributes: ['query'],
+  templates: {
+    resetLabel: 'Clear filters',
+  },
+});
+```
+
+### Clear Only Specific Filters
+
+```javascript
+instantsearch.widgets.clearRefinements({
+  container: '#clear-facets',
+  includedAttributes: ['brand', 'category', 'color'],
+  templates: {
+    resetLabel: 'Clear facets',
+  },
+});
+```
+
+### With Custom Styling Based on State
+
+```javascript
+instantsearch.widgets.clearRefinements({
+  container: '#clear-refinements',
+  templates: {
+    resetLabel({ hasRefinements }) {
+      return `
+        <span class="${hasRefinements ? 'active' : 'inactive'}">
+          ${hasRefinements ? '✕ Clear filters' : 'No active filters'}
+        </span>
+      `;
+    },
+  },
+});
+```
+
+## Combine with currentRefinements
+
+Often used together with the currentRefinements widget:
+
+```javascript
+// Show current refinements
+instantsearch.widgets.currentRefinements({
+  container: '#current-refinements',
+});
+
+// Add clear all button
+instantsearch.widgets.clearRefinements({
+  container: '#clear-refinements',
+});
+```
+
+## Behavior
+
+The clear button:
+- Is **enabled** when there are active refinements
+- Is **disabled** when there are no refinements to clear
+- Clears all refinements when clicked (or only those specified by `includedAttributes`/`excludedAttributes`)
+- Does not clear the search query by default (can be changed with `includedAttributes`)

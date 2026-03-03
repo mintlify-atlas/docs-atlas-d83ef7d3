@@ -1,0 +1,679 @@
+---
+title: "Next.js Integration"
+description: "Server-side rendering and routing patterns for Next.js Pages Router"
+---
+
+Integrate React InstantSearch with Next.js for server-side rendering, routing, and optimal performance.
+
+## Pages Router SSR
+
+For Next.js Pages Router, use `getServerState` to enable SSR:
+
+### Installation
+
+```bash
+npm install react-instantsearch algoliasearch
+```
+
+### Basic Setup
+
+```tsx pages/search.tsx
+import { GetServerSideProps } from 'next';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import { renderToString } from 'react-dom/server';
+import {
+  InstantSearch,
+  InstantSearchSSRProvider,
+  getServerState,
+  SearchBox,
+  Hits,
+} from 'react-instantsearch';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+type SearchPageProps = {
+  serverState?: any;
+  url?: string;
+};
+
+export default function SearchPage({ serverState, url }: SearchPageProps) {
+  return (
+    <InstantSearchSSRProvider {...serverState}>
+      <InstantSearch
+        searchClient={searchClient}
+        indexName="products"
+      >
+        <SearchBox />
+        <Hits />
+      </InstantSearch>
+    </InstantSearchSSRProvider>
+  );
+}
+
+export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({
+  req,
+}) => {
+  const protocol = req.headers.referer?.split('://')[0] || 'https';
+  const url = `${protocol}://${req.headers.host}${req.url}`;
+  
+  const serverState = await getServerState(
+    <SearchPage url={url} />,
+    { renderToString }
+  );
+
+  return {
+    props: {
+      serverState,
+      url,
+    },
+  };
+};
+```
+
+<Note>
+`InstantSearchSSRProvider` hydrates the server state on the client, preventing a flash of loading state.
+</Note>
+
+## Routing with Next.js
+
+Sync InstantSearch state with Next.js router:
+
+```tsx pages/search.tsx
+import { useRouter } from 'next/router';
+import { history } from 'instantsearch.js/es/lib/routers';
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+import {
+  InstantSearch,
+  InstantSearchSSRProvider,
+  SearchBox,
+  Hits,
+  RefinementList,
+} from 'react-instantsearch';
+
+type SearchPageProps = {
+  serverState?: any;
+  url: string;
+};
+
+export default function SearchPage({ serverState, url }: SearchPageProps) {
+  return (
+    <InstantSearchSSRProvider {...serverState}>
+      <InstantSearch
+        searchClient={searchClient}
+        indexName="products"
+        routing={{
+          router: history({
+            getLocation() {
+              if (typeof window === 'undefined') {
+                return new URL(url) as unknown as Location;
+              }
+              return window.location;
+            },
+          }),
+          stateMapping: simple(),
+        }}
+      >
+        <div className="search-panel">
+          <aside>
+            <RefinementList attribute="brand" />
+            <RefinementList attribute="category" />
+          </aside>
+          <main>
+            <SearchBox />
+            <Hits />
+          </main>
+        </div>
+      </InstantSearch>
+    </InstantSearchSSRProvider>
+  );
+}
+
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const protocol = req.headers.referer?.split('://')[0] || 'https';
+  const url = `${protocol}://${req.headers.host}${req.url}`;
+  
+  const serverState = await getServerState(
+    <SearchPage url={url} />,
+    { renderToString }
+  );
+
+  return {
+    props: { serverState, url },
+  };
+};
+```
+
+## App Router (Recommended)
+
+For App Router, use the `react-instantsearch-nextjs` package:
+
+```bash
+npm install react-instantsearch-nextjs
+```
+
+```tsx app/search/Search.tsx
+'use client';
+
+import { InstantSearchNext } from 'react-instantsearch-nextjs';
+import { SearchBox, Hits } from 'react-instantsearch';
+import { searchClient } from '@/lib/algolia';
+
+export default function Search() {
+  return (
+    <InstantSearchNext
+      searchClient={searchClient}
+      indexName="products"
+      routing
+    >
+      <SearchBox />
+      <Hits />
+    </InstantSearchNext>
+  );
+}
+```
+
+See [Server Components](/react/server-components) for detailed App Router guide.
+
+## Next.js Router Integration
+
+Use the official Next.js router package:
+
+```bash
+npm install react-instantsearch-router-nextjs
+```
+
+```tsx pages/search.tsx
+import { useRouter } from 'next/router';
+import singletonRouter from 'next/router';
+import { createInstantSearchRouterNext } from 'react-instantsearch-router-nextjs';
+
+const routing = {
+  router: createInstantSearchRouterNext({ singletonRouter }),
+  stateMapping: {
+    stateToRoute(uiState) {
+      const indexUiState = uiState.products || {};
+      return {
+        q: indexUiState.query,
+        brands: indexUiState.refinementList?.brand,
+        page: indexUiState.page,
+      };
+    },
+    routeToState(routeState) {
+      return {
+        products: {
+          query: routeState.q,
+          refinementList: {
+            brand: routeState.brands,
+          },
+          page: routeState.page,
+        },
+      };
+    },
+  },
+};
+
+export default function SearchPage({ serverState, url }: SearchPageProps) {
+  return (
+    <InstantSearchSSRProvider {...serverState}>
+      <InstantSearch
+        searchClient={searchClient}
+        indexName="products"
+        routing={routing}
+      >
+        {/* Components */}
+      </InstantSearch>
+    </InstantSearchSSRProvider>
+  );
+}
+```
+
+<Note>
+The `react-instantsearch-router-nextjs` package provides better integration with Next.js shallow routing.
+</Note>
+
+## Custom State Mapping
+
+Create clean URLs with custom state mapping:
+
+```tsx
+const routing = {
+  stateMapping: {
+    stateToRoute(uiState) {
+      const indexUiState = uiState.products || {};
+      
+      return {
+        query: indexUiState.query,
+        brands: indexUiState.refinementList?.brand,
+        categories: indexUiState.refinementList?.categories,
+        price: indexUiState.range?.price,
+        page: indexUiState.page !== 1 ? indexUiState.page : undefined,
+      };
+    },
+    
+    routeToState(routeState) {
+      return {
+        products: {
+          query: routeState.query,
+          refinementList: {
+            brand: routeState.brands,
+            categories: routeState.categories,
+          },
+          range: {
+            price: routeState.price,
+          },
+          page: routeState.page || 1,
+        },
+      };
+    },
+  },
+};
+```
+
+This produces URLs like:
+```
+/search?query=laptop&brands=apple&brands=dell&price=500:2000&page=2
+```
+
+## Shared Client Singleton
+
+Avoid re-creating the search client:
+
+```ts lib/searchClient.ts
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+export const searchClient = algoliasearch(
+  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!,
+  process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY!
+);
+```
+
+```tsx pages/search.tsx
+import { searchClient } from '@/lib/searchClient';
+
+// Use in components
+<InstantSearch searchClient={searchClient} indexName="products">
+```
+
+<Warning>
+Never create `searchClient` inside a component - it causes memory leaks and infinite re-renders.
+</Warning>
+
+## Response Caching
+
+Cache API responses to reduce network requests:
+
+```ts lib/searchClient.ts
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import { createInMemoryCache } from '@algolia/cache-in-memory';
+
+const responsesCache = createInMemoryCache();
+
+export const searchClient = algoliasearch(
+  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!,
+  process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY!,
+  { responsesCache }
+);
+
+// Clear cache in getServerSideProps
+export { responsesCache };
+```
+
+```tsx pages/search.tsx
+import { responsesCache } from '@/lib/searchClient';
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  responsesCache.clear();
+  
+  const serverState = await getServerState(
+    <SearchPage url={url} />,
+    { renderToString }
+  );
+
+  return { props: { serverState, url } };
+};
+```
+
+## Multiple Indices
+
+Search across multiple indices:
+
+```tsx
+import { Index } from 'react-instantsearch';
+
+<InstantSearch searchClient={searchClient} indexName="products">
+  <SearchBox />
+  
+  <h2>Products</h2>
+  <Hits hitComponent={ProductHit} />
+  
+  <h2>Articles</h2>
+  <Index indexName="articles">
+    <Hits hitComponent={ArticleHit} />
+  </Index>
+  
+  <h2>Categories</h2>
+  <Index indexName="categories">
+    <Hits hitComponent={CategoryHit} />
+  </Index>
+</InstantSearch>
+```
+
+## Dynamic Index
+
+Switch indices based on route:
+
+```tsx pages/search/[category].tsx
+import { useRouter } from 'next/router';
+
+export default function CategorySearch({ serverState }: SearchPageProps) {
+  const router = useRouter();
+  const { category } = router.query;
+  
+  const indexName = `products_${category}`;
+  
+  return (
+    <InstantSearchSSRProvider {...serverState}>
+      <InstantSearch
+        searchClient={searchClient}
+        indexName={indexName}
+      >
+        <SearchBox />
+        <Hits />
+      </InstantSearch>
+    </InstantSearchSSRProvider>
+  );
+}
+
+export const getServerSideProps: GetServerSideProps = async ({
+  req,
+  params,
+}) => {
+  const url = `${protocol}://${req.headers.host}${req.url}`;
+  
+  const serverState = await getServerState(
+    <CategorySearch url={url} />,
+    { renderToString }
+  );
+
+  return { props: { serverState, url } };
+};
+```
+
+## Middleware Integration
+
+Add middleware for search analytics:
+
+```tsx
+import { useEffect } from 'react';
+import { useInstantSearch } from 'react-instantsearch';
+import type { Middleware } from 'instantsearch.js';
+
+const analyticsMiddleware: Middleware = ({ instantSearchInstance }) => {
+  return {
+    onStateChange({ uiState }) {
+      // Track to analytics
+      gtag('event', 'search', {
+        search_term: uiState.products?.query,
+      });
+    },
+    subscribe() {},
+    unsubscribe() {},
+  };
+};
+
+function SearchWithAnalytics() {
+  const { addMiddlewares } = useInstantSearch();
+  
+  useEffect(() => {
+    const cleanup = addMiddlewares(analyticsMiddleware);
+    return cleanup;
+  }, [addMiddlewares]);
+  
+  return (
+    <>
+      <SearchBox />
+      <Hits />
+    </>
+  );
+}
+```
+
+## Image Optimization
+
+Use Next.js Image for hit images:
+
+```tsx components/Hit.tsx
+import Image from 'next/image';
+import { Highlight } from 'react-instantsearch';
+import type { Hit } from 'instantsearch.js';
+
+type ProductHit = Hit<{
+  name: string;
+  image: string;
+  price: number;
+}>;
+
+export function ProductHitComponent({ hit }: { hit: ProductHit }) {
+  return (
+    <article>
+      <Image
+        src={hit.image}
+        alt={hit.name}
+        width={200}
+        height={200}
+        loading="lazy"
+      />
+      <h3>
+        <Highlight attribute="name" hit={hit} />
+      </h3>
+      <p>${hit.price}</p>
+    </article>
+  );
+}
+```
+
+## Environment Variables
+
+Store credentials securely:
+
+```bash .env.local
+NEXT_PUBLIC_ALGOLIA_APP_ID=your_app_id
+NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=your_search_only_api_key
+```
+
+```ts lib/searchClient.ts
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+export const searchClient = algoliasearch(
+  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!,
+  process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY!
+);
+```
+
+<Note>
+The `NEXT_PUBLIC_` prefix exposes variables to the browser. Never expose your Admin API Key.
+</Note>
+
+## Static Site Generation
+
+Use with Static Generation (SSG):
+
+```tsx pages/search.tsx
+import { GetStaticProps } from 'next';
+
+export const getStaticProps: GetStaticProps = async () => {
+  // Pre-render with empty state
+  const serverState = await getServerState(
+    <SearchPage url="" />,
+    { renderToString }
+  );
+
+  return {
+    props: { serverState },
+    revalidate: 3600, // Revalidate every hour
+  };
+};
+```
+
+Search works client-side after hydration.
+
+## Incremental Static Regeneration
+
+Combine SSG with ISR for popular queries:
+
+```tsx pages/search/[query].tsx
+export async function getStaticPaths() {
+  return {
+    paths: [
+      { params: { query: 'laptop' } },
+      { params: { query: 'phone' } },
+      { params: { query: 'tablet' } },
+    ],
+    fallback: 'blocking',
+  };
+}
+
+export const getStaticProps: GetStaticProps = async ({ params }) => {
+  const query = params?.query as string;
+  
+  const serverState = await getServerState(
+    <SearchPage initialQuery={query} />,
+    { renderToString }
+  );
+
+  return {
+    props: { serverState, query },
+    revalidate: 3600,
+  };
+};
+```
+
+## Performance Optimization
+
+### 1. Bundle Size
+
+Use lite client and tree-shaking:
+
+```tsx
+import { liteClient } from 'algoliasearch/lite';
+import { SearchBox, Hits } from 'react-instantsearch';
+
+// Don't import entire package
+// import * as ReactInstantSearch from 'react-instantsearch';
+```
+
+### 2. Code Splitting
+
+Lazy load search UI:
+
+```tsx
+import dynamic from 'next/dynamic';
+
+const Search = dynamic(() => import('@/components/Search'), {
+  ssr: false,
+  loading: () => <SearchSkeleton />,
+});
+```
+
+### 3. Prefetching
+
+Prefetch on link hover:
+
+```tsx
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+
+<Link
+  href="/search"
+  onMouseEnter={() => router.prefetch('/search')}
+>
+  Search
+</Link>
+```
+
+## Error Handling
+
+Handle SSR errors gracefully:
+
+```tsx
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const serverState = await getServerState(
+      <SearchPage url={url} />,
+      { renderToString }
+    );
+    
+    return { props: { serverState, url } };
+  } catch (error) {
+    console.error('SSR error:', error);
+    
+    // Return empty state, search will work client-side
+    return {
+      props: {
+        serverState: { initialResults: {} },
+        url,
+      },
+    };
+  }
+};
+```
+
+## TypeScript
+
+Full type safety:
+
+```tsx
+import type { GetServerSideProps, InferGetServerSidePropsType } from 'next';
+import type { UiState } from 'instantsearch.js';
+
+interface MyUiState extends UiState {
+  products: {
+    query?: string;
+    page?: number;
+    refinementList?: {
+      brand?: string[];
+    };
+  };
+}
+
+type SearchPageProps = {
+  serverState: any;
+  url: string;
+};
+
+export default function SearchPage(
+  props: InferGetServerSidePropsType<typeof getServerSideProps>
+) {
+  return (
+    <InstantSearchSSRProvider {...props.serverState}>
+      <InstantSearch<MyUiState>
+        searchClient={searchClient}
+        indexName="products"
+      >
+        {/* ... */}
+      </InstantSearch>
+    </InstantSearchSSRProvider>
+  );
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Server Components" icon="server" href="/react/server-components">
+    Use App Router and React Server Components
+  </Card>
+  <Card title="Hooks" icon="code" href="/react/hooks">
+    Build custom components with hooks
+  </Card>
+</CardGroup>
+
+## Examples
+
+- [Pages Router SSR](https://github.com/algolia/instantsearch/tree/master/examples/react/ssr)
+- [Next.js Routing](https://github.com/algolia/instantsearch/tree/master/examples/react/next-routing)
+- [App Router](https://github.com/algolia/instantsearch/tree/master/examples/react/next-app-router)
+- [E-commerce](https://github.com/algolia/instantsearch/tree/master/examples/react/e-commerce)

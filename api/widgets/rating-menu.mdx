@@ -1,0 +1,189 @@
+---
+title: ratingMenu
+description: Filter results by star ratings
+---
+
+The ratingMenu widget allows users to filter results based on rating values. It displays star ratings and shows results with ratings greater than or equal to the selected value.
+
+## Usage
+
+```javascript
+const ratingMenu = instantsearch.widgets.ratingMenu({
+  container: '#rating-menu',
+  attribute: 'rating',
+  max: 5,
+});
+
+search.addWidget(ratingMenu);
+```
+
+## Examples
+
+### Basic Rating Menu
+
+```javascript
+instantsearch.widgets.ratingMenu({
+  container: '#rating',
+  attribute: 'rating',
+});
+```
+
+### With Custom Max Rating
+
+```javascript
+instantsearch.widgets.ratingMenu({
+  container: '#quality-rating',
+  attribute: 'quality',
+  max: 10,
+});
+```
+
+### With Custom Template
+
+```javascript
+instantsearch.widgets.ratingMenu({
+  container: '#rating',
+  attribute: 'rating',
+  templates: {
+    item: ({ stars, label, count, isRefined }, { html }) => html`
+      <a href="#" class="${isRefined ? 'selected' : ''}">
+        ${stars.map((filled) => 
+          filled ? '★' : '☆'
+        ).join('')}
+        <span>${label} & Up</span>
+        <span>(${count})</span>
+      </a>
+    `,
+  },
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="attribute" type="string" required>
+  The name of the numeric attribute containing ratings. Must be declared as an attribute for faceting.
+</ParamField>
+
+<ParamField path="max" type="number" default="5">
+  The maximum rating value. The minimum is always 0.
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="item" type="Template">
+      Template for each rating item.
+      
+      Receives:
+      - `name`: The rating value
+      - `label`: Display label
+      - `value`: Encoded value
+      - `count`: Number of results
+      - `isRefined`: Whether selected
+      - `stars`: Array of 5 booleans indicating filled/empty stars
+      - `url`: URL for this refinement
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="noRefinementRoot" type="string | string[]">
+      CSS class when there are no refinements.
+    </ParamField>
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item.
+    </ParamField>
+    <ParamField path="selectedItem" type="string | string[]">
+      CSS class for the selected item.
+    </ParamField>
+    <ParamField path="disabledItem" type="string | string[]">
+      CSS class for disabled items.
+    </ParamField>
+    <ParamField path="link" type="string | string[]">
+      CSS class for the link.
+    </ParamField>
+    <ParamField path="starIcon" type="string | string[]">
+      CSS class for star icons.
+    </ParamField>
+    <ParamField path="fullStarIcon" type="string | string[]">
+      CSS class for filled star icons.
+    </ParamField>
+    <ParamField path="emptyStarIcon" type="string | string[]">
+      CSS class for empty star icons.
+    </ParamField>
+    <ParamField path="label" type="string | string[]">
+      CSS class for the label.
+    </ParamField>
+    <ParamField path="count" type="string | string[]">
+      CSS class for the count.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-RatingMenu">
+  <svg style="display:none;">
+    <symbol id="ais-RatingMenu-starSymbol" viewBox="0 0 24 24">
+      <path d="M12 .288l2.833 8.718h9.167l-7.417 5.389 2.833 8.718-7.416-5.388-7.417 5.388 2.833-8.718-7.416-5.389h9.167z" />
+    </symbol>
+    <symbol id="ais-RatingMenu-starEmptySymbol" viewBox="0 0 24 24">
+      <path d="M12 6.76l1.379 4.246h4.465l-3.612 2.625 1.379 4.246-3.611-2.625-3.612 2.625 1.379-4.246-3.612-2.625h4.465l1.38-4.246zm0-6.472l-2.833 8.718h-9.167l7.416 5.389-2.833 8.718 7.417-5.388 7.416 5.388-2.833-8.718 7.417-5.389h-9.167l-2.833-8.718z" />
+    </symbol>
+  </svg>
+  <ul class="ais-RatingMenu-list">
+    <li class="ais-RatingMenu-item ais-RatingMenu-item--selected">
+      <a class="ais-RatingMenu-link" href="#">
+        <svg class="ais-RatingMenu-starIcon ais-RatingMenu-starIcon--full">
+          <use href="#ais-RatingMenu-starSymbol"></use>
+        </svg>
+        <svg class="ais-RatingMenu-starIcon ais-RatingMenu-starIcon--full">
+          <use href="#ais-RatingMenu-starSymbol"></use>
+        </svg>
+        <svg class="ais-RatingMenu-starIcon ais-RatingMenu-starIcon--full">
+          <use href="#ais-RatingMenu-starSymbol"></use>
+        </svg>
+        <svg class="ais-RatingMenu-starIcon ais-RatingMenu-starIcon--full">
+          <use href="#ais-RatingMenu-starSymbol"></use>
+        </svg>
+        <svg class="ais-RatingMenu-starIcon ais-RatingMenu-starIcon--empty">
+          <use href="#ais-RatingMenu-starEmptySymbol"></use>
+        </svg>
+        <span class="ais-RatingMenu-label">& Up</span>
+        <span class="ais-RatingMenu-count">234</span>
+      </a>
+    </li>
+  </ul>
+</div>
+```
+
+## How It Works
+
+The ratingMenu widget filters results to show items with ratings **greater than or equal** to the selected value.
+
+For example:
+- Selecting "4 stars & up" shows items with ratings 4.0, 4.5, and 5.0
+- Selecting "3 stars & up" shows items with ratings 3.0, 3.5, 4.0, 4.5, and 5.0
+
+## Requirements
+
+<Warning>
+  The attribute must be declared as an **attribute for faceting** in your Algolia index settings.
+  
+  The values must be JavaScript numbers (not strings).
+</Warning>

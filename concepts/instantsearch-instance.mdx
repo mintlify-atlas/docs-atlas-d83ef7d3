@@ -1,0 +1,386 @@
+---
+title: 'InstantSearch instance'
+description: 'Learn about the main InstantSearch instance, its initialization options, and core methods for building search experiences.'
+keywords: ['instantsearch', 'initialization', 'instance', 'configuration', 'search client']
+---
+
+The InstantSearch instance is the core object that manages your search UI. It coordinates widgets, manages search state, and communicates with your search backend.
+
+## Creating an instance
+
+InstantSearch requires a search client and an index name to initialize:
+
+<CodeGroup>
+
+```javascript JavaScript
+import instantsearch from 'instantsearch.js';
+import algoliasearch from 'algoliasearch/lite';
+
+const searchClient = algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey');
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+```
+
+```tsx React
+import { InstantSearch } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey');
+
+function App() {
+  return (
+    <InstantSearch
+      searchClient={searchClient}
+      indexName="products"
+    >
+      {/* Your widgets */}
+    </InstantSearch>
+  );
+}
+```
+
+```vue Vue
+<template>
+  <ais-instant-search
+    :search-client="searchClient"
+    index-name="products"
+  >
+    <!-- Your widgets -->
+  </ais-instant-search>
+</template>
+
+<script>
+import algoliasearch from 'algoliasearch/lite';
+
+export default {
+  data() {
+    return {
+      searchClient: algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey'),
+    };
+  },
+};
+</script>
+```
+
+</CodeGroup>
+
+## Configuration options
+
+The InstantSearch instance accepts several configuration options defined in `InstantSearchOptions` (from `/home/daytona/workspace/source/packages/instantsearch.js/src/lib/InstantSearch.ts:62-195`):
+
+### Required options
+
+<ParamField path="searchClient" type="SearchClient" required>
+  The search client to connect to your search backend. This must implement a `search` method.
+  
+  ```javascript
+  const searchClient = algoliasearch('appId', 'apiKey');
+  ```
+</ParamField>
+
+<ParamField path="indexName" type="string">
+  The name of the main index. If no indexName is provided, you must manually add an index widget.
+  
+  ```javascript
+  indexName: 'products'
+  ```
+</ParamField>
+
+### Optional options
+
+<ParamField path="initialUiState" type="UiState">
+  Provides an initial state to widgets. The state is only used for the first search.
+  
+  ```javascript
+  initialUiState: {
+    products: {
+      query: 'laptop',
+      refinementList: {
+        brand: ['Apple', 'Samsung']
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="routing" type="RouterProps | boolean">
+  Enable URL routing to save UI state in the URL. Pass `true` for default behavior or an object for custom configuration.
+  
+  ```javascript
+  routing: true
+  // or
+  routing: {
+    router: historyRouter(),
+    stateMapping: simpleStateMapping()
+  }
+  ```
+  
+  See the [routing documentation](/concepts/routing) for details.
+</ParamField>
+
+<ParamField path="insights" type="InsightsProps | boolean" default="false">
+  Enable the Insights middleware to automatically send view and click events.
+  
+  ```javascript
+  insights: true
+  ```
+</ParamField>
+
+<ParamField path="stalledSearchDelay" type="number" default="200">
+  Time in milliseconds before a search is considered stalled.
+  
+  ```javascript
+  stalledSearchDelay: 500
+  ```
+</ParamField>
+
+<ParamField path="onStateChange" type="function">
+  Function called when the state changes. Using this makes the instance controlled.
+  
+  ```javascript
+  onStateChange({ uiState, setUiState }) {
+    // Modify or validate the state
+    setUiState(uiState);
+  }
+  ```
+</ParamField>
+
+<ParamField path="numberLocale" type="string">
+  Locale for formatting numbers, passed to `Number.prototype.toLocaleString()`.
+  
+  ```javascript
+  numberLocale: 'en-US'
+  ```
+</ParamField>
+
+<ParamField path="future" type="object">
+  Feature flags for upcoming changes:
+  
+  <Expandable title="Future options">
+    <ParamField path="preserveSharedStateOnUnmount" type="boolean" default="false">
+      When `true`, widget state is preserved when widgets are unmounted if other widgets use the same attribute.
+    </ParamField>
+    
+    <ParamField path="persistHierarchicalRootCount" type="boolean" default="false">
+      When `true`, root level counts in hierarchical facets remain stable.
+    </ParamField>
+  </Expandable>
+  
+  ```javascript
+  future: {
+    preserveSharedStateOnUnmount: true
+  }
+  ```
+</ParamField>
+
+## Instance methods
+
+The InstantSearch instance exposes several methods (from `/home/daytona/workspace/source/packages/instantsearch.js/src/lib/InstantSearch.ts:211-900`):
+
+### Managing widgets
+
+<ResponseField name="addWidgets" type="(widgets: Widget[]) => InstantSearch">
+  Adds widgets to the search instance. Widgets can be added before or after the instance has started.
+  
+  ```javascript
+  search.addWidgets([
+    searchBox({ container: '#searchbox' }),
+    hits({ container: '#hits' })
+  ]);
+  ```
+</ResponseField>
+
+<ResponseField name="removeWidgets" type="(widgets: Widget[]) => InstantSearch">
+  Removes widgets from the search instance.
+  
+  ```javascript
+  search.removeWidgets([searchBoxWidget]);
+  ```
+</ResponseField>
+
+### Lifecycle methods
+
+<ResponseField name="start" type="() => void">
+  Starts the InstantSearch instance and triggers the first search. This must be called after adding widgets.
+  
+  ```javascript
+  search.addWidgets([/* ... */]);
+  search.start();
+  ```
+</ResponseField>
+
+<ResponseField name="dispose" type="() => void">
+  Removes all widgets and stops the instance. The instance can be restarted later.
+  
+  ```javascript
+  search.dispose();
+  ```
+</ResponseField>
+
+### State management
+
+<ResponseField name="setUiState" type="(uiState: UiState | ((prev: UiState) => UiState)) => void">
+  Sets the UI state and triggers a search. Accepts a state object or a function.
+  
+  ```javascript
+  // Set state directly
+  search.setUiState({
+    products: {
+      query: 'laptop'
+    }
+  });
+  
+  // Update state functionally
+  search.setUiState((prevState) => ({
+    ...prevState,
+    products: {
+      ...prevState.products,
+      page: 2
+    }
+  }));
+  ```
+</ResponseField>
+
+<ResponseField name="getUiState" type="() => UiState">
+  Returns the current UI state.
+  
+  ```javascript
+  const currentState = search.getUiState();
+  console.log(currentState.products.query);
+  ```
+</ResponseField>
+
+<ResponseField name="refresh" type="() => void">
+  Clears the cache and triggers a new search.
+  
+  ```javascript
+  search.refresh();
+  ```
+</ResponseField>
+
+### URL management
+
+<ResponseField name="createURL" type="(state: UiState) => string">
+  Creates a URL for the given state. Only available after `start()` is called.
+  
+  ```javascript
+  const url = search.createURL({
+    products: {
+      query: 'laptop',
+      page: 2
+    }
+  });
+  ```
+</ResponseField>
+
+### Middleware
+
+<ResponseField name="use" type="(...middleware: Middleware[]) => InstantSearch">
+  Adds middleware to the InstantSearch lifecycle.
+  
+  ```javascript
+  search.use(createInsightsMiddleware({ insightsClient }));
+  ```
+</ResponseField>
+
+<ResponseField name="unuse" type="(...middleware: Middleware[]) => InstantSearch">
+  Removes middleware from the instance.
+  
+  ```javascript
+  search.unuse(insightsMiddleware);
+  ```
+</ResponseField>
+
+## Instance properties
+
+<ResponseField name="status" type="'idle' | 'loading' | 'stalled' | 'error'">
+  The current status of the search.
+  
+  ```javascript
+  if (search.status === 'loading') {
+    console.log('Search in progress...');
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="error" type="Error | undefined">
+  The last error returned from the Search API. Cleared when the next valid response is received.
+  
+  ```javascript
+  if (search.error) {
+    console.error('Search error:', search.error.message);
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="helper" type="AlgoliaSearchHelper | null">
+  The main search helper instance. Available after `start()` is called.
+</ResponseField>
+
+<ResponseField name="mainIndex" type="IndexWidget">
+  The root index widget that contains all other widgets.
+</ResponseField>
+
+## Events
+
+InstantSearch extends EventEmitter and emits a `render` event after each search response:
+
+```javascript
+search.on('render', () => {
+  console.log('Search rendered');
+});
+
+search.on('error', (error) => {
+  console.error('Search error:', error);
+});
+```
+
+## Type signature
+
+The InstantSearch class is generic and accepts type parameters for custom UI state:
+
+```typescript
+class InstantSearch<
+  TUiState extends UiState = UiState,
+  TRouteState = TUiState
+>
+```
+
+This allows you to type your custom UI state:
+
+```typescript
+type MyUiState = {
+  products: {
+    query?: string;
+    page?: number;
+    refinementList?: {
+      brand?: string[];
+    };
+  };
+};
+
+const search = instantsearch<MyUiState>({
+  searchClient,
+  indexName: 'products',
+});
+```
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="Widgets" icon="puzzle-piece" href="/concepts/widgets">
+    Learn about the widget system
+  </Card>
+  <Card title="Search state" icon="database" href="/concepts/search-state">
+    Understanding UI state management
+  </Card>
+  <Card title="Routing" icon="route" href="/concepts/routing">
+    Synchronize state with URLs
+  </Card>
+  <Card title="Server-side rendering" icon="server" href="/concepts/server-side-rendering">
+    Implement SSR with InstantSearch
+  </Card>
+</CardGroup>

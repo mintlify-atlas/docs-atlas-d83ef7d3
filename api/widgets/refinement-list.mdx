@@ -1,0 +1,222 @@
+---
+title: refinementList
+description: Filter results by facet values with multi-select checkboxes
+---
+
+The refinementList widget displays a list of facet values that users can select to filter results. It's one of the most common filtering widgets, supporting multi-selection and search within facets.
+
+## Usage
+
+```javascript
+const refinementList = instantsearch.widgets.refinementList({
+  container: '#brand-list',
+  attribute: 'brand',
+});
+
+search.addWidget(refinementList);
+```
+
+## Examples
+
+### Basic Refinement List
+
+```javascript
+instantsearch.widgets.refinementList({
+  container: '#categories',
+  attribute: 'categories',
+  limit: 10,
+});
+```
+
+### With Search for Facet Values
+
+```javascript
+instantsearch.widgets.refinementList({
+  container: '#brands',
+  attribute: 'brand',
+  searchable: true,
+  searchablePlaceholder: 'Search brands...',
+  limit: 5,
+  showMore: true,
+  showMoreLimit: 20,
+});
+```
+
+### With OR/AND Operator
+
+```javascript
+// OR operator (default) - shows results matching ANY selected value
+instantsearch.widgets.refinementList({
+  container: '#categories',
+  attribute: 'categories',
+  operator: 'or',
+});
+
+// AND operator - shows results matching ALL selected values
+instantsearch.widgets.refinementList({
+  container: '#features',
+  attribute: 'features',
+  operator: 'and',
+});
+```
+
+### With Custom Sorting
+
+```javascript
+instantsearch.widgets.refinementList({
+  container: '#brands',
+  attribute: 'brand',
+  sortBy: ['isRefined', 'count:desc', 'name:asc'],
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="attribute" type="string" required>
+  The name of the attribute in your records. Must be declared as an attribute for faceting in your Algolia settings.
+</ParamField>
+
+<ParamField path="operator" type="'or' | 'and'" default="'or'">
+  How to apply multiple selections:
+  - `'or'`: Show results matching ANY selected value
+  - `'and'`: Show results matching ALL selected values
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Maximum number of facet values to display.
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to display a "Show more" button.
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  Maximum number of facet values to display when "Show more" is clicked.
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | function" default="['isRefined', 'count:desc', 'name:asc']">
+  How to sort refinements. Can be an array of strings or a sorting function.
+  
+  Available string values:
+  - `'isRefined'` - Refined values first
+  - `'count:asc'` - By count ascending
+  - `'count:desc'` - By count descending
+  - `'name:asc'` - Alphabetically ascending
+  - `'name:desc'` - Alphabetically descending
+</ParamField>
+
+<ParamField path="searchable" type="boolean" default="false">
+  Add a search input to filter facet values. Requires the attribute to be searchable for faceting.
+</ParamField>
+
+<ParamField path="searchablePlaceholder" type="string" default="'Search...'">
+  Placeholder text for the search input.
+</ParamField>
+
+<ParamField path="searchableIsAlwaysActive" type="boolean" default="true">
+  If `false`, the search input is disabled when there are fewer items than the limit.
+</ParamField>
+
+<ParamField path="searchableEscapeFacetValues" type="boolean" default="true">
+  Whether to escape facet values in the search results.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="item" type="Template">
+      Template for each facet value item.
+    </ParamField>
+    <ParamField path="showMoreText" type="Template">
+      Template for the "Show more" button.
+    </ParamField>
+    <ParamField path="searchableNoResults" type="Template">
+      Template displayed when search returns no results.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="noRefinementRoot" type="string | string[]">
+      CSS class when no refinements are available.
+    </ParamField>
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item.
+    </ParamField>
+    <ParamField path="selectedItem" type="string | string[]">
+      CSS class for selected items.
+    </ParamField>
+    <ParamField path="label" type="string | string[]">
+      CSS class for the label.
+    </ParamField>
+    <ParamField path="checkbox" type="string | string[]">
+      CSS class for the checkbox.
+    </ParamField>
+    <ParamField path="labelText" type="string | string[]">
+      CSS class for the label text.
+    </ParamField>
+    <ParamField path="count" type="string | string[]">
+      CSS class for the count.
+    </ParamField>
+    <ParamField path="showMore" type="string | string[]">
+      CSS class for the "Show more" button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-RefinementList">
+  <div class="ais-RefinementList-searchBox">
+    <!-- SearchBox for facet values -->
+  </div>
+  <ul class="ais-RefinementList-list">
+    <li class="ais-RefinementList-item ais-RefinementList-item--selected">
+      <label class="ais-RefinementList-label">
+        <input class="ais-RefinementList-checkbox" type="checkbox" checked />
+        <span class="ais-RefinementList-labelText">Apple</span>
+        <span class="ais-RefinementList-count">746</span>
+      </label>
+    </li>
+    <li class="ais-RefinementList-item">
+      <label class="ais-RefinementList-label">
+        <input class="ais-RefinementList-checkbox" type="checkbox" />
+        <span class="ais-RefinementList-labelText">Samsung</span>
+        <span class="ais-RefinementList-count">633</span>
+      </label>
+    </li>
+  </ul>
+  <button class="ais-RefinementList-showMore">Show more</button>
+</div>
+```
+
+## Requirements
+
+<Warning>
+  The attribute must be declared as an **attribute for faceting** in your Algolia index settings.
+  
+  For searchable faceting, the attribute must also be **searchable for faceting**.
+</Warning>

@@ -1,0 +1,662 @@
+---
+title: 'Server-side rendering'
+description: 'Implement server-side rendering with Vue InstantSearch for better SEO and performance'
+keywords: ['ssr', 'server-side rendering', 'nuxt', 'vue', 'seo', 'hydration']
+---
+
+## Overview
+
+Server-side rendering (SSR) with Vue InstantSearch enables you to:
+
+<CardGroup cols={3}>
+  <Card title="Improve SEO" icon="search">
+    Search engines can crawl your search results
+  </Card>
+  <Card title="Faster initial load" icon="bolt">
+    Users see content before JavaScript loads
+  </Card>
+  <Card title="Better UX" icon="sparkles">
+    No loading states on initial page load
+  </Card>
+</CardGroup>
+
+## How it works
+
+SSR with Vue InstantSearch follows this flow:
+
+<Steps>
+  <Step title="Server prefetch">
+    The server executes search queries and collects results before rendering
+  </Step>
+  <Step title="Render to HTML">
+    The server renders the Vue component tree to HTML with search results
+  </Step>
+  <Step title="Serialize state">
+    Search results are serialized and embedded in the HTML
+  </Step>
+  <Step title="Hydration">
+    The client reuses the server state without making new requests
+  </Step>
+</Steps>
+
+## Basic SSR setup
+
+### 1. Create the server root mixin
+
+Use `createServerRootMixin` to create an InstantSearch instance that works with SSR:
+
+<CodeGroup>
+```javascript Vue 2
+import { createServerRootMixin } from 'vue-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import _renderToString from 'vue-server-renderer/basic';
+
+function renderToString(app) {
+  return new Promise((resolve, reject) => {
+    _renderToString(app, (err, res) => {
+      if (err) reject(err);
+      resolve(res);
+    });
+  });
+}
+
+const searchClient = algoliasearch('appId', 'apiKey');
+
+export const serverRootMixin = createServerRootMixin({
+  searchClient,
+  indexName: 'products',
+  insights: true,
+});
+```
+
+```javascript Vue 3
+import { createServerRootMixin } from 'vue-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import { renderToString } from '@vue/server-renderer';
+
+const searchClient = algoliasearch('appId', 'apiKey');
+
+export const serverRootMixin = createServerRootMixin({
+  searchClient,
+  indexName: 'products',
+  insights: true,
+});
+
+export { renderToString };
+```
+</CodeGroup>
+
+### 2. Use ais-instant-search-ssr
+
+Replace `<ais-instant-search>` with `<ais-instant-search-ssr>` in your search component:
+
+```vue Search.vue
+<template>
+  <ais-instant-search-ssr>
+    <ais-search-box />
+    <ais-stats />
+    <ais-refinement-list attribute="brand" />
+    <ais-hits>
+      <template #item="{ item }">
+        <article>
+          <h2>
+            <ais-highlight attribute="name" :hit="item" />
+          </h2>
+          <p>
+            <ais-highlight attribute="brand" :hit="item" />
+          </p>
+        </article>
+      </template>
+    </ais-hits>
+    <ais-pagination />
+  </ais-instant-search-ssr>
+</template>
+
+<script>
+import {
+  AisInstantSearchSsr,
+  AisSearchBox,
+  AisStats,
+  AisRefinementList,
+  AisHits,
+  AisHighlight,
+  AisPagination,
+} from 'vue-instantsearch';
+
+export default {
+  components: {
+    AisInstantSearchSsr,
+    AisSearchBox,
+    AisStats,
+    AisRefinementList,
+    AisHits,
+    AisHighlight,
+    AisPagination,
+  },
+};
+</script>
+```
+
+<Note>
+`<ais-instant-search-ssr>` automatically connects to the InstantSearch instance provided by `createServerRootMixin`.
+</Note>
+
+### 3. Implement server entry point
+
+Create a server entry that fetches search results:
+
+```javascript entry-server.js
+import { createApp } from './main';
+
+export default (context) =>
+  new Promise(async (resolve, reject) => {
+    const { app, router } = await createApp({ context });
+
+    router.push(context.url);
+
+    router.onReady(() => {
+      // Called when app is rendered
+      context.rendered = () => {
+        // Attach search state to context
+        context.algoliaState = app.instantsearch.getState();
+      };
+
+      const matchedComponents = router.getMatchedComponents();
+      if (matchedComponents.length === 0) {
+        return reject({ code: 404 });
+      }
+
+      resolve(app);
+    }, reject);
+  });
+```
+
+### 4. Set up main app with mixin
+
+```javascript main.js
+import Vue from 'vue';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import { createServerRootMixin } from 'vue-instantsearch';
+import _renderToString from 'vue-server-renderer/basic';
+import App from './App.vue';
+import { createRouter } from './router';
+
+function renderToString(app) {
+  return new Promise((resolve, reject) => {
+    _renderToString(app, (err, res) => {
+      if (err) reject(err);
+      resolve(res);
+    });
+  });
+}
+
+const searchClient = algoliasearch('appId', 'apiKey');
+
+export async function createApp({ context } = {}) {
+  const router = createRouter();
+
+  const app = new Vue({
+    mixins: [
+      createServerRootMixin({
+        searchClient,
+        indexName: 'products',
+        insights: true,
+      }),
+    ],
+    serverPrefetch() {
+      return this.instantsearch.findResultsState({
+        component: this,
+        renderToString,
+      });
+    },
+    beforeMount() {
+      if (typeof window === 'object' && window.__ALGOLIA_STATE__) {
+        this.instantsearch.hydrate(window.__ALGOLIA_STATE__);
+        delete window.__ALGOLIA_STATE__;
+      }
+    },
+    router,
+    render: (h) => h(App),
+  });
+
+  return { app, router };
+}
+```
+
+### 5. Client-side hydration
+
+```javascript entry-client.js
+import { createApp } from './main';
+
+createApp({
+  afterApp({ app }) {
+    app.$mount('#app');
+  },
+});
+```
+
+## Nuxt.js integration
+
+Vue InstantSearch works seamlessly with Nuxt.js:
+
+### 1. Configure Nuxt
+
+Add the required transpile configuration:
+
+```javascript nuxt.config.js
+module.exports = {
+  build: {
+    transpile: ['vue-instantsearch', 'instantsearch.js/es', 'algoliasearch'],
+  },
+};
+```
+
+### 2. Create a search page
+
+```vue pages/search.vue
+<template>
+  <ais-instant-search-ssr>
+    <ais-search-box />
+    <ais-stats />
+    <ais-refinement-list attribute="brand" />
+    <ais-hits>
+      <template #item="{ item }">
+        <div>
+          <ais-highlight attribute="name" :hit="item" />
+        </div>
+      </template>
+    </ais-hits>
+    <ais-pagination />
+  </ais-instant-search-ssr>
+</template>
+
+<script>
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import {
+  AisInstantSearchSsr,
+  AisSearchBox,
+  AisStats,
+  AisRefinementList,
+  AisHits,
+  AisHighlight,
+  AisPagination,
+  createServerRootMixin,
+} from 'vue-instantsearch';
+import _renderToString from 'vue-server-renderer/basic';
+
+function renderToString(app) {
+  return new Promise((resolve, reject) => {
+    _renderToString(app, (err, res) => {
+      if (err) reject(err);
+      resolve(res);
+    });
+  });
+}
+
+const searchClient = algoliasearch('appId', 'apiKey');
+
+export default {
+  components: {
+    AisInstantSearchSsr,
+    AisSearchBox,
+    AisStats,
+    AisRefinementList,
+    AisHits,
+    AisHighlight,
+    AisPagination,
+  },
+  mixins: [
+    createServerRootMixin({
+      searchClient,
+      indexName: 'products',
+      insights: true,
+    }),
+  ],
+  serverPrefetch() {
+    return this.instantsearch
+      .findResultsState({ component: this, renderToString })
+      .then((algoliaState) => {
+        this.$ssrContext.nuxt.algoliaState = algoliaState;
+      });
+  },
+  beforeMount() {
+    const results = window.__NUXT__.algoliaState;
+    this.instantsearch.hydrate(results);
+  },
+};
+</script>
+```
+
+<Tip>
+In Nuxt, you can access the state via `window.__NUXT__.algoliaState` which is automatically serialized by Nuxt.
+</Tip>
+
+## Advanced SSR configuration
+
+### Initial UI state
+
+Set the initial search state on the server:
+
+```javascript
+createServerRootMixin({
+  searchClient,
+  indexName: 'products',
+  insights: true,
+  initialUiState: {
+    products: {
+      query: 'phone',
+      page: 1,
+      refinementList: {
+        brand: ['Apple'],
+      },
+    },
+  },
+});
+```
+
+### Custom routing
+
+Implement URL-based search state:
+
+```javascript
+import qs from 'qs';
+
+createServerRootMixin({
+  searchClient,
+  indexName: 'products',
+  routing: {
+    router: {
+      read() {
+        const url = context
+          ? context.url
+          : typeof window.location === 'object'
+          ? window.location.href
+          : '';
+        const search = url.slice(url.indexOf('?'));
+
+        return qs.parse(search, {
+          ignoreQueryPrefix: true,
+        });
+      },
+      write(routeState) {
+        const query = qs.stringify(routeState, {
+          addQueryPrefix: true,
+        });
+
+        if (typeof history === 'object') {
+          history.pushState(routeState, null, query);
+        }
+      },
+      createURL(routeState) {
+        return qs.stringify(routeState, {
+          addQueryPrefix: true,
+        });
+      },
+      onUpdate(callback) {
+        if (typeof window !== 'object') return;
+        
+        this._onPopState = () => {
+          callback(this.read());
+        };
+
+        window.addEventListener('popstate', this._onPopState);
+      },
+      dispose() {
+        if (this._onPopState && typeof window === 'object') {
+          window.removeEventListener('popstate', this._onPopState);
+        }
+      },
+    },
+  },
+});
+```
+
+### Multi-index SSR
+
+Search across multiple indices:
+
+```vue
+<template>
+  <ais-instant-search-ssr>
+    <!-- Main products index -->
+    <ais-search-box />
+    <ais-hits>
+      <template #item="{ item }">
+        <div>{{ item.name }}</div>
+      </template>
+    </ais-hits>
+
+    <!-- Query suggestions index -->
+    <ais-index
+      index-name="query_suggestions"
+      index-id="suggestions"
+    >
+      <ais-configure :hits-per-page="5" />
+      <ais-hits>
+        <template #item="{ item }">
+          <ais-highlight attribute="query" :hit="item" />
+        </template>
+      </ais-hits>
+    </ais-index>
+
+    <!-- Refinement from another index -->
+    <ais-index
+      index-name="products"
+      index-id="refinements"
+    >
+      <ais-refinement-list attribute="category" />
+    </ais-index>
+  </ais-instant-search-ssr>
+</template>
+
+<script>
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import { createServerRootMixin } from 'vue-instantsearch';
+import _renderToString from 'vue-server-renderer/basic';
+
+function renderToString(app) {
+  return new Promise((resolve, reject) => {
+    _renderToString(app, (err, res) => {
+      if (err) reject(err);
+      resolve(res);
+    });
+  });
+}
+
+const searchClient = algoliasearch('appId', 'apiKey');
+
+export default {
+  mixins: [
+    createServerRootMixin({
+      searchClient,
+      indexName: 'products',
+      insights: true,
+      initialUiState: {
+        products: {
+          query: 'phone',
+        },
+        suggestions: {
+          query: 'p',
+        },
+        refinements: {
+          refinementList: {
+            category: ['Electronics'],
+          },
+        },
+      },
+    }),
+  ],
+  serverPrefetch() {
+    return this.instantsearch.findResultsState({
+      component: this,
+      renderToString,
+    });
+  },
+  beforeMount() {
+    if (window.__ALGOLIA_STATE__) {
+      this.instantsearch.hydrate(window.__ALGOLIA_STATE__);
+    }
+  },
+};
+</script>
+```
+
+## Performance optimization
+
+<AccordionGroup>
+  <Accordion title="Use the lite client">
+    The lite client reduces bundle size and is optimized for search-only operations:
+    
+    ```javascript
+    import { liteClient as algoliasearch } from 'algoliasearch/lite';
+    ```
+  </Accordion>
+
+  <Accordion title="Limit attributes to retrieve">
+    Only fetch the attributes you need:
+    
+    ```vue
+    <ais-configure
+      :attributes-to-retrieve="['name', 'price', 'image']"
+    />
+    ```
+  </Accordion>
+
+  <Accordion title="Cache search client">
+    Create the search client once and reuse it:
+    
+    ```javascript
+    // searchClient.js
+    import { liteClient as algoliasearch } from 'algoliasearch/lite';
+    
+    export const searchClient = algoliasearch('appId', 'apiKey');
+    ```
+  </Accordion>
+
+  <Accordion title="Optimize images">
+    Use responsive images and lazy loading:
+    
+    ```vue
+    <template #item="{ item }">
+      <img
+        :src="item.image"
+        :alt="item.name"
+        loading="lazy"
+        width="200"
+        height="200"
+      />
+    </template>
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="State mismatch warnings">
+    If you see hydration warnings, ensure:
+    
+    - The server and client render the same content
+    - `window.__ALGOLIA_STATE__` is properly serialized
+    - No dynamic content changes between server and client
+    
+    ```javascript
+    // Check state is properly passed
+    beforeMount() {
+      console.log('Algolia state:', window.__ALGOLIA_STATE__);
+      if (window.__ALGOLIA_STATE__) {
+        this.instantsearch.hydrate(window.__ALGOLIA_STATE__);
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Missing search results">
+    Verify that:
+    
+    - `serverPrefetch` is called on the server
+    - Search results are serialized in the HTML
+    - The hydration happens before mounting
+    
+    ```javascript
+    serverPrefetch() {
+      console.log('Server prefetch started');
+      return this.instantsearch
+        .findResultsState({ component: this, renderToString })
+        .then((state) => {
+          console.log('Results found:', state);
+          return state;
+        });
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Build errors with vue-instantsearch">
+    Add the required transpile configuration:
+    
+    ```javascript
+    // Webpack
+    module.exports = {
+      module: {
+        rules: [
+          {
+            test: /\.js$/,
+            include: [
+              /node_modules\/vue-instantsearch/,
+              /node_modules\/instantsearch\.js/,
+            ],
+            use: 'babel-loader',
+          },
+        ],
+      },
+    };
+    
+    // Nuxt
+    export default {
+      build: {
+        transpile: ['vue-instantsearch', 'instantsearch.js/es', 'algoliasearch'],
+      },
+    };
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best practices
+
+<Steps>
+  <Step title="Always use ais-instant-search-ssr">
+    Don't mix `<ais-instant-search>` and `<ais-instant-search-ssr>` in the same app
+  </Step>
+
+  <Step title="Serialize state properly">
+    Ensure the state is embedded in the HTML and accessible on the client
+  </Step>
+
+  <Step title="Clean up hydrated state">
+    Remove the state from window after hydration to prevent memory leaks:
+    
+    ```javascript
+    beforeMount() {
+      if (window.__ALGOLIA_STATE__) {
+        this.instantsearch.hydrate(window.__ALGOLIA_STATE__);
+        delete window.__ALGOLIA_STATE__;
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Test both server and client rendering">
+    Verify that the initial server-rendered HTML matches the client-hydrated output
+  </Step>
+</Steps>
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Component reference" icon="puzzle" href="/components/instant-search">
+    Explore all available InstantSearch components
+  </Card>
+  <Card title="Routing" icon="route" href="/guides/routing">
+    Learn about URL synchronization and routing
+  </Card>
+</Columns>

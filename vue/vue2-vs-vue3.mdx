@@ -1,0 +1,459 @@
+---
+title: 'Vue 2 vs Vue 3'
+description: 'Understanding the differences between Vue 2 and Vue 3 usage with Vue InstantSearch'
+keywords: ['vue 2', 'vue 3', 'migration', 'compatibility', 'differences']
+---
+
+## Version support
+
+Vue InstantSearch supports both Vue 2 and Vue 3 from a single package:
+
+<Fields>
+  <Field name="Vue 2" type="2.6.0+">
+    Fully supported with the Vue 2 build
+  </Field>
+  <Field name="Vue 3" type="3.0.0+">
+    Fully supported with the Vue 3 build
+  </Field>
+</Fields>
+
+<Note>
+The package automatically selects the correct build based on your Vue version. You don't need to install different packages or manually configure the build.
+</Note>
+
+## Installation
+
+The installation is identical for both versions:
+
+```bash
+npm install vue-instantsearch algoliasearch
+```
+
+The package structure includes separate builds:
+
+```
+vue-instantsearch/
+├── vue2/           # Vue 2 build
+│   ├── cjs/        # CommonJS
+│   └── es/         # ES modules
+└── vue3/           # Vue 3 build
+    ├── cjs/        # CommonJS
+    └── es/         # ES modules
+```
+
+## Plugin registration
+
+The way you register Vue InstantSearch differs between versions:
+
+<CodeGroup>
+```javascript Vue 2
+import Vue from 'vue';
+import InstantSearch from 'vue-instantsearch';
+import App from './App.vue';
+
+Vue.use(InstantSearch);
+
+new Vue({
+  render: (h) => h(App),
+}).$mount('#app');
+```
+
+```javascript Vue 3
+import { createApp } from 'vue';
+import InstantSearch from 'vue-instantsearch';
+import App from './App.vue';
+
+const app = createApp(App);
+app.use(InstantSearch);
+app.mount('#app');
+```
+</CodeGroup>
+
+## Component props
+
+### Camel case modifier
+
+Vue 2 requires the `.camel` modifier for props with camelCase names in templates. Vue 3 handles this automatically.
+
+<CodeGroup>
+```vue Vue 2
+<template>
+  <ais-configure
+    :hits-per-page.camel="20"
+    :attributes-to-snippet.camel="['description:50']"
+    :snippet-ellipsis-text.camel="'...'"
+  />
+</template>
+```
+
+```vue Vue 3
+<template>
+  <ais-configure
+    :hits-per-page="20"
+    :attributes-to-snippet="['description:50']"
+    :snippet-ellipsis-text="'...'"
+  />
+</template>
+```
+</CodeGroup>
+
+<Tip>
+While Vue 3 doesn't require `.camel`, using it won't cause errors. You can keep it for compatibility if you're maintaining code that runs on both versions.
+</Tip>
+
+## Slots
+
+### Slot syntax
+
+Vue 2 and Vue 3 use different syntax for scoped slots:
+
+<CodeGroup>
+```vue Vue 2
+<template>
+  <ais-hits>
+    <template slot="item" slot-scope="{ item }">
+      <div>{{ item.name }}</div>
+    </template>
+  </ais-hits>
+</template>
+```
+
+```vue Vue 3
+<template>
+  <ais-hits>
+    <template #item="{ item }">
+      <div>{{ item.name }}</div>
+    </template>
+  </ais-hits>
+</template>
+```
+</CodeGroup>
+
+<Note>
+Vue 2.6+ also supports the `#` shorthand syntax, so you can use the Vue 3 syntax in Vue 2.6+ for forward compatibility.
+</Note>
+
+### Named slots compatibility
+
+Both versions support named slots, but the syntax differs:
+
+<CodeGroup>
+```vue Vue 2
+<template>
+  <ais-search-box>
+    <template slot="submit-icon">
+      <svg><!-- icon --></svg>
+    </template>
+    <template slot="reset-icon">
+      <svg><!-- icon --></svg>
+    </template>
+  </ais-search-box>
+</template>
+```
+
+```vue Vue 3
+<template>
+  <ais-search-box>
+    <template #submit-icon>
+      <svg><!-- icon --></svg>
+    </template>
+    <template #reset-icon>
+      <svg><!-- icon --></svg>
+    </template>
+  </ais-search-box>
+</template>
+```
+</CodeGroup>
+
+## V-model
+
+### Two-way binding
+
+Vue 3 introduces `modelValue` as the default v-model prop, while Vue 2 uses `value`:
+
+<CodeGroup>
+```vue Vue 2
+<template>
+  <ais-search-box :value="query" @input="query = $event" />
+  <!-- or using v-model -->
+  <ais-search-box v-model="query" />
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      query: '',
+    };
+  },
+};
+</script>
+```
+
+```vue Vue 3
+<template>
+  <ais-search-box :model-value="query" @update:model-value="query = $event" />
+  <!-- or using v-model -->
+  <ais-search-box v-model="query" />
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      query: '',
+    };
+  },
+};
+</script>
+```
+</CodeGroup>
+
+<Tip>
+Vue InstantSearch components support both `value` and `modelValue` props for compatibility.
+</Tip>
+
+## Composition API
+
+Vue 3's Composition API is fully supported:
+
+```vue
+<template>
+  <ais-instant-search
+    :search-client="searchClient"
+    index-name="products"
+  >
+    <ais-search-box v-model="query" />
+    <ais-hits>
+      <template #item="{ item }">
+        <div @click="handleClick(item)">{{ item.name }}</div>
+      </template>
+    </ais-hits>
+  </ais-instant-search>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch('appId', 'apiKey');
+const query = ref('');
+
+const handleClick = (item) => {
+  console.log('Clicked:', item);
+};
+</script>
+```
+
+<Note>
+The Composition API is also available in Vue 2.7+ via the `@vue/composition-api` plugin.
+</Note>
+
+## Server-side rendering
+
+SSR implementation differs between versions due to different rendering APIs:
+
+<CodeGroup>
+```javascript Vue 2 SSR
+import { createServerRootMixin } from 'vue-instantsearch';
+import _renderToString from 'vue-server-renderer/basic';
+
+function renderToString(app) {
+  return new Promise((resolve, reject) => {
+    _renderToString(app, (err, res) => {
+      if (err) reject(err);
+      resolve(res);
+    });
+  });
+}
+
+export default {
+  mixins: [
+    createServerRootMixin({
+      searchClient,
+      indexName: 'products',
+    }),
+  ],
+  serverPrefetch() {
+    return this.instantsearch.findResultsState({
+      component: this,
+      renderToString,
+    });
+  },
+  beforeMount() {
+    if (window.__ALGOLIA_STATE__) {
+      this.instantsearch.hydrate(window.__ALGOLIA_STATE__);
+    }
+  },
+};
+```
+
+```javascript Vue 3 SSR
+import { createServerRootMixin } from 'vue-instantsearch';
+import { renderToString } from '@vue/server-renderer';
+
+export default {
+  mixins: [
+    createServerRootMixin({
+      searchClient,
+      indexName: 'products',
+    }),
+  ],
+  async serverPrefetch() {
+    const state = await this.instantsearch.findResultsState({
+      component: this,
+      renderToString,
+    });
+    return state;
+  },
+  beforeMount() {
+    if (window.__ALGOLIA_STATE__) {
+      this.instantsearch.hydrate(window.__ALGOLIA_STATE__);
+    }
+  },
+};
+```
+</CodeGroup>
+
+## TypeScript support
+
+Vue 3 has better TypeScript support out of the box:
+
+```typescript Vue 3 with TypeScript
+<script setup lang="ts">
+import { ref, Ref } from 'vue';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import type { SearchClient } from 'algoliasearch/lite';
+
+const searchClient: SearchClient = algoliasearch(
+  'appId',
+  'apiKey'
+);
+
+const query: Ref<string> = ref('');
+
+interface Product {
+  objectID: string;
+  name: string;
+  price: number;
+}
+
+const handleClick = (item: Product): void => {
+  console.log('Clicked:', item);
+};
+</script>
+```
+
+## Migration checklist
+
+When migrating from Vue 2 to Vue 3:
+
+<Steps>
+  <Step title="Update Vue and build tools">
+    Upgrade to Vue 3 and update your build configuration (Vite, Webpack, etc.)
+  </Step>
+
+  <Step title="Update slot syntax">
+    Replace `slot` and `slot-scope` with `#` shorthand:
+    
+    ```vue
+    <!-- Before -->
+    <template slot="item" slot-scope="{ item }">
+    
+    <!-- After -->
+    <template #item="{ item }">
+    ```
+  </Step>
+
+  <Step title="Remove .camel modifiers">
+    Vue 3 handles prop case conversion automatically:
+    
+    ```vue
+    <!-- Before -->
+    <ais-configure :hits-per-page.camel="20" />
+    
+    <!-- After -->
+    <ais-configure :hits-per-page="20" />
+    ```
+  </Step>
+
+  <Step title="Update SSR implementation">
+    Use `@vue/server-renderer` instead of `vue-server-renderer`
+  </Step>
+
+  <Step title="Test all components">
+    Verify that all InstantSearch components work as expected
+  </Step>
+</Steps>
+
+## Compatibility table
+
+| Feature | Vue 2 | Vue 3 | Notes |
+|---------|-------|-------|-------|
+| Plugin registration | `Vue.use()` | `app.use()` | Different APIs |
+| Scoped slots | `slot-scope` | `#` or `v-slot` | Vue 2.6+ supports both |
+| Prop case | `.camel` modifier | Automatic | Vue 3 auto-converts |
+| v-model | `value` + `input` | `modelValue` + `update:modelValue` | Both supported |
+| SSR renderer | `vue-server-renderer` | `@vue/server-renderer` | Different packages |
+| Composition API | Via plugin (2.7+) | Built-in | Native in Vue 3 |
+| TypeScript | Limited | Full support | Better DX in Vue 3 |
+| Fragment support | No | Yes | Multiple root elements |
+| Teleport | No | Yes | Portal-like feature |
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Use the modern slot syntax">
+    Even in Vue 2.6+, prefer the `#` shorthand for better forward compatibility:
+    
+    ```vue
+    <!-- ✅ Recommended -->
+    <template #item="{ item }">
+    
+    <!-- ❌ Avoid -->
+    <template slot="item" slot-scope="{ item }">
+    ```
+  </Accordion>
+
+  <Accordion title="Keep the search client outside of reactive data">
+    For better performance, don't make the search client reactive:
+    
+    ```javascript
+    // ✅ Good
+    import { liteClient as algoliasearch } from 'algoliasearch/lite';
+    
+    const searchClient = algoliasearch('appId', 'apiKey');
+    
+    export default {
+      data() {
+        return { searchClient };
+      },
+    };
+    ```
+  </Accordion>
+
+  <Accordion title="Consider using script setup in Vue 3">
+    The `<script setup>` syntax provides better performance and DX:
+    
+    ```vue
+    <script setup>
+    import { ref } from 'vue';
+    import { liteClient as algoliasearch } from 'algoliasearch/lite';
+    
+    const searchClient = algoliasearch('appId', 'apiKey');
+    const query = ref('');
+    </script>
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Server-side rendering" icon="server" href="/vue/server-side-rendering">
+    Learn how to implement SSR with Vue InstantSearch
+  </Card>
+  <Card title="Component reference" icon="puzzle" href="/components/instant-search">
+    Explore all available components and their props
+  </Card>
+</Columns>

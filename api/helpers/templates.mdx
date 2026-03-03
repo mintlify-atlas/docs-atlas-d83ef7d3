@@ -1,0 +1,401 @@
+---
+title: Templates
+description: Template rendering utilities for custom UI components
+---
+
+Template helpers provide utilities for rendering custom UI in InstantSearch widgets. They support both function-based templates (JSX-like with Preact) and string-based templates (Hogan.js/Mustache).
+
+## Template Types
+
+InstantSearch supports two template formats:
+
+### Function Templates (Recommended)
+
+Modern function-based templates using Preact and HTM:
+
+```javascript
+import { html } from 'htm/preact';
+
+const template = (data, { html, components }) => html`
+  <div class="hit">
+    <h3>${components.Highlight({ hit: data, attribute: 'name' })}</h3>
+    <p>${data.description}</p>
+  </div>
+`;
+```
+
+### String Templates (Legacy)
+
+Mustache/Hogan.js string templates:
+
+```javascript
+const template = `
+  <div class="hit">
+    <h3>{{name}}</h3>
+    <p>{{description}}</p>
+  </div>
+`;
+```
+
+## renderTemplate
+
+Renders a template with data and helpers.
+
+```javascript
+import { renderTemplate } from 'instantsearch.js/es/lib/templating';
+
+const html = renderTemplate({
+  templates: {
+    item: (data) => `<div>${data.name}</div>`,
+  },
+  templateKey: 'item',
+  data: { name: 'Product' },
+});
+```
+
+### Parameters
+
+<ParamField path="templates" type="object" required>
+  Object containing all available templates.
+  
+  ```javascript
+  {
+    item: (hit) => html`<div>${hit.name}</div>`,
+    empty: () => html`<p>No results</p>`,
+  }
+  ```
+</ParamField>
+
+<ParamField path="templateKey" type="string" required>
+  The key of the template to render.
+  
+  ```javascript
+  templateKey: 'item'
+  ```
+</ParamField>
+
+<ParamField path="data" type="object">
+  Data to pass to the template.
+  
+  ```javascript
+  data: {
+    name: 'iPhone 13',
+    price: 999,
+  }
+  ```
+</ParamField>
+
+<ParamField path="compileOptions" type="object">
+  Options for Hogan.js compilation (string templates only).
+  
+  ```javascript
+  compileOptions: {
+    delimiters: '<% %>',
+  }
+  ```
+</ParamField>
+
+<ParamField path="helpers" type="object">
+  Custom helper functions for string templates.
+  
+  ```javascript
+  helpers: {
+    formatPrice: (value, render) => {
+      return '$' + render(value);
+    },
+  }
+  ```
+</ParamField>
+
+<ParamField path="bindEvent" type="object">
+  Event binding utilities for click tracking.
+  
+  ```javascript
+  bindEvent: {
+    createClickEvent(event, hit) {
+      return { type: 'click', hit };
+    },
+  }
+  ```
+</ParamField>
+
+<ParamField path="sendEvent" type="Function">
+  Function to send analytics events.
+  
+  ```javascript
+  sendEvent: (eventType, hit, eventName) => {
+    console.log('Event:', eventType, hit, eventName);
+  }
+  ```
+</ParamField>
+
+## Template Components
+
+Function templates have access to built-in components:
+
+### Highlight
+
+Highlights matching query terms in a hit attribute.
+
+```javascript
+const template = (hit, { html, components }) => html`
+  <div>
+    ${components.Highlight({ hit, attribute: 'name' })}
+  </div>
+`;
+```
+
+<ParamField path="hit" type="object" required>
+  The search result hit object.
+</ParamField>
+
+<ParamField path="attribute" type="string" required>
+  The attribute to highlight.
+</ParamField>
+
+<ParamField path="highlightedTagName" type="string" default="'mark'">
+  HTML tag name for highlighted parts.
+</ParamField>
+
+### Snippet
+
+Displays a snippet of a hit attribute with highlighted matches.
+
+```javascript
+const template = (hit, { html, components }) => html`
+  <div>
+    ${components.Snippet({ hit, attribute: 'description' })}
+  </div>
+`;
+```
+
+<ParamField path="hit" type="object" required>
+  The search result hit object.
+</ParamField>
+
+<ParamField path="attribute" type="string" required>
+  The attribute to snippet.
+</ParamField>
+
+<ParamField path="highlightedTagName" type="string" default="'mark'">
+  HTML tag name for highlighted parts.
+</ParamField>
+
+### ReverseHighlight
+
+Highlights non-matching parts (inverse of Highlight).
+
+```javascript
+const template = (hit, { html, components }) => html`
+  <div>
+    ${components.ReverseHighlight({ hit, attribute: 'name' })}
+  </div>
+`;
+```
+
+### ReverseSnippet
+
+Snippets non-matching parts (inverse of Snippet).
+
+```javascript
+const template = (hit, { html, components }) => html`
+  <div>
+    ${components.ReverseSnippet({ hit, attribute: 'description' })}
+  </div>
+`;
+```
+
+## prepareTemplateProps
+
+Prepares template properties for rendering.
+
+```javascript
+import { prepareTemplateProps } from 'instantsearch.js/es/lib/templating';
+
+const props = prepareTemplateProps({
+  defaultTemplates: {
+    item: (hit) => html`<div>${hit.name}</div>`,
+  },
+  templates: {
+    item: (hit) => html`<div class="custom">${hit.name}</div>`,
+  },
+  templatesConfig: {},
+});
+```
+
+## Examples
+
+### Function Template with Components
+
+```javascript
+import { html } from 'htm/preact';
+
+const hitTemplate = (hit, { html, components }) => html`
+  <article class="hit">
+    <img src="${hit.image}" alt="${hit.name}" />
+    <div class="hit-content">
+      <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+      <p>${components.Snippet({ hit, attribute: 'description' })}</p>
+      <span class="price">$${hit.price}</span>
+    </div>
+  </article>
+`;
+```
+
+### String Template with Helpers
+
+```javascript
+const template = `
+  <div class="product">
+    <h3>{{#helpers.highlight}}name{{/helpers.highlight}}</h3>
+    <p>{{#helpers.formatPrice}}price{{/helpers.formatPrice}}</p>
+  </div>
+`;
+
+const helpers = {
+  formatPrice: function(value, render) {
+    return '$' + render(value);
+  },
+};
+
+renderTemplate({
+  templates: { item: template },
+  templateKey: 'item',
+  data: hit,
+  helpers,
+});
+```
+
+### Template with Event Tracking
+
+```javascript
+const hitTemplate = (hit, { html, sendEvent }) => html`
+  <article 
+    class="hit"
+    onClick=${() => sendEvent('click', hit, 'Product Clicked')}
+  >
+    <h3>${hit.name}</h3>
+    <button 
+      onClick=${(e) => {
+        e.stopPropagation();
+        sendEvent('conversion', hit, 'Added to Cart');
+      }}
+    >
+      Add to Cart
+    </button>
+  </article>
+`;
+```
+
+### Conditional Template
+
+```javascript
+const hitTemplate = (hit, { html, components }) => html`
+  <div class="hit">
+    <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+    ${hit.onSale && html`<span class="badge">On Sale!</span>`}
+    ${hit.image ? html`<img src="${hit.image}" />` : html`<div class="no-image">No image</div>`}
+    <p class="price ${hit.onSale && 'sale-price'}">
+      $${hit.price}
+    </p>
+  </div>
+`;
+```
+
+### Empty State Template
+
+```javascript
+const templates = {
+  item: (hit, { html, components }) => html`
+    <div class="hit">
+      ${components.Highlight({ hit, attribute: 'name' })}
+    </div>
+  `,
+  empty: (results, { html }) => html`
+    <div class="empty-state">
+      <p>No results found for <strong>${results.query}</strong></p>
+      <p>Try adjusting your search or filters</p>
+    </div>
+  `,
+};
+```
+
+### Render Multiple Attributes
+
+```javascript
+const hitTemplate = (hit, { html, components }) => html`
+  <article class="hit">
+    <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+    <p class="brand">${components.Highlight({ hit, attribute: 'brand' })}</p>
+    <div class="description">
+      ${components.Snippet({ hit, attribute: 'description' })}
+    </div>
+    <ul class="features">
+      ${hit.features?.map(feature => html`
+        <li>${feature}</li>
+      `)}
+    </ul>
+  </article>
+`;
+```
+
+### Custom Highlight Styling
+
+```javascript
+const hitTemplate = (hit, { html, components }) => html`
+  <div class="hit">
+    ${components.Highlight({ 
+      hit, 
+      attribute: 'name',
+      highlightedTagName: 'strong',
+    })}
+  </div>
+`;
+```
+
+## Legacy String Template Syntax
+
+### Variables
+
+```javascript
+`<div>{{name}}</div>`
+```
+
+### Sections (loops, conditionals)
+
+```javascript
+`
+  {{#items}}
+    <div>{{name}}</div>
+  {{/items}}
+  
+  {{^items}}
+    <p>No items</p>
+  {{/items}}
+`
+```
+
+### Helpers
+
+```javascript
+`<div>{{#helpers.formatPrice}}price{{/helpers.formatPrice}}</div>`
+```
+
+## Best Practices
+
+<Tip>
+  **Use Function Templates**: Function templates with HTM/Preact provide better performance, TypeScript support, and access to components like Highlight and Snippet.
+</Tip>
+
+<Warning>
+  **XSS Protection**: Always use components like `Highlight` and `Snippet` for user-generated content. Never use raw HTML interpolation with untrusted data.
+</Warning>
+
+<Note>
+  **Event Tracking**: Use the `sendEvent` function in templates to track user interactions for analytics and personalization.
+</Note>
+
+## Related
+
+- [Widgets API](/api/widgets/overview) - Use templates in widgets
+- [Connectors API](/api/connectors/overview) - Build custom widgets with templates

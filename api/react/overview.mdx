@@ -1,0 +1,63 @@
+---
+title: 'React Components Overview'
+description: 'Core React InstantSearch components for building search experiences'
+---
+
+React InstantSearch provides a set of components and hooks to build search experiences with Algolia.
+
+## Core Components
+
+The main components for setting up InstantSearch:
+
+<CardGroup cols={2}>
+  <Card title="InstantSearch" icon="magnifying-glass" href="/api/react/instantsearch">
+    Root component that manages the search state
+  </Card>
+  <Card title="Index" icon="folder-tree" href="/api/react/index">
+    Target a specific index for multi-index search
+  </Card>
+  <Card title="Configure" icon="gear" href="/api/react/configure">
+    Configure search parameters
+  </Card>
+  <Card title="DynamicWidgets" icon="wand-magic-sparkles" href="/api/react/dynamic-widgets">
+    Automatically render widgets based on index configuration
+  </Card>
+</CardGroup>
+
+## Hooks
+
+React InstantSearch provides hooks for building custom search UI:
+
+<Card title="React Hooks" icon="hook" href="/api/react/hooks/overview">
+  Build custom search components with React hooks
+</Card>
+
+## Installation
+
+```bash
+npm install react-instantsearch
+```
+
+## Basic Usage
+
+```jsx
+import { InstantSearch, SearchBox, Hits } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey');
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+## Learn More
+
+- [React InstantSearch Guide](/guides/react)
+- [Widget Components](/api/react/widgets/overview)
+- [React Hooks](/api/react/hooks/overview)

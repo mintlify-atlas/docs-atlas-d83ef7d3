@@ -1,0 +1,479 @@
+---
+title: 'Connectors'
+description: 'Learn about connectors in InstantSearch, how they separate business logic from rendering, and when to use them for custom widgets.'
+keywords: ['connectors', 'custom widgets', 'business logic', 'rendering', 'framework agnostic']
+---
+
+Connectors are functions that encapsulate the business logic of widgets, separating it from the rendering layer. This makes the same search logic reusable across different frameworks and rendering approaches.
+
+## What is a connector?
+
+A connector is a function that:
+
+1. Handles all search-related logic (parameters, state management)
+2. Accepts a render function from you
+3. Returns a widget factory function
+4. Calls your render function with a simplified API
+
+The connector pattern allows you to build custom widgets without reimplementing search logic.
+
+## Connector vs Widget
+
+Understanding the difference:
+
+<Columns cols={2}>
+  <div>
+    ### Widget
+    
+    - Complete UI component
+    - Combines logic and rendering
+    - Framework-specific
+    - Ready to use out of the box
+    
+    ```javascript
+    // Pre-built widget
+    import { searchBox } from 'instantsearch.js/es/widgets';
+    
+    searchBox({
+      container: '#searchbox',
+      placeholder: 'Search...'
+    })
+    ```
+  </div>
+  
+  <div>
+    ### Connector
+    
+    - Business logic only
+    - You provide the rendering
+    - Framework-agnostic
+    - Maximum customization
+    
+    ```javascript
+    // Connector + custom render
+    import { connectSearchBox } from 'instantsearch.js/es/connectors';
+    
+    connectSearchBox(
+      (renderOptions, isFirstRender) => {
+        // Your custom rendering
+      }
+    )
+    ```
+  </div>
+</Columns>
+
+## How connectors work
+
+The connector pattern is defined in `/home/daytona/workspace/source/packages/instantsearch.js/src/types/connector.ts:64-83`:
+
+```typescript
+type Connector<TWidgetDescription, TConnectorParams> = <TWidgetParams>(
+  renderFn: Renderer<TWidgetDescription['renderState'], TConnectorParams & TWidgetParams>,
+  unmountFn?: Unmounter
+) => (widgetParams: TConnectorParams & TWidgetParams) => Widget<TWidgetDescription>;
+```
+
+In practice:
+
+<Steps>
+  <Step title="Call the connector">
+    Pass your render function to the connector.
+    
+    ```javascript
+    const mySearchBox = connectSearchBox(
+      (renderOptions, isFirstRender) => {
+        // Rendering logic
+      }
+    );
+    ```
+  </Step>
+  
+  <Step title="Configure the widget">
+    The connector returns a widget factory. Call it with your parameters.
+    
+    ```javascript
+    const searchBoxWidget = mySearchBox({
+      // Your custom parameters
+      placeholder: 'Search products...'
+    });
+    ```
+  </Step>
+  
+  <Step title="Add to InstantSearch">
+    Use the widget like any other.
+    
+    ```javascript
+    search.addWidgets([searchBoxWidget]);
+    ```
+  </Step>
+</Steps>
+
+## Render function API
+
+Your render function receives two arguments (from `/home/daytona/workspace/source/packages/instantsearch.js/src/types/connector.ts:43-53`):
+
+### Render options
+
+The first argument contains widget-specific data plus base options:
+
+```typescript
+type RendererOptions<TWidgetParams> = {
+  widgetParams: TWidgetParams;           // Your widget parameters
+  instantSearchInstance: InstantSearch;   // The main instance
+  results?: SearchResults;                // Search results
+  hits?: Hit[];                          // Result hits
+  insights?: InsightsClient;             // Insights client
+  // ... plus connector-specific options
+};
+```
+
+### Is first render
+
+The second argument is a boolean indicating if this is the initial render:
+
+```javascript
+function render(renderOptions, isFirstRender) {
+  if (isFirstRender) {
+    // Create DOM elements, set up event listeners
+  } else {
+    // Update existing elements with new data
+  }
+}
+```
+
+## Using connectors
+
+Here's a complete example using `connectSearchBox` (based on `/home/daytona/workspace/source/packages/instantsearch.js/src/connectors/search-box/connectSearchBox.ts`):
+
+<CodeGroup>
+
+```javascript Vanilla JavaScript
+import { connectSearchBox } from 'instantsearch.js/es/connectors';
+
+const customSearchBox = connectSearchBox(
+  (renderOptions, isFirstRender) => {
+    const { query, refine, clear, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    if (isFirstRender) {
+      // Create the HTML structure
+      const input = document.createElement('input');
+      const button = document.createElement('button');
+      
+      input.placeholder = 'Search...';
+      button.textContent = 'Clear';
+      
+      // Set up event listeners
+      input.addEventListener('input', (e) => {
+        refine(e.target.value);
+      });
+      
+      button.addEventListener('click', () => {
+        clear();
+        input.value = '';
+      });
+      
+      container.appendChild(input);
+      container.appendChild(button);
+    }
+    
+    // Update the input value
+    const input = container.querySelector('input');
+    input.value = query;
+  },
+  
+  // Optional unmount function
+  () => {
+    const container = document.querySelector('#searchbox');
+    container.innerHTML = '';
+  }
+);
+
+// Use the custom widget
+search.addWidgets([
+  customSearchBox({
+    container: document.querySelector('#searchbox'),
+  })
+]);
+```
+
+```tsx React
+import { connectSearchBox } from 'react-instantsearch';
+
+const CustomSearchBox = connectSearchBox(
+  ({ query, refine, clear, widgetParams }) => (
+    <div>
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => refine(e.target.value)}
+        placeholder={widgetParams.placeholder}
+      />
+      <button onClick={clear}>Clear</button>
+    </div>
+  )
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <CustomSearchBox placeholder="Search products..." />
+    </InstantSearch>
+  );
+}
+```
+
+```vue Vue
+<template>
+  <div>
+    <input
+      type="search"
+      :value="state.query"
+      @input="state.refine($event.target.value)"
+      :placeholder="widgetParams.placeholder"
+    />
+    <button @click="state.clear()">Clear</button>
+  </div>
+</template>
+
+<script>
+import { connectSearchBox } from 'instantsearch.js/es/connectors';
+import { createWidgetMixin } from 'vue-instantsearch/vue3/es';
+
+export default {
+  mixins: [createWidgetMixin({ connector: connectSearchBox })],
+  props: {
+    placeholder: String,
+  },
+};
+</script>
+```
+
+</CodeGroup>
+
+## SearchBox connector example
+
+The SearchBox connector provides these render options (from `/home/daytona/workspace/source/packages/instantsearch.js/src/connectors/search-box/connectSearchBox.ts:34-54`):
+
+```typescript
+type SearchBoxRenderState = {
+  query: string;                    // Current search query
+  refine: (value: string) => void;  // Function to update query
+  clear: () => void;                // Function to clear query
+  isSearchStalled: boolean;         // Whether search is stalled
+};
+```
+
+Example implementation:
+
+```javascript
+const { query, refine, clear } = renderOptions;
+
+// Display current query
+console.log('Current query:', query);
+
+// Update the query
+refine('new search term');
+
+// Clear the search
+clear();
+```
+
+## Hits connector example
+
+The Hits connector provides search results (from `/home/daytona/workspace/source/packages/instantsearch.js/src/connectors/hits/connectHits.ts:31-62`):
+
+```typescript
+type HitsRenderState<THit> = {
+  hits: Array<Hit<THit>>;           // Deprecated, use items
+  items: Array<Hit<THit>>;          // Matched results
+  results?: SearchResults;           // Full results object
+  banner?: Banner;                  // Optional banner
+  sendEvent: SendEventForHits;      // Send Insights events
+  bindEvent: BindEventForHits;      // Bind Insights events
+};
+```
+
+Example:
+
+```javascript
+import { connectHits } from 'instantsearch.js/es/connectors';
+
+const customHits = connectHits(
+  (renderOptions, isFirstRender) => {
+    const { items, results, sendEvent, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    if (isFirstRender) {
+      const div = document.createElement('div');
+      div.className = 'hits-container';
+      container.appendChild(div);
+    }
+    
+    const hitsContainer = container.querySelector('.hits-container');
+    
+    hitsContainer.innerHTML = items.map(hit => `
+      <article>
+        <h2>${hit.name}</h2>
+        <p>${hit.description}</p>
+        <button onclick="${() => sendEvent('click', hit, 'Product Clicked')}">View</button>
+      </article>
+    `).join('');
+    
+    // Send automatic view events
+    sendEvent('view', items);
+  }
+);
+```
+
+## Available connectors
+
+InstantSearch provides connectors for all major widgets:
+
+<AccordionGroup>
+  <Accordion title="Search connectors">
+    - `connectSearchBox` - Search input logic
+    - `connectHits` - Results display logic
+    - `connectInfiniteHits` - Infinite scroll logic
+    - `connectStats` - Search statistics
+    - `connectPagination` - Pagination logic
+    - `connectAutocomplete` - Autocomplete logic
+  </Accordion>
+  
+  <Accordion title="Refinement connectors">
+    - `connectRefinementList` - Multi-select facets
+    - `connectMenu` - Single-select facets
+    - `connectHierarchicalMenu` - Category hierarchy
+    - `connectRange` - Numeric range filter
+    - `connectRatingMenu` - Star rating filter
+    - `connectToggleRefinement` - Boolean toggle
+    - `connectNumericMenu` - Numeric menu
+  </Accordion>
+  
+  <Accordion title="Navigation connectors">
+    - `connectBreadcrumb` - Navigation breadcrumb
+    - `connectCurrentRefinements` - Active filters
+    - `connectClearRefinements` - Clear filters
+    - `connectSortBy` - Index sorting
+  </Accordion>
+  
+  <Accordion title="Configuration connectors">
+    - `connectConfigure` - Search parameters
+    - `connectGeoSearch` - Geographic search
+    - `connectPoweredBy` - Algolia branding
+    - `connectQueryRules` - Query rules
+  </Accordion>
+  
+  <Accordion title="Recommendation connectors">
+    - `connectRelatedProducts` - Related items
+    - `connectFrequentlyBoughtTogether` - Product bundles
+    - `connectTrendingItems` - Trending content
+    - `connectLookingSimilar` - Similar items
+  </Accordion>
+</AccordionGroup>
+
+## Connector parameters
+
+Connectors can accept their own parameters. For example, `connectSearchBox` accepts:
+
+```typescript
+type SearchBoxConnectorParams = {
+  queryHook?: (query: string, hook: (value: string) => void) => void;
+};
+```
+
+Use this for debouncing:
+
+```javascript
+import { connectSearchBox } from 'instantsearch.js/es/connectors';
+
+const debouncedSearchBox = connectSearchBox(
+  (renderOptions, isFirstRender) => {
+    // Your render logic
+  }
+);
+
+search.addWidgets([
+  debouncedSearchBox({
+    container: '#searchbox',
+    queryHook(query, search) {
+      clearTimeout(timerId);
+      timerId = setTimeout(() => search(query), 300);
+    },
+  })
+]);
+```
+
+## When to use connectors
+
+<CardGroup cols={2}>
+  <Card title="Use connectors when" icon="check" color="green">
+    - Building custom UI components
+    - Creating framework-specific widgets
+    - Need full control over rendering
+    - Building design system components
+    - Implementing unique interactions
+  </Card>
+  
+  <Card title="Use pre-built widgets when" icon="box" color="blue">
+    - Standard search UI is sufficient
+    - Rapid prototyping
+    - Using default themes
+    - Limited customization needed
+    - Following best practices
+  </Card>
+</CardGroup>
+
+## Best practices
+
+<Warning>
+  **Clean up in the unmount function**: Always provide an unmount function to remove event listeners and clean up DOM elements.
+  
+  ```javascript
+  connectSearchBox(
+    renderFn,
+    () => {
+      // Remove event listeners
+      // Clear DOM elements
+    }
+  )
+  ```
+</Warning>
+
+<Tip>
+  **Use `isFirstRender` efficiently**: Only create DOM elements and set up event listeners on the first render. Update existing elements on subsequent renders.
+</Tip>
+
+<Info>
+  **Type your connectors**: In TypeScript, use generic types for better type safety:
+  
+  ```typescript
+  type ProductHit = {
+    name: string;
+    price: number;
+  };
+  
+  const customHits = connectHits<ProductHit>(
+    ({ items }) => {
+      // items is typed as Array<Hit<ProductHit>>
+    }
+  );
+  ```
+</Info>
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="Widgets" icon="puzzle-piece" href="/concepts/widgets">
+    Learn about the widget system
+  </Card>
+  <Card title="Custom widgets guide" icon="hammer" href="/guides/custom-widgets">
+    Step-by-step widget creation
+  </Card>
+  <Card title="Connector API reference" icon="book" href="/api-reference/connectors">
+    Complete connector documentation
+  </Card>
+  <Card title="Search state" icon="database" href="/concepts/search-state">
+    Understanding UI state management
+  </Card>
+</CardGroup>

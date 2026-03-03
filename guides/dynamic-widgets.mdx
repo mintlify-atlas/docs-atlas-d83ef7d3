@@ -1,0 +1,232 @@
+---
+title: Dynamic Widgets
+description: Automatically generate facet widgets based on Algolia's facet ordering
+---
+
+Dynamic Widgets automatically creates and manages facet widgets based on your Algolia index's `facetOrdering` configuration. This is useful when you want to dynamically display facets without hardcoding them.
+
+## Overview
+
+The `dynamicWidgets` widget reads the `facetOrdering` from your Algolia index settings and automatically renders the appropriate facet widgets in the specified order. You can provide a list of widgets to use or a fallback widget for attributes not explicitly defined.
+
+## Basic Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { dynamicWidgets, refinementList, panel } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient,
+});
+
+search.addWidgets([
+  dynamicWidgets({
+    container: '#dynamic-widgets',
+    widgets: [
+      (container) =>
+        panel({
+          templates: { header: () => 'Brand' },
+        })(refinementList)({
+          container,
+          attribute: 'brand',
+        }),
+      (container) =>
+        panel({
+          templates: { header: () => 'Categories' },
+        })(refinementList)({
+          container,
+          attribute: 'categories',
+        }),
+    ],
+  }),
+]);
+
+search.start();
+```
+
+## Using a Fallback Widget
+
+Provide a fallback widget function to automatically create widgets for attributes not in your predefined list:
+
+```javascript
+dynamicWidgets({
+  container: '#dynamic-widgets',
+  widgets: [],
+  fallbackWidget: ({ container, attribute }) =>
+    refinementList({
+      container,
+      attribute,
+      limit: 10,
+    }),
+})
+```
+
+## Configuring Facet Ordering
+
+<Note>
+Dynamic widgets requires `facetOrdering` to be configured in your Algolia index settings.
+</Note>
+
+Set up facet ordering in your index:
+
+```javascript
+index.setSettings({
+  attributesForFaceting: ['brand', 'categories', 'color', 'size'],
+  renderingContent: {
+    facetOrdering: {
+      facets: {
+        order: ['brand', 'categories', 'color', 'size'],
+      },
+    },
+  },
+});
+```
+
+## Advanced Configuration
+
+### Limiting Facets Requested
+
+By default, dynamic widgets requests all facets (`['*']`). For better performance with many potential facets, specify exact attributes:
+
+```javascript
+const makeWidget = connectDynamicWidgets(
+  (renderOptions, isFirstRender) => {
+    const { attributesToRender } = renderOptions;
+    // Custom rendering logic
+  }
+);
+
+search.addWidgets([
+  makeWidget({
+    widgets: myWidgets,
+    facets: ['brand', 'categories'], // Only request these facets
+    maxValuesPerFacet: 20,
+  }),
+]);
+```
+
+### Transform Items
+
+Filter or modify the attributes to render:
+
+```javascript
+const makeWidget = connectDynamicWidgets(
+  (renderOptions, isFirstRender) => {
+    // Render logic
+  }
+);
+
+makeWidget({
+  widgets: myWidgets,
+  transformItems(items) {
+    // Only show first 5 attributes
+    return items.slice(0, 5);
+  },
+})
+```
+
+## How It Works
+
+The implementation from `src/widgets/dynamic-widgets/dynamic-widgets.ts` shows the widget:
+
+1. **Reads facet ordering** from search results (`results.renderingContent?.facetOrdering?.facets?.order`)
+2. **Matches attributes** to your provided widgets or fallback
+3. **Mounts/unmounts widgets** automatically based on the order
+4. **Manages containers** for each attribute
+
+```typescript
+// From src/connectors/dynamic-widgets/connectDynamicWidgets.ts
+getWidgetRenderState({ results, state }) {
+  if (!results) {
+    return { attributesToRender: [], widgetParams };
+  }
+
+  const attributesToRender = transformItems(
+    results.renderingContent?.facetOrdering?.facets?.order ?? [],
+    { results }
+  );
+
+  return {
+    attributesToRender,
+    widgetParams,
+  };
+}
+```
+
+## Performance Considerations
+
+<Warning>
+If you have more than 20 facets, increase `maxValuesPerFacet` to at least match your pinned facet values.
+</Warning>
+
+```javascript
+dynamicWidgets({
+  container: '#dynamic-widgets',
+  widgets: myWidgets,
+  maxValuesPerFacet: 50, // Increase if needed
+})
+```
+
+## Complete Example
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import {
+  dynamicWidgets,
+  refinementList,
+  hierarchicalMenu,
+  panel,
+} from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+const facetWidgets = {
+  brand: (container) =>
+    panel({ templates: { header: () => 'Brand' } })(
+      refinementList
+    )({
+      container,
+      attribute: 'brand',
+      searchable: true,
+    }),
+  categories: (container) =>
+    panel({ templates: { header: () => 'Categories' } })(
+      hierarchicalMenu
+    )({
+      container,
+      attributes: [
+        'categories.lvl0',
+        'categories.lvl1',
+        'categories.lvl2',
+      ],
+    }),
+};
+
+search.addWidgets([
+  dynamicWidgets({
+    container: '#dynamic-facets',
+    widgets: Object.values(facetWidgets),
+    fallbackWidget: ({ container, attribute }) =>
+      panel({
+        templates: { header: () => attribute },
+      })(refinementList)({
+        container,
+        attribute,
+        limit: 5,
+      }),
+    maxValuesPerFacet: 30,
+  }),
+]);
+
+search.start();
+```
+
+## Related Resources
+
+- [Refinement List widget](/widgets/refinement-list)
+- [Custom Widgets guide](/guides/custom-widgets)
+- [Algolia Facet Ordering](https://www.algolia.com/doc/guides/managing-results/refine-results/faceting/how-to/defining-facet-order/)

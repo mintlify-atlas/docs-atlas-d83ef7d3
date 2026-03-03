@@ -1,0 +1,459 @@
+---
+title: Geographic Search Example
+description: Build a location-based search with interactive maps using the GeoSearch widget
+---
+
+This example demonstrates how to build a geographic search experience with map visualization, allowing users to search for locations and see results plotted on an interactive map.
+
+## Overview
+
+The geographic search example includes:
+
+- **Interactive map** with Google Maps integration
+- **Location markers** for each search result
+- **Geographic filtering** based on map bounds
+- **Proximity search** using user location
+- **Price range filtering**
+- **Room type refinement**
+
+<Frame>
+  <img src="/images/examples/geo-demo.png" alt="Geographic search with map" />
+</Frame>
+
+## Live Demo
+
+This example uses Airbnb listing data to demonstrate location-based search capabilities.
+
+## Implementation
+
+### Complete Setup
+
+```javascript
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import instantsearch from 'instantsearch.js';
+import {
+  configure,
+  searchBox,
+  stats,
+  hits,
+  pagination,
+  refinementList,
+  rangeSlider,
+  geoSearch,
+} from 'instantsearch.js/es/widgets';
+
+import 'instantsearch.css/themes/reset.css';
+
+const search = instantsearch({
+  searchClient: algoliasearch(
+    'latency',
+    '6be0576ff61c053d5f9a3225e2a90f76'
+  ),
+  indexName: 'airbnb',
+  routing: true,
+  insights: true,
+});
+```
+
+### Configure Geographic Search
+
+Enable location-based search using the user's IP:
+
+```javascript
+search.addWidgets([
+  configure({
+    aroundLatLngViaIP: true,
+    hitsPerPage: 12,
+  }),
+]);
+```
+
+### Add the Map Widget
+
+<Tabs>
+  <Tab title="GeoSearch Widget">
+    
+Integrate Google Maps with the GeoSearch widget:
+
+```javascript
+import { geoSearch } from 'instantsearch.js/es/widgets';
+
+geoSearch({
+  container: '#map',
+  googleReference: window.google,
+  enableRefineControl: false,
+  builtInMarker: {
+    createOption(hit) {
+      return {
+        title: hit.description,
+      };
+    },
+  },
+})
+```
+
+  </Tab>
+  <Tab title="Custom Markers">
+    
+Create custom markers with InfoWindows:
+
+```javascript
+geoSearch({
+  container: '#map',
+  googleReference: window.google,
+  customHTMLMarker: {
+    createOptions(hit) {
+      return {
+        position: {
+          lat: hit._geoloc.lat,
+          lng: hit._geoloc.lng,
+        },
+      };
+    },
+    
+    createElement(hit) {
+      const div = document.createElement('div');
+      div.className = 'custom-marker';
+      div.innerHTML = `
+        <div class="marker-price">$${hit.price}</div>
+      `;
+      return div;
+    },
+    
+    onInfoWindowOpen({ infoWindow, hit }) {
+      const content = `
+        <div class="info-window">
+          <img src="${hit.picture_url}" />
+          <h3>${hit.name}</h3>
+          <p>${hit.room_type} - ${hit.city}</p>
+          <p class="price">$${hit.price}/night</p>
+        </div>
+      `;
+      infoWindow.setContent(content);
+    },
+  },
+})
+```
+
+  </Tab>
+  <Tab title="Map Bounds Filtering">
+    
+Enable filtering based on the visible map area:
+
+```javascript
+geoSearch({
+  container: '#map',
+  googleReference: window.google,
+  enableRefineControl: true,
+  enableRefineOnMapMove: true,
+  
+  // Custom rendering
+  templates: {
+    reset: 'Clear map refinement',
+    toggle: 'Search as I move the map',
+  },
+  
+  // Initial position
+  initialPosition: {
+    lat: 40.7128,
+    lng: -74.0060,
+  },
+  initialZoom: 12,
+})
+```
+
+  </Tab>
+</Tabs>
+
+### Search Box with Geo Placeholder
+
+```javascript
+searchBox({
+  container: '#search-box',
+  placeholder: 'Where are you going?',
+  showSubmit: false,
+  cssClasses: {
+    input: 'form-control',
+  },
+})
+```
+
+### Listing Results
+
+Display location results with map integration:
+
+```javascript
+hits({
+  container: '#hits',
+  templates: {
+    item(hit, { html, components }) {
+      return html`
+        <div class="hit col-sm-3">
+          <div class="pictures-wrapper">
+            <img 
+              class="picture" 
+              src="${hit.picture_url}" 
+              alt="${hit.name}"
+            />
+            <img 
+              class="profile" 
+              src="${hit.user.user.thumbnail_url}"
+              alt="Host"
+            />
+          </div>
+          <div class="infos">
+            <h4 class="media-heading">
+              ${components.Highlight({ hit, attribute: 'name' })}
+            </h4>
+            <p>
+              ${hit.room_type} -
+              ${components.Highlight({ hit, attribute: 'city' })},
+              ${components.Highlight({ hit, attribute: 'country' })}
+            </p>
+            <p class="price">$${hit.price} / night</p>
+          </div>
+        </div>
+      `;
+    },
+    empty({ query }, { html }) {
+      return html`
+        <div class="text-center">
+          No results found matching <strong>${query}</strong>.
+        </div>
+      `;
+    },
+  },
+})
+```
+
+## Additional Filters
+
+### Room Type Filter
+
+```javascript
+refinementList({
+  container: '#room_types',
+  attribute: 'room_type',
+  sortBy: ['name:asc'],
+  cssClasses: {
+    item: ['col-sm-3'],
+  },
+})
+```
+
+### Price Range Slider
+
+```javascript
+rangeSlider({
+  container: '#price',
+  attribute: 'price',
+  pips: false,
+  tooltips: {
+    format(rawValue) {
+      return `$${parseInt(rawValue, 10)}`;
+    },
+  },
+})
+```
+
+## Map Configuration
+
+### Google Maps Setup
+
+Include the Google Maps API in your HTML:
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Geographic Search</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+  </head>
+  <body>
+    <div id="map" style="height: 500px;"></div>
+    <!-- Your search interface -->
+  </body>
+</html>
+```
+
+<Warning>
+  Replace `YOUR_API_KEY` with your actual Google Maps API key. Get one from the [Google Cloud Console](https://console.cloud.google.com/).
+</Warning>
+
+### Map Styling
+
+Customize the map appearance:
+
+```javascript
+geoSearch({
+  container: '#map',
+  googleReference: window.google,
+  mapOptions: {
+    styles: [
+      {
+        featureType: 'poi',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }],
+      },
+    ],
+    zoomControl: true,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: true,
+  },
+})
+```
+
+## Geolocation Data Structure
+
+Your Algolia records need geolocation data:
+
+```json
+{
+  "objectID": "12345",
+  "name": "Cozy Studio Apartment",
+  "_geoloc": {
+    "lat": 40.7128,
+    "lng": -74.0060
+  },
+  "city": "New York",
+  "price": 120,
+  "room_type": "Entire home/apt"
+}
+```
+
+<Note>
+  The `_geoloc` attribute can also be an array of coordinates for locations spanning multiple points.
+</Note>
+
+## Proximity Ranking
+
+Configure proximity-based ranking in your index settings:
+
+```javascript
+// In your Algolia dashboard or via API
+{
+  "ranking": [
+    "geo",
+    "typo",
+    "words",
+    "filters",
+    "proximity",
+    "attribute",
+    "exact",
+    "custom"
+  ]
+}
+```
+
+## Advanced Features
+
+### Radius Filtering
+
+Limit search to a specific radius:
+
+```javascript
+configure({
+  aroundLatLng: '40.7128, -74.0060',
+  aroundRadius: 5000, // 5km radius
+})
+```
+
+### Precision Control
+
+Adjust geo precision for performance:
+
+```javascript
+configure({
+  aroundPrecision: 1000, // 1km precision
+})
+```
+
+### Multiple Locations
+
+Search around multiple locations:
+
+```javascript
+configure({
+  insideBoundingBox: [
+    [40.9, -74.3, 40.5, -73.7], // NYC area
+    [34.1, -118.5, 33.7, -118.1], // LA area
+  ],
+})
+```
+
+## User Location Detection
+
+Request user's current location:
+
+```javascript
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      search.setUiState({
+        [search.indexName]: {
+          configure: {
+            aroundLatLng: `${position.coords.latitude}, ${position.coords.longitude}`,
+            aroundRadius: 10000, // 10km
+          },
+        },
+      });
+    },
+    (error) => {
+      console.error('Geolocation error:', error);
+      // Fallback to IP-based location
+      search.setUiState({
+        [search.indexName]: {
+          configure: {
+            aroundLatLngViaIP: true,
+          },
+        },
+      });
+    }
+  );
+}
+```
+
+## Running the Example
+
+```bash
+cd examples/js/tourism
+yarn install
+yarn start
+```
+
+<Note>
+  You'll need to add your Google Maps API key to the HTML file before running.
+</Note>
+
+## Customization Tips
+
+<AccordionGroup>
+  <Accordion title="Use alternative map providers">
+    While this example uses Google Maps, you can integrate with Mapbox, Leaflet, or other mapping libraries using the connector approach.
+  </Accordion>
+  
+  <Accordion title="Add clustering">
+    For many markers, implement marker clustering to improve performance and readability.
+  </Accordion>
+  
+  <Accordion title="Custom distance display">
+    Show distance from user location in search results using the `_rankingInfo` object.
+  </Accordion>
+  
+  <Accordion title="Directions integration">
+    Add "Get Directions" buttons that link to Google Maps or other navigation apps.
+  </Accordion>
+</AccordionGroup>
+
+## Related Examples
+
+- [E-Commerce Search](/examples/e-commerce) - Filter patterns applicable to geo search
+- [Multi-Index Search](/examples/multi-index) - Search across location types
+- [Routing](/examples/routing) - Shareable map states
+
+## Source Code
+
+<Card title="JavaScript Example" icon="js" href="https://github.com/algolia/instantsearch/tree/master/examples/js/tourism">
+  View the complete geographic search example on GitHub
+</Card>

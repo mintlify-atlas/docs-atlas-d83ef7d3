@@ -1,0 +1,183 @@
+---
+title: searchBox
+description: The main search input widget for entering search queries
+---
+
+The searchBox widget creates an input field where users can type their search queries. This is typically the main entry point for search interactions.
+
+## Usage
+
+```javascript
+const searchBox = instantsearch.widgets.searchBox({
+  container: '#search-box',
+  placeholder: 'Search for products...',
+  searchAsYouType: true,
+  showReset: true,
+  showSubmit: true,
+  showLoadingIndicator: true,
+});
+
+search.addWidget(searchBox);
+```
+
+## Examples
+
+### Basic Search Box
+
+```javascript
+instantsearch.widgets.searchBox({
+  container: '#search-box',
+});
+```
+
+### With Custom Placeholder
+
+```javascript
+instantsearch.widgets.searchBox({
+  container: '#search-box',
+  placeholder: 'Search our catalog...',
+  autofocus: true,
+});
+```
+
+### With Debounced Search
+
+```javascript
+instantsearch.widgets.searchBox({
+  container: '#search-box',
+  queryHook(query, search) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => search(query), 500);
+  },
+});
+```
+
+### Search on Enter Only
+
+```javascript
+instantsearch.widgets.searchBox({
+  container: '#search-box',
+  searchAsYouType: false,
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="placeholder" type="string" default="">
+  The placeholder text shown in the input field.
+</ParamField>
+
+<ParamField path="autofocus" type="boolean" default="false">
+  Whether the input should be autofocused when the page loads.
+</ParamField>
+
+<ParamField path="searchAsYouType" type="boolean" default="true">
+  If set to `false`, the search will only be triggered when pressing Enter.
+</ParamField>
+
+<ParamField path="ignoreCompositionEvents" type="boolean" default="false">
+  Whether to update the search state during IME composition (useful for Asian languages).
+</ParamField>
+
+<ParamField path="showReset" type="boolean" default="true">
+  Whether to show the reset button to clear the query.
+</ParamField>
+
+<ParamField path="showSubmit" type="boolean" default="true">
+  Whether to show the submit button.
+</ParamField>
+
+<ParamField path="showLoadingIndicator" type="boolean" default="true">
+  Whether to show a loading indicator when the search is stalled.
+</ParamField>
+
+<ParamField path="queryHook" type="function">
+  A function called on each keystroke to transform or debounce the query.
+  
+  ```javascript
+  (query: string, search: (query: string) => void) => void
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="submit" type="Template">
+      Template for the submit button.
+    </ParamField>
+    <ParamField path="reset" type="Template">
+      Template for the reset button.
+    </ParamField>
+    <ParamField path="loadingIndicator" type="Template">
+      Template for the loading indicator.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="form" type="string | string[]">
+      CSS class for the form element.
+    </ParamField>
+    <ParamField path="input" type="string | string[]">
+      CSS class for the input element.
+    </ParamField>
+    <ParamField path="submit" type="string | string[]">
+      CSS class for the submit button.
+    </ParamField>
+    <ParamField path="submitIcon" type="string | string[]">
+      CSS class for the submit icon.
+    </ParamField>
+    <ParamField path="reset" type="string | string[]">
+      CSS class for the reset button.
+    </ParamField>
+    <ParamField path="resetIcon" type="string | string[]">
+      CSS class for the reset icon.
+    </ParamField>
+    <ParamField path="loadingIndicator" type="string | string[]">
+      CSS class for the loading indicator.
+    </ParamField>
+    <ParamField path="loadingIcon" type="string | string[]">
+      CSS class for the loading icon.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-SearchBox">
+  <form class="ais-SearchBox-form" novalidate>
+    <input
+      class="ais-SearchBox-input"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      placeholder="Search for products"
+      spellcheck="false"
+      maxlength="512"
+      type="search"
+      value=""
+    />
+    <button class="ais-SearchBox-submit" type="submit" title="Submit">
+      <svg class="ais-SearchBox-submitIcon">...</svg>
+    </button>
+    <button class="ais-SearchBox-reset" type="reset" title="Clear">
+      <svg class="ais-SearchBox-resetIcon">...</svg>
+    </button>
+    <span class="ais-SearchBox-loadingIndicator" hidden>
+      <svg class="ais-SearchBox-loadingIcon">...</svg>
+    </span>
+  </form>
+</div>
+```

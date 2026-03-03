@@ -1,0 +1,409 @@
+---
+title: instantsearch()
+description: Main factory function to create an InstantSearch instance
+---
+
+The `instantsearch()` function creates and returns an `InstantSearch` instance that manages your search UI and coordinates all widgets.
+
+## Signature
+
+```typescript
+function instantsearch<TUiState = Record<string, unknown>, TRouteState = TUiState>(
+  options: InstantSearchOptions<Expand<UiState & TUiState>, TRouteState>
+): InstantSearch<Expand<UiState & TUiState>, TRouteState>
+```
+
+## Parameters
+
+<ParamField path="options" type="InstantSearchOptions" required>
+  Configuration options for the InstantSearch instance. See [InstantSearchOptions](/api/instantsearch-options) for all available options.
+</ParamField>
+
+## Returns
+
+Returns an `InstantSearch` instance with the following properties and methods.
+
+## InstantSearch Class
+
+### Properties
+
+<ParamField path="client" type="SearchClient | CompositionClient">
+  The search client used to communicate with Algolia.
+</ParamField>
+
+<ParamField path="indexName" type="string">
+  The name of the main index.
+</ParamField>
+
+<ParamField path="compositionID" type="string | undefined">
+  The objectID of the composition when using the composition API.
+</ParamField>
+
+<ParamField path="helper" type="AlgoliaSearchHelper | null">
+  The Algolia search helper instance. Available after `start()` is called.
+</ParamField>
+
+<ParamField path="mainHelper" type="AlgoliaSearchHelper | null">
+  The main helper instance used for queries.
+</ParamField>
+
+<ParamField path="started" type="boolean">
+  Whether the InstantSearch instance has been started.
+</ParamField>
+
+<ParamField path="status" type="InstantSearchStatus">
+  The current status of the search. Can be `"idle"`, `"loading"`, `"stalled"`, or `"error"`.
+</ParamField>
+
+<ParamField path="error" type="Error | undefined">
+  The last error returned from the Search API. Cleared when the next valid search response is rendered.
+</ParamField>
+
+<ParamField path="renderState" type="RenderState">
+  The current render state containing all widget render information.
+</ParamField>
+
+### Methods
+
+#### start()
+
+Initializes InstantSearch.js and triggers the first search.
+
+```typescript
+start(): void
+```
+
+**Example:**
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient: algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey')
+});
+
+search.start();
+```
+
+<Warning>
+  The `start()` method can only be called once. Calling it multiple times will throw an error.
+</Warning>
+
+#### addWidgets()
+
+Adds multiple widgets to the search instance. Widgets can be added before or after InstantSearch has started.
+
+```typescript
+addWidgets(
+  widgets: Array<Widget | IndexWidget | Array<IndexWidget | Widget>>
+): this
+```
+
+<ParamField path="widgets" type="Array<Widget | IndexWidget | Array<Widget | IndexWidget>>" required>
+  Array of widget instances to add to InstantSearch.
+</ParamField>
+
+**Example:**
+
+```javascript
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  hits({ container: '#hits' }),
+  pagination({ container: '#pagination' })
+]);
+```
+
+#### removeWidgets()
+
+Removes multiple widgets from the search instance.
+
+```typescript
+removeWidgets(
+  widgets: Array<Widget | IndexWidget | Widget[]>
+): this
+```
+
+<ParamField path="widgets" type="Array<Widget | IndexWidget | Widget[]>" required>
+  Array of widget instances to remove from InstantSearch. Widgets must implement a `dispose()` method.
+</ParamField>
+
+**Example:**
+
+```javascript
+const paginationWidget = pagination({ container: '#pagination' });
+search.addWidgets([paginationWidget]);
+
+// Later...
+search.removeWidgets([paginationWidget]);
+```
+
+#### setUiState()
+
+Sets the UI state and triggers a search.
+
+```typescript
+setUiState(
+  uiState: TUiState | ((previousUiState: TUiState) => TUiState),
+  callOnStateChange?: boolean
+): void
+```
+
+<ParamField path="uiState" type="TUiState | ((previousUiState: TUiState) => TUiState)" required>
+  The next UI state or a function that computes it from the current state.
+</ParamField>
+
+<ParamField path="callOnStateChange" type="boolean" default="true">
+  Internal parameter used to control whether the `onStateChange` callback is called.
+</ParamField>
+
+**Example:**
+
+```javascript
+// Set UI state directly
+search.setUiState({
+  indexName: {
+    query: 'laptop',
+    page: 2
+  }
+});
+
+// Update UI state from previous state
+search.setUiState((prevState) => ({
+  ...prevState,
+  indexName: {
+    ...prevState.indexName,
+    query: 'laptop'
+  }
+}));
+```
+
+#### getUiState()
+
+Returns the current UI state.
+
+```typescript
+getUiState(): TUiState
+```
+
+**Returns:** The current UI state object.
+
+**Example:**
+
+```javascript
+const uiState = search.getUiState();
+console.log(uiState);
+// { indexName: { query: 'laptop', page: 1 } }
+```
+
+#### createURL()
+
+Creates a URL from a UI state.
+
+```typescript
+createURL(nextState?: TUiState): string
+```
+
+<ParamField path="nextState" type="TUiState">
+  The UI state to create a URL from. Defaults to the current UI state.
+</ParamField>
+
+**Returns:** A URL string representing the UI state.
+
+<Note>
+  The `start()` method must be called before using `createURL()`.
+</Note>
+
+#### use()
+
+Hooks middleware into the InstantSearch lifecycle.
+
+```typescript
+use(...middleware: Array<Middleware<TUiState>>): this
+```
+
+<ParamField path="middleware" type="Array<Middleware<TUiState>>" required>
+  One or more middleware functions to add to the InstantSearch instance.
+</ParamField>
+
+**Example:**
+
+```javascript
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: window.aa
+});
+
+search.use(insightsMiddleware);
+```
+
+#### unuse()
+
+Removes middleware from the InstantSearch lifecycle.
+
+```typescript
+unuse(...middleware: Array<Middleware<TUiState>>): this
+```
+
+<ParamField path="middleware" type="Array<Middleware<TUiState>>" required>
+  One or more middleware functions to remove from the InstantSearch instance.
+</ParamField>
+
+**Example:**
+
+```javascript
+search.unuse(insightsMiddleware);
+```
+
+#### refresh()
+
+Clears the cache and triggers a new search.
+
+```typescript
+refresh(): void
+```
+
+**Example:**
+
+```javascript
+search.refresh();
+```
+
+<Note>
+  The `start()` method must be called before using `refresh()`.
+</Note>
+
+#### dispose()
+
+Removes all widgets and cleans up the InstantSearch instance without triggering a search.
+
+```typescript
+dispose(): void
+```
+
+**Example:**
+
+```javascript
+search.dispose();
+```
+
+### Events
+
+The `InstantSearch` instance extends `EventEmitter` and emits the following events:
+
+#### render
+
+Emitted every time a search is done and the UI is rendered.
+
+```javascript
+search.on('render', () => {
+  console.log('Search complete and UI updated');
+});
+```
+
+#### error
+
+Emitted when an error occurs during search.
+
+```javascript
+search.on('error', (error) => {
+  console.error('Search error:', error);
+});
+```
+
+## Basic Example
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import algoliasearch from 'algoliasearch/lite';
+import { searchBox, hits, pagination } from 'instantsearch.js/es/widgets';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: true
+});
+
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  hits({ container: '#hits' }),
+  pagination({ container: '#pagination' })
+]);
+
+search.start();
+```
+
+## TypeScript Example
+
+```typescript
+import instantsearch from 'instantsearch.js';
+import algoliasearch from 'algoliasearch/lite';
+import type { UiState } from 'instantsearch.js';
+
+interface MyUiState extends UiState {
+  products: {
+    query?: string;
+    page?: number;
+    refinementList?: {
+      category?: string[];
+    };
+  };
+}
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+const search = instantsearch<MyUiState>({
+  indexName: 'products',
+  searchClient,
+  initialUiState: {
+    products: {
+      query: 'laptop'
+    }
+  }
+});
+
+search.start();
+```
+
+## Deprecated Methods
+
+<Warning>
+  The following methods are deprecated and will be removed in future versions.
+</Warning>
+
+### addWidget()
+
+<Note>
+  Deprecated. Use `addWidgets([widget])` instead.
+</Note>
+
+```typescript
+addWidget(widget: Widget): this
+```
+
+### removeWidget()
+
+<Note>
+  Deprecated. Use `removeWidgets([widget])` instead.
+</Note>
+
+```typescript
+removeWidget(widget: Widget | IndexWidget): this
+```
+
+### EXPERIMENTAL_use()
+
+<Note>
+  Deprecated. Use `use()` instead. The middleware API is now stable.
+</Note>
+
+```typescript
+EXPERIMENTAL_use(...middleware: Middleware[]): this
+```

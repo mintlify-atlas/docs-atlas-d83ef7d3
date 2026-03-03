@@ -1,0 +1,383 @@
+---
+title: 'useHits'
+description: 'Access and display search results'
+---
+
+The `useHits` hook provides access to the search results (hits) from Algolia.
+
+## Import
+
+```jsx
+import { useHits } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags in hit string values.
+
+  ```jsx
+  const { items } = useHits({ escapeHTML: false });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: Hit[]) => Hit[]">
+  Function to transform the hits before rendering.
+
+  ```jsx
+  const { items } = useHits({
+    transformItems: (items) => 
+      items.map((item) => ({
+        ...item,
+        formattedPrice: `$${item.price.toFixed(2)}`,
+      })),
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="Hit[]">
+  The array of hits from the current search.
+
+  ```jsx
+  const { items } = useHits();
+  items.forEach((item) => {
+    console.log(item.objectID, item.name);
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="hits" type="Hit[]">
+  Alias for `items` (deprecated).
+
+  <Warning>
+    Use `items` instead. The `hits` property is deprecated.
+  </Warning>
+</ResponseField>
+
+<ResponseField name="results" type="SearchResults | undefined">
+  The complete search results object from Algolia.
+
+  ```jsx
+  const { results } = useHits();
+  console.log(results?.nbHits);
+  console.log(results?.processingTimeMS);
+  ```
+</ResponseField>
+
+<ResponseField name="banner" type="Banner | undefined">
+  The banner to display above the hits (if configured).
+
+  ```jsx
+  const { banner } = useHits();
+  if (banner) {
+    return <img src={banner.image.urls[0].url} alt={banner.image.title} />;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="sendEvent" type="SendEventForHits">
+  Function to send events to the Insights API.
+
+  ```jsx
+  const { items, sendEvent } = useHits();
+  
+  sendEvent('click', items[0], 'Product Clicked');
+  ```
+</ResponseField>
+
+<ResponseField name="bindEvent" type="BindEventForHits">
+  Function to bind Insights events to HTML elements.
+
+  ```jsx
+  const { items, bindEvent } = useHits();
+  
+  <div {...bindEvent('click', items[0], 'Product Clicked')}>
+    {/* ... */}
+  </div>
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Hits Display
+
+```jsx
+import { useHits } from 'react-instantsearch';
+
+function CustomHits() {
+  const { items } = useHits();
+
+  return (
+    <div className="hits">
+      {items.map((item) => (
+        <div key={item.objectID} className="hit">
+          <img src={item.image} alt={item.name} />
+          <h3>{item.name}</h3>
+          <p>{item.description}</p>
+          <span>${item.price}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### With TypeScript
+
+```tsx
+import { useHits } from 'react-instantsearch';
+import type { Hit } from 'instantsearch.js';
+
+interface Product {
+  objectID: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  brand: string;
+}
+
+function ProductHits() {
+  const { items } = useHits<Product>();
+
+  return (
+    <div className="products">
+      {items.map((item) => (
+        <div key={item.objectID}>
+          <img src={item.image} alt={item.name} />
+          <h3>{item.name}</h3>
+          <p>{item.brand}</p>
+          <p>${item.price.toFixed(2)}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### With Highlighting
+
+```jsx
+import { useHits, Highlight } from 'react-instantsearch';
+
+function HighlightedHits() {
+  const { items } = useHits();
+
+  return (
+    <div className="hits">
+      {items.map((item) => (
+        <div key={item.objectID}>
+          <h3>
+            <Highlight attribute="name" hit={item} />
+          </h3>
+          <p>
+            <Highlight attribute="description" hit={item} />
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Transform Items
+
+```jsx
+import { useHits } from 'react-instantsearch';
+
+function TransformedHits() {
+  const { items } = useHits({
+    transformItems: (items) =>
+      items.map((item) => ({
+        ...item,
+        // Add computed fields
+        formattedPrice: `$${item.price.toFixed(2)}`,
+        // Add discount calculation
+        discountPrice: item.discount 
+          ? item.price * (1 - item.discount / 100)
+          : item.price,
+      })),
+  });
+
+  return (
+    <div className="hits">
+      {items.map((item) => (
+        <div key={item.objectID}>
+          <h3>{item.name}</h3>
+          {item.discount ? (
+            <>
+              <span className="original-price">{item.formattedPrice}</span>
+              <span className="discount-price">
+                ${item.discountPrice.toFixed(2)}
+              </span>
+            </>
+          ) : (
+            <span>{item.formattedPrice}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### With Insights Events
+
+```jsx
+import { useHits } from 'react-instantsearch';
+
+function HitsWithInsights() {
+  const { items, sendEvent } = useHits();
+
+  const handleClick = (item) => {
+    sendEvent('click', item, 'Product Clicked');
+    // Navigate to product page
+    window.location.href = `/products/${item.objectID}`;
+  };
+
+  return (
+    <div className="hits">
+      {items.map((item) => (
+        <div 
+          key={item.objectID}
+          onClick={() => handleClick(item)}
+          style={{ cursor: 'pointer' }}
+        >
+          <h3>{item.name}</h3>
+          <p>{item.description}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### With Empty State
+
+```jsx
+import { useHits } from 'react-instantsearch';
+
+function HitsWithEmptyState() {
+  const { items } = useHits();
+
+  if (items.length === 0) {
+    return (
+      <div className="empty-state">
+        <h3>No results found</h3>
+        <p>Try adjusting your search or filters</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="hits">
+      {items.map((item) => (
+        <div key={item.objectID}>
+          {/* ... */}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### With Results Metadata
+
+```jsx
+import { useHits } from 'react-instantsearch';
+
+function HitsWithMetadata() {
+  const { items, results } = useHits();
+
+  return (
+    <div>
+      <div className="results-info">
+        <p>
+          {results?.nbHits.toLocaleString()} results found in{' '}
+          {results?.processingTimeMS}ms
+        </p>
+      </div>
+      <div className="hits">
+        {items.map((item) => (
+          <div key={item.objectID}>
+            {/* ... */}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Grid Layout
+
+```jsx
+import { useHits } from 'react-instantsearch';
+
+function GridHits() {
+  const { items } = useHits();
+
+  return (
+    <div className="hits-grid">
+      {items.map((item) => (
+        <div key={item.objectID} className="hit-card">
+          <div className="hit-image">
+            <img src={item.image} alt={item.name} />
+          </div>
+          <div className="hit-content">
+            <h3>{item.name}</h3>
+            <p className="brand">{item.brand}</p>
+            <div className="hit-footer">
+              <span className="price">${item.price}</span>
+              {item.rating && (
+                <span className="rating">⭐ {item.rating}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### With Banner
+
+```jsx
+import { useHits } from 'react-instantsearch';
+
+function HitsWithBanner() {
+  const { items, banner } = useHits();
+
+  return (
+    <div>
+      {banner && (
+        <div className="banner">
+          <a href={banner.link.url}>
+            <img 
+              src={banner.image.urls[0].url} 
+              alt={banner.image.title}
+            />
+          </a>
+        </div>
+      )}
+      <div className="hits">
+        {items.map((item) => (
+          <div key={item.objectID}>
+            {/* ... */}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Related
+
+- [Hits Widget](/api/react/widgets/hits)
+- [useInfiniteHits Hook](/api/react/hooks/use-infinite-hits)
+- [Highlight Component](/api/react/widgets/highlight)
+- [Insights Guide](/guides/insights)

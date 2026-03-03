@@ -1,0 +1,208 @@
+---
+title: Helpers API Overview
+description: Utilities, routers, state mappings, and middleware for InstantSearch
+---
+
+The Helpers API provides utilities and tools to customize and extend InstantSearch functionality. These helpers enable advanced features like URL routing, state management, analytics integration, and custom template rendering.
+
+## Categories
+
+<CardGroup cols={2}>
+  <Card title="Routers" icon="route" href="/api/helpers/routers">
+    Synchronize search state with browser URL
+  </Card>
+  <Card title="State Mappings" icon="map" href="/api/helpers/state-mappings">
+    Transform UI state to/from URL format
+  </Card>
+  <Card title="Middlewares" icon="plug" href="/api/helpers/middlewares">
+    Extend InstantSearch with custom behavior
+  </Card>
+  <Card title="Templates" icon="code" href="/api/helpers/templates">
+    Render custom UI templates
+  </Card>
+  <Card title="algoliasearch-helper" icon="wrench" href="/api/helpers/algoliasearch-helper">
+    Low-level search helper API
+  </Card>
+</CardGroup>
+
+## Routers
+
+Routers manage URL synchronization for your search UI:
+
+- **history** - Browser history API router (pushState/popstate)
+- **simple** - Basic router implementation
+
+```javascript
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const searchInsights = instantsearch({
+  // ... other options
+  routing: {
+    router: history(),
+  },
+});
+```
+
+## State Mappings
+
+State mappings transform search state between UI and URL formats:
+
+- **simple** - Maps all indices to URL
+- **singleIndex** - Maps a single index to URL
+
+```javascript
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+
+const searchInsights = instantsearch({
+  // ... other options
+  routing: {
+    stateMapping: simple(),
+  },
+});
+```
+
+## Middlewares
+
+Middlewares extend InstantSearch with custom functionality:
+
+- **createInsightsMiddleware** - Integrate Algolia Insights for analytics
+- **createRouterMiddleware** - Advanced routing customization
+- **createMetadataMiddleware** - Add metadata to searches
+
+```javascript
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: window.aa,
+});
+
+search.use(insightsMiddleware);
+```
+
+## Templates
+
+Template helpers for rendering custom UI:
+
+- **renderTemplate** - Render Hogan.js or function templates
+- **prepareTemplateProps** - Prepare template data
+
+```javascript
+import { renderTemplate } from 'instantsearch.js/es/lib/templating';
+
+const html = renderTemplate({
+  templates: { item: (hit) => `<div>${hit.name}</div>` },
+  templateKey: 'item',
+  data: hit,
+});
+```
+
+## algoliasearch-helper
+
+The low-level helper library that powers InstantSearch:
+
+- **AlgoliaSearchHelper** - Core search helper class
+- **SearchParameters** - Immutable search parameters
+- **SearchResults** - Search results wrapper
+
+```javascript
+import algoliasearchHelper from 'algoliasearch-helper';
+
+const helper = algoliasearchHelper(client, indexName, {
+  facets: ['brand', 'category'],
+});
+
+helper.on('result', ({ results }) => {
+  console.log(results);
+});
+
+helper.search();
+```
+
+## Use Cases
+
+### URL Routing
+
+Combine routers and state mappings for URL synchronization:
+
+```javascript
+import { history } from 'instantsearch.js/es/lib/routers';
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+    stateMapping: simple(),
+  },
+});
+```
+
+### Analytics Integration
+
+Track search events with Insights middleware:
+
+```javascript
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: window.aa,
+  insightsInitParams: {
+    useCookie: true,
+  },
+});
+
+search.use(insightsMiddleware);
+```
+
+### Custom Templates
+
+Render custom hit templates:
+
+```javascript
+import { connectHits } from 'instantsearch.js/es/connectors';
+import { renderTemplate } from 'instantsearch.js/es/lib/templating';
+
+const customHits = connectHits((renderOptions, isFirstRender) => {
+  const { hits, widgetParams } = renderOptions;
+  
+  const html = hits.map(hit => 
+    renderTemplate({
+      templates: widgetParams.templates,
+      templateKey: 'item',
+      data: hit,
+    })
+  ).join('');
+  
+  widgetParams.container.innerHTML = html;
+});
+```
+
+## Installation
+
+Helpers are included with InstantSearch.js:
+
+```bash
+npm install instantsearch.js algoliasearch
+```
+
+For the low-level helper:
+
+```bash
+npm install algoliasearch-helper
+```
+
+## TypeScript Support
+
+All helpers include TypeScript type definitions:
+
+```typescript
+import type { Router, StateMapping, UiState } from 'instantsearch.js';
+import type { AlgoliaSearchHelper, SearchParameters } from 'algoliasearch-helper';
+```
+
+## Related Resources
+
+- [InstantSearch.js API](/api/instantsearch-js/overview)
+- [Widgets API](/api/widgets/overview)
+- [Connectors API](/api/connectors/overview)

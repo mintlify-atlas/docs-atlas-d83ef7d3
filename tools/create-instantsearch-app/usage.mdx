@@ -1,0 +1,192 @@
+---
+title: CLI Usage
+description: Learn how to use the create-instantsearch-app command-line interface
+---
+
+The `create-instantsearch-app` CLI supports both interactive and non-interactive modes.
+
+## Basic Usage
+
+```bash
+create-instantsearch-app <project-directory> [options]
+```
+
+## Interactive Mode (Default)
+
+Run without flags to enter interactive mode:
+
+```bash
+npx create-instantsearch-app my-app
+```
+
+You'll be prompted for:
+
+<Steps>
+  <Step title="Project Name">
+    The name of your application (defaults to directory name)
+  </Step>
+  <Step title="Template Selection">
+    Choose from InstantSearch.js, React, Vue, or other templates
+  </Step>
+  <Step title="Library Version">
+    Select the version of the InstantSearch library
+  </Step>
+  <Step title="Algolia Credentials">
+    - Application ID (defaults to `latency` demo)
+    - Search API key (defaults to demo key)
+    - Index name (defaults to `instant_search`)
+  </Step>
+  <Step title="Search Configuration">
+    - Attributes to display in results
+    - Image attribute for result thumbnails
+    - Attributes for faceting/filtering
+  </Step>
+  <Step title="Advanced Options">
+    - Search input type (autocomplete vs regular search box)
+    - Query Suggestions index (for autocomplete)
+    - Enable user events (Insights)
+  </Step>
+</Steps>
+
+## Non-Interactive Mode
+
+Use the `--no-interactive` flag with other options:
+
+```bash
+create-instantsearch-app my-app \
+  --template "React InstantSearch" \
+  --app-id YOUR_APP_ID \
+  --api-key YOUR_SEARCH_KEY \
+  --index-name YOUR_INDEX \
+  --no-interactive
+```
+
+## CLI Flags
+
+### Basic Options
+
+<ParamField path="--name" type="string">
+  The name of the application or widget
+</ParamField>
+
+<ParamField path="--template" type="string">
+  The InstantSearch template to use (see [Templates](/tools/create-instantsearch-app/templates))
+  
+  Examples: `"InstantSearch.js"`, `"React InstantSearch"`, `"Vue InstantSearch"`
+</ParamField>
+
+<ParamField path="--library-version" type="string">
+  The version of the library to use
+  
+  Example: `"4.0.0"`
+</ParamField>
+
+### Algolia Configuration
+
+<ParamField path="--app-id" type="string">
+  Your Algolia application ID
+</ParamField>
+
+<ParamField path="--api-key" type="string">
+  Your Algolia search API key (public, search-only)
+</ParamField>
+
+<ParamField path="--index-name" type="string">
+  The main index for your search
+</ParamField>
+
+### Search UI Configuration
+
+<ParamField path="--attributes-to-display" type="string[]">
+  Comma-separated list of attributes to display in search results
+  
+  Example: `"name,description,price"`
+</ParamField>
+
+<ParamField path="--image-attribute" type="string">
+  The attribute to use for displaying images in results
+  
+  Example: `"image_url"`
+</ParamField>
+
+<ParamField path="--attributes-for-faceting" type="string[]">
+  Comma-separated list of attributes to use for filtering
+  
+  Example: `"brand,category,color"`
+</ParamField>
+
+### Other Options
+
+<ParamField path="--config" type="string">
+  Path to a configuration file (JSON) containing all options
+  
+  See [Configuration](/tools/create-instantsearch-app/configuration) for details
+</ParamField>
+
+<ParamField path="--no-installation" type="boolean">
+  Skip automatic dependency installation
+</ParamField>
+
+<ParamField path="--no-interactive" type="boolean">
+  Disable all interactive prompts
+</ParamField>
+
+<ParamField path="-v, --version" type="boolean">
+  Output the version number
+</ParamField>
+
+<ParamField path="-h, --help" type="boolean">
+  Display help information
+</ParamField>
+
+## Examples
+
+### Create React app with demo credentials
+
+```bash
+npx create-instantsearch-app my-react-app \
+  --template "React InstantSearch" \
+  --app-id latency \
+  --api-key 6be0576ff61c053d5f9a3225e2a90f76 \
+  --index-name instant_search \
+  --no-interactive
+```
+
+### Create Vue app with custom index
+
+```bash
+npx create-instantsearch-app my-vue-app \
+  --template "Vue InstantSearch" \
+  --app-id YOUR_APP_ID \
+  --api-key YOUR_SEARCH_KEY \
+  --index-name products \
+  --attributes-to-display "name,description" \
+  --image-attribute "thumbnail" \
+  --attributes-for-faceting "brand,category" \
+  --no-interactive
+```
+
+### Skip dependency installation
+
+```bash
+npx create-instantsearch-app my-app \
+  --template "InstantSearch.js" \
+  --no-installation
+```
+
+## User Events (Insights)
+
+<Note>
+  When prompted to "Enable user events", selecting 'Y' activates the `insights` option. This allows Algolia to process user events like clicks and conversions, enabling powerful analytics and personalization features.
+</Note>
+
+User events are supported in InstantSearch.js >= 4.55, React InstantSearch >= 7.0, and Vue InstantSearch >= 4.9.0.
+
+## Autocomplete vs Search Box
+
+For supported templates and versions, you can choose between:
+
+- **Autocomplete**: Enhanced search input with suggested searches and recent searches (requires Query Suggestions index)
+- **Regular search box**: Standard search input field
+
+Autocomplete is available in InstantSearch.js >= 4.52.

@@ -1,0 +1,75 @@
+---
+title: "connectStats"
+description: "Build a custom widget to display search statistics"
+---
+
+The **Stats** connector provides the logic to build a custom widget that displays search statistics (hits number and processing time).
+
+## Usage
+
+```javascript
+import { connectStats } from 'instantsearch.js/es/connectors';
+
+const customStats = connectStats(
+  (renderOptions, isFirstRender) => {
+    const { nbHits, processingTimeMS, query, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <div>
+        <strong>${nbHits.toLocaleString()}</strong> results found
+        ${query ? ` for "<em>${query}</em>"` : ''}
+        in <strong>${processingTimeMS}ms</strong>
+      </div>
+    `;
+  }
+);
+
+search.addWidgets([
+  customStats({
+    container: document.querySelector('#stats'),
+  }),
+]);
+```
+
+## Connector Options
+
+This connector has no specific options.
+
+## Render Options
+
+<ParamField path="nbHits" type="number">
+  The number of hits in the result set.
+</ParamField>
+
+<ParamField path="nbSortedHits" type="number">
+  The number of sorted hits in the result set (when using Relevant sort).
+</ParamField>
+
+<ParamField path="areHitsSorted" type="boolean">
+  Indicates whether the index is currently using Relevant sort and is displaying only sorted hits.
+</ParamField>
+
+<ParamField path="nbPages" type="number">
+  The number of pages computed for the result set.
+</ParamField>
+
+<ParamField path="page" type="number">
+  The current page.
+</ParamField>
+
+<ParamField path="hitsPerPage" type="number">
+  The maximum number of hits per page returned by Algolia.
+</ParamField>
+
+<ParamField path="processingTimeMS" type="number">
+  The time taken to compute the results inside the Algolia engine.
+</ParamField>
+
+<ParamField path="query" type="string">
+  The query used for the current search.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

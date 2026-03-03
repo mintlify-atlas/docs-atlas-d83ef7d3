@@ -1,0 +1,116 @@
+---
+title: "connectInfiniteHits"
+description: "Build a custom widget to display search results with infinite scrolling"
+---
+
+The **InfiniteHits** connector provides the logic to build a custom widget that displays search results with infinite scrolling.
+
+## Usage
+
+```javascript
+import { connectInfiniteHits } from 'instantsearch.js/es/connectors';
+
+const customInfiniteHits = connectInfiniteHits(
+  (renderOptions, isFirstRender) => {
+    const { items, showMore, isLastPage, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <div class="hits">
+        ${items.map(item => `
+          <div class="hit">
+            <h3>${item.name}</h3>
+          </div>
+        `).join('')}
+      </div>
+      ${!isLastPage ? '<button id="load-more">Load more</button>' : ''}
+    `;
+    
+    if (!isLastPage) {
+      container.querySelector('#load-more').addEventListener('click', showMore);
+    }
+  }
+);
+
+search.addWidgets([
+  customInfiniteHits({
+    container: document.querySelector('#infinite-hits'),
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags from hits string values.
+</ParamField>
+
+<ParamField path="showPrevious" type="boolean" default="false">
+  Enable the button to load previous results.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+<ParamField path="cache" type="object">
+  Reads and writes hits from/to cache. Helps restore InfiniteHits and scroll position when users navigate back from a product page.
+  
+  Must implement `read` and `write` methods:
+  - `read({ state }): object | null`
+  - `write({ state, hits }): void`
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<Hit>">
+  The accumulated hits for current and cached pages.
+</ParamField>
+
+<ParamField path="hits" type="Array<Hit>">
+  The accumulated hits for current and cached pages.
+  
+  <Warning>
+    This parameter is deprecated. Use `items` instead.
+  </Warning>
+</ParamField>
+
+<ParamField path="currentPageHits" type="Array<Hit>">
+  The hits for the current page only.
+</ParamField>
+
+<ParamField path="results" type="SearchResults">
+  The complete response from the Algolia API.
+</ParamField>
+
+<ParamField path="banner" type="Banner">
+  The banner to display above the hits.
+</ParamField>
+
+<ParamField path="showMore" type="() => void">
+  Loads the next page of hits.
+</ParamField>
+
+<ParamField path="showPrevious" type="() => void">
+  Loads the previous results.
+</ParamField>
+
+<ParamField path="isFirstPage" type="boolean">
+  Indicates whether the first page of hits has been reached.
+</ParamField>
+
+<ParamField path="isLastPage" type="boolean">
+  Indicates whether the last page of hits has been reached.
+</ParamField>
+
+<ParamField path="sendEvent" type="(eventType: string, hits: object | object[], eventName?: string) => void">
+  Sends an event to the Insights middleware.
+</ParamField>
+
+<ParamField path="bindEvent" type="(eventType: string, hits: object | object[], eventName?: string) => string">
+  Returns a string for the `data-insights-event` attribute.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

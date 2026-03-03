@@ -1,0 +1,97 @@
+---
+title: "connectHitsPerPage"
+description: "Build a custom widget for selecting the number of results per page"
+---
+
+The **HitsPerPage** connector provides the logic to build a custom widget that lets users select the number of results to display per page.
+
+## Usage
+
+```javascript
+import { connectHitsPerPage } from 'instantsearch.js/es/connectors';
+
+const customHitsPerPage = connectHitsPerPage(
+  (renderOptions, isFirstRender) => {
+    const { items, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <select>
+        ${items.map(item => `
+          <option 
+            value="${item.value}"
+            ${item.isRefined ? 'selected' : ''}
+          >
+            ${item.label}
+          </option>
+        `).join('')}
+      </select>
+    `;
+    
+    container.querySelector('select').addEventListener('change', (e) => {
+      refine(parseInt(e.target.value));
+    });
+  }
+);
+
+search.addWidgets([
+  customHitsPerPage({
+    container: document.querySelector('#hits-per-page'),
+    items: [
+      { label: '10 per page', value: 10, default: true },
+      { label: '20 per page', value: 20 },
+      { label: '50 per page', value: 50 },
+    ],
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="items" type="Array<HitsPerPageItem>" required>
+  Array of objects defining the different values and labels.
+  
+  Each item must have:
+  - `label`: Label to display in the option
+  - `value`: Number of hits to display per page
+  - `default`: Whether this is the default hits per page (one item must be default)
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<HitsPerPageRenderItem>">
+  Array of objects defining the different values and labels.
+  
+  Each item has:
+  - `label`: Label to display in the option
+  - `value`: Number of hits to display per page
+  - `isRefined`: Indicates if it's the current refined value
+</ParamField>
+
+<ParamField path="refine" type="(value: number) => void">
+  Sets the number of hits per page and triggers a search.
+</ParamField>
+
+<ParamField path="createURL" type="(value: number) => string">
+  Creates the URL for a single item name in the list.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  Indicates if search state can be refined.
+</ParamField>
+
+<ParamField path="hasNoResults" type="boolean">
+  Indicates whether or not the search has results.
+  
+  <Warning>
+    This parameter is deprecated. Use `canRefine` instead.
+  </Warning>
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

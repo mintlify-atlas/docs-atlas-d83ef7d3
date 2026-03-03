@@ -1,0 +1,434 @@
+---
+title: State Mappings
+description: Transform UI state to and from URL format
+---
+
+State mappings transform the internal search UI state to a format suitable for URLs (and vice versa). They work with routers to provide clean, shareable URLs for your search interface.
+
+## Available State Mappings
+
+### simple
+
+Maps all indices and their search state to the URL. This is the most common state mapping.
+
+```javascript
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+    stateMapping: simple(),
+  },
+});
+```
+
+### singleIndex
+
+Maps a single index to the URL, keeping the URL structure flat.
+
+```javascript
+import { singleIndex } from 'instantsearch.js/es/lib/stateMappings';
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+    stateMapping: singleIndex('products'),
+  },
+});
+```
+
+## State Mapping Methods
+
+State mappings must implement two methods:
+
+### stateToRoute(uiState)
+
+Transforms the UI state to route state (what goes in the URL).
+
+<ParamField path="uiState" type="UiState">
+  The complete UI state from InstantSearch.
+  
+  ```javascript
+  {
+    products: {
+      query: 'laptop',
+      refinementList: {
+        brand: ['Apple', 'Dell']
+      },
+      page: 2
+    }
+  }
+  ```
+</ParamField>
+
+**Returns:** Route state object
+
+### routeToState(routeState)
+
+Transforms the route state (from URL) back to UI state.
+
+<ParamField path="routeState" type="object">
+  The route state parsed from the URL.
+  
+  ```javascript
+  {
+    query: 'laptop',
+    brand: ['Apple', 'Dell'],
+    page: 2
+  }
+  ```
+</ParamField>
+
+**Returns:** UI state object
+
+## simple() State Mapping
+
+The `simple()` state mapping:
+
+- Maps all indices to the URL
+- Excludes `configure` widget parameters
+- Preserves the index structure in the URL
+
+### URL Structure
+
+```javascript
+// UI State
+{
+  products: {
+    query: 'laptop',
+    refinementList: { brand: ['Apple'] },
+    page: 2
+  },
+  articles: {
+    query: 'laptop',
+    menu: { category: 'reviews' }
+  }
+}
+
+// URL
+?products[query]=laptop&products[refinementList][brand][0]=Apple&products[page]=2&articles[query]=laptop&articles[menu][category]=reviews
+```
+
+### Example
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { history } from 'instantsearch.js/es/lib/routers';
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+    stateMapping: simple(),
+  },
+});
+```
+
+## singleIndex() State Mapping
+
+The `singleIndex()` state mapping:
+
+- Maps only one index to the URL
+- Creates a flat URL structure
+- Useful for simple, single-index search UIs
+
+<ParamField path="indexName" type="string" required>
+  The name of the index to map to the URL.
+</ParamField>
+
+### URL Structure
+
+```javascript
+// UI State
+{
+  products: {
+    query: 'laptop',
+    refinementList: { brand: ['Apple'] },
+    page: 2
+  }
+}
+
+// URL (flattened)
+?query=laptop&refinementList[brand][0]=Apple&page=2
+```
+
+### Example
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { history } from 'instantsearch.js/es/lib/routers';
+import { singleIndex } from 'instantsearch.js/es/lib/stateMappings';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+    stateMapping: singleIndex('products'),
+  },
+});
+```
+
+## Custom State Mapping
+
+You can create custom state mappings for complete control over URL structure:
+
+```javascript
+const customStateMapping = {
+  stateToRoute(uiState) {
+    const indexUiState = uiState.products || {};
+    
+    return {
+      q: indexUiState.query,
+      brands: indexUiState.refinementList?.brand,
+      p: indexUiState.page,
+      // Custom transformations
+      price_min: indexUiState.range?.price?.min,
+      price_max: indexUiState.range?.price?.max,
+    };
+  },
+  
+  routeToState(routeState = {}) {
+    return {
+      products: {
+        query: routeState.q,
+        refinementList: {
+          brand: routeState.brands || [],
+        },
+        page: routeState.p,
+        range: {
+          price: {
+            min: routeState.price_min,
+            max: routeState.price_max,
+          },
+        },
+      },
+    };
+  },
+};
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+    stateMapping: customStateMapping,
+  },
+});
+```
+
+## Examples
+
+### Basic Simple Mapping
+
+```javascript
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+    stateMapping: simple(),
+  },
+});
+
+// URL: ?products[query]=phone&products[refinementList][brand][0]=Apple
+```
+
+### Single Index Mapping
+
+```javascript
+import { singleIndex } from 'instantsearch.js/es/lib/stateMappings';
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+    stateMapping: singleIndex('products'),
+  },
+});
+
+// URL: ?query=phone&refinementList[brand][0]=Apple (flatter structure)
+```
+
+### Clean URL Parameters
+
+```javascript
+const cleanStateMapping = {
+  stateToRoute(uiState) {
+    const indexUiState = uiState.products || {};
+    
+    // Map to clean parameter names
+    return {
+      q: indexUiState.query,
+      brand: indexUiState.refinementList?.brand,
+      category: indexUiState.menu?.category,
+      page: indexUiState.page,
+      sortBy: indexUiState.sortBy,
+    };
+  },
+  
+  routeToState(routeState = {}) {
+    return {
+      products: {
+        query: routeState.q,
+        refinementList: {
+          brand: routeState.brand || [],
+        },
+        menu: {
+          category: routeState.category,
+        },
+        page: routeState.page,
+        sortBy: routeState.sortBy,
+      },
+    };
+  },
+};
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    router: history(),
+    stateMapping: cleanStateMapping,
+  },
+});
+
+// URL: ?q=phone&brand=Apple&category=smartphones&page=2
+```
+
+### SEO-Friendly URLs
+
+```javascript
+const seoStateMapping = {
+  stateToRoute(uiState) {
+    const indexUiState = uiState.products || {};
+    
+    // Create SEO-friendly route structure
+    const routeState = {};
+    
+    if (indexUiState.query) {
+      routeState.search = indexUiState.query.toLowerCase().replace(/\s+/g, '-');
+    }
+    
+    if (indexUiState.refinementList?.brand?.[0]) {
+      routeState.brand = indexUiState.refinementList.brand[0].toLowerCase();
+    }
+    
+    if (indexUiState.page && indexUiState.page > 1) {
+      routeState.page = indexUiState.page;
+    }
+    
+    return routeState;
+  },
+  
+  routeToState(routeState = {}) {
+    const uiState = { products: {} };
+    
+    if (routeState.search) {
+      uiState.products.query = routeState.search.replace(/-/g, ' ');
+    }
+    
+    if (routeState.brand) {
+      uiState.products.refinementList = {
+        brand: [routeState.brand],
+      };
+    }
+    
+    if (routeState.page) {
+      uiState.products.page = routeState.page;
+    }
+    
+    return uiState;
+  },
+};
+
+// URL: ?search=wireless-headphones&brand=sony&page=2
+```
+
+### Multi-Index with Custom Mapping
+
+```javascript
+const multiIndexMapping = {
+  stateToRoute(uiState) {
+    return {
+      p: uiState.products && {
+        q: uiState.products.query,
+        brands: uiState.products.refinementList?.brand,
+      },
+      a: uiState.articles && {
+        q: uiState.articles.query,
+        cat: uiState.articles.menu?.category,
+      },
+    };
+  },
+  
+  routeToState(routeState = {}) {
+    const uiState = {};
+    
+    if (routeState.p) {
+      uiState.products = {
+        query: routeState.p.q,
+        refinementList: {
+          brand: routeState.p.brands || [],
+        },
+      };
+    }
+    
+    if (routeState.a) {
+      uiState.articles = {
+        query: routeState.a.q,
+        menu: {
+          category: routeState.a.cat,
+        },
+      };
+    }
+    
+    return uiState;
+  },
+};
+
+// URL: ?p[q]=phone&p[brands][0]=Apple&a[q]=phone&a[cat]=reviews
+```
+
+## State Mapping Type
+
+The state mapping must implement this interface:
+
+```typescript
+interface StateMapping<TUiState = UiState, TRouteState = UiState> {
+  stateToRoute(uiState: TUiState): TRouteState;
+  routeToState(routeState?: TRouteState): TUiState;
+}
+```
+
+## Best Practices
+
+<Note>
+  **Configure Parameters Excluded**: The `configure` widget parameters are automatically excluded from the URL to keep it clean and avoid exposing technical search parameters.
+</Note>
+
+<Tip>
+  **URL Length**: Keep URLs under 2,000 characters to ensure compatibility with all browsers. Consider limiting the number of refinements or using shorter parameter names for complex searches.
+</Tip>
+
+<Warning>
+  **State Compatibility**: Ensure `routeToState` can handle partial or invalid route states gracefully. Users may manually edit URLs or share incomplete search states.
+</Warning>
+
+## Related
+
+- [Routers](/api/helpers/routers) - URL synchronization
+- [Routing Guide](/guides/routing) - Complete routing documentation

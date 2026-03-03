@@ -1,0 +1,222 @@
+---
+title: '<InstantSearch>'
+description: 'Root component that manages the InstantSearch state'
+---
+
+The `<InstantSearch>` component is the root component that manages the search state and provides it to all child components.
+
+## Import
+
+```jsx
+import { InstantSearch } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="searchClient" type="SearchClient" required>
+  The Algolia search client created with `algoliasearch()`.
+
+  ```jsx
+  import { liteClient as algoliasearch } from 'algoliasearch/lite';
+  
+  const searchClient = algoliasearch(
+    'YourApplicationID',
+    'YourSearchOnlyAPIKey'
+  );
+  ```
+
+  <Warning>
+    Create the search client outside your component to avoid re-creating it on every render. Re-creating the client causes unnecessary search requests.
+  </Warning>
+</ParamField>
+
+<ParamField path="indexName" type="string" required>
+  The main index to search in.
+
+  ```jsx
+  <InstantSearch indexName="products" searchClient={searchClient}>
+    {/* ... */}
+  </InstantSearch>
+  ```
+</ParamField>
+
+<ParamField path="initialUiState" type="UiState">
+  The initial UI state of the search interface. Use this to set initial query, refinements, pagination, etc.
+
+  ```jsx
+  <InstantSearch
+    searchClient={searchClient}
+    indexName="products"
+    initialUiState={{
+      products: {
+        query: 'iphone',
+        refinementList: {
+          brand: ['Apple'],
+        },
+        page: 1,
+      },
+    }}
+  >
+    {/* ... */}
+  </InstantSearch>
+  ```
+</ParamField>
+
+<ParamField path="routing" type="boolean | object">
+  Enable URL routing to sync the search state with the browser URL.
+
+  ```jsx
+  // Simple routing
+  <InstantSearch routing={true} {/* ... */}>
+    {/* ... */}
+  </InstantSearch>
+
+  // Custom routing
+  <InstantSearch
+    routing={{
+      router: createNextRouter(),
+      stateMapping: createInstantSearchRouterNext({
+        routerOptions: { basePath: '/search' },
+      }),
+    }}
+  >
+    {/* ... */}
+  </InstantSearch>
+  ```
+</ParamField>
+
+<ParamField path="onStateChange" type="(params: { uiState: UiState; setUiState: Function }) => void">
+  Called when the search state changes. Useful for tracking or syncing state.
+
+  ```jsx
+  <InstantSearch
+    onStateChange={({ uiState, setUiState }) => {
+      // Track state changes
+      console.log('Search state changed:', uiState);
+      
+      // Update state normally
+      setUiState(uiState);
+    }}
+  >
+    {/* ... */}
+  </InstantSearch>
+  ```
+</ParamField>
+
+<ParamField path="searchFunction" type="(helper: Helper) => void">
+  Override the search function to control when searches are triggered.
+
+  ```jsx
+  <InstantSearch
+    searchFunction={(helper) => {
+      // Only search if query is not empty
+      if (helper.state.query) {
+        helper.search();
+      }
+    }}
+  >
+    {/* ... */}
+  </InstantSearch>
+  ```
+</ParamField>
+
+<ParamField path="stalledSearchDelay" type="number" default="200">
+  Time in milliseconds before a search is considered stalled. Used for showing loading indicators.
+
+  ```jsx
+  <InstantSearch stalledSearchDelay={500}>
+    {/* ... */}
+  </InstantSearch>
+  ```
+</ParamField>
+
+<ParamField path="future" type="object">
+  Opt-in to future breaking changes to prepare for the next major version.
+
+  ```jsx
+  <InstantSearch
+    future={{
+      preserveSharedStateOnUnmount: true,
+    }}
+  >
+    {/* ... */}
+  </InstantSearch>
+  ```
+</ParamField>
+
+<ParamField path="children" type="ReactNode">
+  The child components, typically search widgets.
+</ParamField>
+
+## Example
+
+```jsx
+import { InstantSearch, SearchBox, Hits, RefinementList } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch
+      searchClient={searchClient}
+      indexName="products"
+      routing={true}
+      initialUiState={{
+        products: {
+          query: '',
+        },
+      }}
+    >
+      <div className="container">
+        <div className="search-panel">
+          <div className="search-panel__filters">
+            <RefinementList attribute="brand" />
+          </div>
+          <div className="search-panel__results">
+            <SearchBox placeholder="Search products..." />
+            <Hits />
+          </div>
+        </div>
+      </div>
+    </InstantSearch>
+  );
+}
+```
+
+## With TypeScript
+
+```tsx
+import { InstantSearch } from 'react-instantsearch';
+import type { UiState } from 'instantsearch.js';
+
+interface MyUiState extends UiState {
+  products: {
+    query?: string;
+    refinementList?: {
+      brand?: string[];
+      category?: string[];
+    };
+  };
+}
+
+function App() {
+  return (
+    <InstantSearch<MyUiState>
+      searchClient={searchClient}
+      indexName="products"
+    >
+      {/* ... */}
+    </InstantSearch>
+  );
+}
+```
+
+## Related
+
+- [Index Component](/api/react/index)
+- [useInstantSearch Hook](/api/react/hooks/use-instant-search)
+- [Configure Component](/api/react/configure)

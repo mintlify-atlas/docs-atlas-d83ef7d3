@@ -1,0 +1,114 @@
+---
+title: "connectNumericMenu"
+description: "Build a custom widget for filtering by numeric ranges with predefined options"
+---
+
+The **NumericMenu** connector provides the logic to build a custom widget that displays a list of numeric filters with predefined ranges.
+
+## Usage
+
+```javascript
+import { connectNumericMenu } from 'instantsearch.js/es/connectors';
+
+const customNumericMenu = connectNumericMenu(
+  (renderOptions, isFirstRender) => {
+    const { items, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <ul>
+        ${items.map(item => `
+          <li>
+            <label>
+              <input 
+                type="radio" 
+                name="price-range"
+                value="${item.value}"
+                ${item.isRefined ? 'checked' : ''}
+              />
+              ${item.label}
+            </label>
+          </li>
+        `).join('')}
+      </ul>
+    `;
+    
+    container.querySelectorAll('input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        refine(e.target.value);
+      });
+    });
+  }
+);
+
+search.addWidgets([
+  customNumericMenu({
+    container: document.querySelector('#numeric-menu'),
+    attribute: 'price',
+    items: [
+      { label: 'All' },
+      { label: 'Less than 10$', end: 10 },
+      { label: 'Between 10$ - 100$', start: 10, end: 100 },
+      { label: 'More than 100$', start: 100 },
+    ],
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="attribute" type="string" required>
+  Name of the attribute for filtering.
+</ParamField>
+
+<ParamField path="items" type="Array<NumericMenuItem>" required>
+  List of all the items.
+  
+  Each item must have:
+  - `label`: Name of the option
+  - `start`: Lower bound of the option (greater than or equal to) - optional
+  - `end`: Higher bound of the option (less than or equal to) - optional
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<NumericMenuRenderItem>">
+  The list of available choices.
+  
+  Each item has:
+  - `label`: Name of the option
+  - `value`: URL encoded bounds object with the form `{start, end}`. Can be used with `refine` directly
+  - `isRefined`: `true` if the value is selected
+</ParamField>
+
+<ParamField path="refine" type="(value: string) => void">
+  Sets the selected value and triggers a new search.
+</ParamField>
+
+<ParamField path="createURL" type="(value: string) => string">
+  Creates a URL for the next state.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  Indicates if search state can be refined. This is `true` unless the last search contains no results and "All" range is selected.
+</ParamField>
+
+<ParamField path="hasNoResults" type="boolean">
+  `true` if the last search contains no results.
+  
+  <Warning>
+    This parameter is deprecated. Use `canRefine` instead.
+  </Warning>
+</ParamField>
+
+<ParamField path="sendEvent" type="function">
+  Sends an event to the Insights middleware.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

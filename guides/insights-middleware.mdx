@@ -1,0 +1,557 @@
+---
+title: Insights Middleware
+description: Track user behavior and send analytics events to Algolia Insights
+---
+
+The Insights middleware enables you to send analytics events to Algolia, tracking user interactions like clicks, conversions, and views. This data powers features like Click Analytics, Personalization, and A/B Testing.
+
+## Overview
+
+Algolia Insights tracks user behavior to:
+- **Improve relevance** with Click Analytics
+- **Personalize results** based on user behavior  
+- **Run A/B tests** to optimize search
+- **Analyze performance** with detailed metrics
+
+The Insights middleware automatically manages user tokens and sends events from InstantSearch widgets.
+
+## Basic Setup
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+import aa from 'search-insights';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+// Create and add insights middleware
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: aa,
+});
+
+search.use(insightsMiddleware);
+search.start();
+```
+
+The middleware automatically:
+1. Loads the Insights library if not already present
+2. Initializes with your app credentials
+3. Manages anonymous user tokens
+4. Enables `clickAnalytics` on searches
+
+## Installation
+
+Install the Insights library:
+
+```bash
+npm install search-insights
+```
+
+Or use the CDN:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/search-insights@2.17.2"></script>
+```
+
+## Setting User Token
+
+### Authenticated Users
+
+Set the user token for logged-in users:
+
+```javascript
+import aa from 'search-insights';
+
+// After user logs in
+aa('setUserToken', 'user-123456');
+
+// Or via middleware initialization
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: aa,
+  insightsInitParams: {
+    userToken: 'user-123456',
+  },
+});
+```
+
+### Anonymous Users
+
+The middleware automatically generates and persists anonymous tokens:
+
+```javascript
+// Middleware creates token like: anonymous-a1b2c3d4-e5f6-7890
+// Token is stored in cookie for returning visitors
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: aa,
+  insightsInitParams: {
+    useCookie: true,
+    cookieDuration: 182 * 24 * 60 * 60 * 1000, // 6 months
+  },
+});
+```
+
+## Sending Events
+
+InstantSearch widgets with insights support automatically send events:
+
+### Click Events
+
+```javascript
+import { hits } from 'instantsearch.js/es/widgets';
+
+hits({
+  container: '#hits',
+  templates: {
+    item: (hit, { html, sendEvent }) => html`
+      <article>
+        <h3>${hit.name}</h3>
+        <p>$${hit.price}</p>
+        <button onClick=${() => sendEvent('click', hit, 'Product Clicked')}>
+          View Details
+        </button>
+      </article>
+    `,
+  },
+})
+```
+
+### Conversion Events
+
+```javascript
+import aa from 'search-insights';
+
+// After user adds to cart
+aa('convertedObjectIDs', {
+  index: 'products',
+  eventName: 'Product Added to Cart',
+  objectIDs: ['product-123'],
+});
+
+// After purchase
+aa('convertedObjectIDsAfterSearch', {
+  index: 'products',
+  eventName: 'Product Purchased',
+  queryID: results.queryID, // From search results
+  objectIDs: ['product-123', 'product-456'],
+});
+```
+
+### View Events
+
+```javascript
+import { hits } from 'instantsearch.js/es/widgets';
+
+hits({
+  container: '#hits',
+  templates: {
+    item: (hit, { html, sendEvent }) => {
+      // Automatically send view event when rendered
+      sendEvent('view', hit, 'Product Viewed');
+      
+      return html`
+        <article>
+          <h3>${hit.name}</h3>
+          <p>$${hit.price}</p>
+        </article>
+      `;
+    },
+  },
+})
+```
+
+## Custom Event Handling
+
+Intercept and modify events before sending:
+
+```javascript
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: aa,
+  onEvent(event, insightsClient) {
+    // Log events for debugging
+    console.log('Insights event:', event);
+    
+    // Add custom properties
+    const customEvent = {
+      ...event,
+      payload: {
+        ...event.payload,
+        // Add custom data
+        userSegment: 'premium',
+        device: 'mobile',
+      },
+    };
+    
+    // Send modified event
+    insightsClient(customEvent.insightsMethod, customEvent.payload);
+  },
+});
+```
+
+## User Token Management
+
+The middleware handles user token lifecycle automatically:
+
+```typescript
+// From src/middlewares/createInsightsMiddleware.ts
+started() {
+  let userTokenFromInit;
+  const tokenFromSearchParameters = initialParameters.userToken;
+
+  if (insightsInitParams?.userToken) {
+    userTokenFromInit = insightsInitParams.userToken;
+  }
+
+  if (userTokenFromInit) {
+    setUserToken(userTokenFromInit);
+  } else if (tokenFromSearchParameters) {
+    setUserToken(tokenFromSearchParameters);
+  } else if (userTokenBeforeInit) {
+    setUserToken(userTokenBeforeInit);
+  } else if (queuedUserToken) {
+    setUserToken(queuedUserToken);
+  } else if (anonymousUserToken) {
+    setUserToken(anonymousUserToken);
+    
+    if (insightsInitParams?.useCookie || queuedInitParams?.useCookie) {
+      saveTokenAsCookie(
+        anonymousUserToken,
+        insightsInitParams?.cookieDuration || queuedInitParams?.cookieDuration
+      );
+    }
+  }
+
+  // Listen for token changes
+  insightsClient('onUserTokenChange', (token) => 
+    setUserTokenToSearch(token, true),
+    { immediate: true }
+  );
+}
+```
+
+## Click Analytics
+
+Enable to track which results users click:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: aa,
+});
+
+search.use(insightsMiddleware);
+
+// Click analytics is automatically enabled
+// Searches include clickAnalytics: true parameter
+```
+
+Click data appears in your Algolia dashboard and improves ranking.
+
+## Custom Insights Client
+
+Use a custom Insights implementation:
+
+```javascript
+const customInsightsClient = (method, payload) => {
+  // Send to your own analytics service
+  fetch('/api/analytics', {
+    method: 'POST',
+    body: JSON.stringify({ method, payload }),
+  });
+  
+  // Also send to Algolia
+  aa(method, payload);
+};
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: customInsightsClient,
+});
+```
+
+## Server-Side Rendering
+
+For SSR, set the user token in initial state:
+
+```javascript
+// Server-side
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  initialUiState: {
+    products: {
+      // Initial search state
+    },
+  },
+});
+
+// Set user token on server
+const serverState = {
+  userToken: request.cookies.userId || generateAnonymousToken(),
+};
+
+// Client-side
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: aa,
+  insightsInitParams: {
+    userToken: window.__SERVER_STATE__.userToken,
+  },
+});
+
+search.use(insightsMiddleware);
+```
+
+## Event Types
+
+### Click Events
+
+Track when users click results:
+
+```javascript
+sendEvent('click', hit, 'Product Clicked');
+
+// Sent as:
+aa('clickedObjectIDsAfterSearch', {
+  index: 'products',
+  eventName: 'Product Clicked',
+  queryID: 'abc123',
+  objectIDs: ['product-id'],
+  positions: [0],
+});
+```
+
+### Conversion Events
+
+Track when users convert:
+
+```javascript
+sendEvent('conversion', hit, 'Product Purchased');
+
+// Sent as:
+aa('convertedObjectIDsAfterSearch', {
+  index: 'products',
+  eventName: 'Product Purchased',
+  queryID: 'abc123',
+  objectIDs: ['product-id'],
+});
+```
+
+### View Events
+
+Track when results are viewed:
+
+```javascript
+sendEvent('view', hit, 'Product Viewed');
+
+// Sent as (deduplicated):
+aa('viewedObjectIDs', {
+  index: 'products',
+  eventName: 'Product Viewed',
+  objectIDs: ['product-id'],
+});
+```
+
+## Deduplication
+
+View events are automatically deduplicated per query:
+
+```typescript
+// From src/middlewares/createInsightsMiddleware.ts
+const viewedObjectIDs = new Set<string>();
+let lastQueryId: string | undefined;
+
+instantSearchInstance.mainHelper!.derivedHelpers[0].on('result', ({ results }) => {
+  if (results && (!results.queryID || results.queryID !== lastQueryId)) {
+    lastQueryId = results.queryID;
+    viewedObjectIDs.clear(); // Clear on new query
+  }
+});
+
+instanceInstance.sendEventToInsights = (event: InsightsEvent) => {
+  if (event.insightsMethod === 'viewedObjectIDs') {
+    const payload = event.payload as { objectIDs: string[] };
+    const difference = payload.objectIDs.filter(
+      (objectID) => !viewedObjectIDs.has(objectID)
+    );
+    
+    if (difference.length === 0) {
+      return; // Skip if all already viewed
+    }
+    
+    difference.forEach((objectID) => viewedObjectIDs.add(objectID));
+    payload.objectIDs = difference;
+  }
+  
+  insightsClient(event.insightsMethod, event.payload);
+};
+```
+
+## Debugging
+
+Enable logging to debug events:
+
+```javascript
+import aa from 'search-insights';
+
+// Log all events
+aa('init', {
+  appId: 'YourAppID',
+  apiKey: 'YourSearchAPIKey',
+  useCookie: true,
+  onEvent(event) {
+    console.log('Insights event sent:', event);
+  },
+});
+
+// Or in middleware
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: aa,
+  onEvent(event, client) {
+    console.log('Event:', event);
+    // Send event
+    client(event.insightsMethod, event.payload);
+  },
+});
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Set User Tokens Early" icon="user">
+    Set authenticated user tokens before InstantSearch starts.
+  </Card>
+  <Card title="Use Descriptive Names" icon="tag">
+    Use clear, consistent event names for better analytics.
+  </Card>
+  <Card title="Track Conversions" icon="chart-line">
+    Track all conversion points: add-to-cart, purchase, signup.
+  </Card>
+  <Card title="Test Events" icon="vial">
+    Use the Events Debugger in Algolia dashboard to verify events.
+  </Card>
+</CardGroup>
+
+## Complete Example
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+import { searchBox, hits, refinementList } from 'instantsearch.js/es/widgets';
+import aa from 'search-insights';
+
+// Initialize search
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: true,
+});
+
+// Setup insights
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: aa,
+  insightsInitParams: {
+    useCookie: true,
+    cookieDuration: 182 * 24 * 60 * 60 * 1000, // 6 months
+  },
+  onEvent(event, client) {
+    // Log events in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Insights:', event);
+    }
+    
+    // Add custom metadata
+    const enhancedEvent = {
+      ...event,
+      payload: {
+        ...event.payload,
+        timestamp: Date.now(),
+      },
+    };
+    
+    client(enhancedEvent.insightsMethod, enhancedEvent.payload);
+  },
+});
+
+search.use(insightsMiddleware);
+
+// Add widgets
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  
+  hits({
+    container: '#hits',
+    templates: {
+      item: (hit, { html, components, sendEvent }) => {
+        // Send view event
+        sendEvent('view', hit, 'Product Viewed');
+        
+        return html`
+          <article>
+            <img src="${hit.image}" alt="${hit.name}" />
+            <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+            <p>$${hit.price}</p>
+            <button
+              onClick=${() => {
+                // Send click event
+                sendEvent('click', hit, 'Product Clicked');
+                // Navigate to product
+                window.location.href = `/products/${hit.objectID}`;
+              }}
+            >
+              View Product
+            </button>
+            <button
+              onClick=${() => {
+                // Send conversion event
+                sendEvent('conversion', hit, 'Added to Cart');
+                // Add to cart logic
+                addToCart(hit);
+              }}
+            >
+              Add to Cart
+            </button>
+          </article>
+        `;
+      },
+    },
+  }),
+  
+  refinementList({
+    container: '#brand',
+    attribute: 'brand',
+  }),
+]);
+
+// Handle user login
+window.addEventListener('user:login', (event) => {
+  aa('setUserToken', event.detail.userId);
+});
+
+// Track purchases
+window.addEventListener('purchase:complete', (event) => {
+  const { queryID, items } = event.detail;
+  
+  aa('convertedObjectIDsAfterSearch', {
+    index: 'products',
+    eventName: 'Product Purchased',
+    queryID,
+    objectIDs: items.map(item => item.objectID),
+  });
+});
+
+search.start();
+```
+
+## Related Resources
+
+- [Insights Middleware API](/api-reference/insights-middleware)
+- [Hits widget with Insights](/widgets/hits)
+- [Algolia Click Analytics](https://www.algolia.com/doc/guides/building-search-ui/going-further/send-insights-events/js/)
+- [Algolia Personalization](https://www.algolia.com/doc/guides/personalization/personalizing-results/)
+- [search-insights library](https://github.com/algolia/search-insights.js)

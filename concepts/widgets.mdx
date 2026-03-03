@@ -1,0 +1,402 @@
+---
+title: 'Widgets'
+description: 'Understand the widget system in InstantSearch, including lifecycle methods, state management, and how to create custom widgets.'
+keywords: ['widgets', 'lifecycle', 'custom widgets', 'rendering', 'ui components']
+---
+
+Widgets are the building blocks of InstantSearch. They connect UI components to the search state, handle user interactions, and render search results.
+
+## What is a widget?
+
+A widget is an object that implements specific lifecycle methods to interact with the InstantSearch instance. Widgets can:
+
+- Read and modify search parameters
+- Render UI based on search results
+- Handle user interactions and update search state
+- Manage their own internal state
+
+Every widget implements the `Widget` interface defined in `/home/daytona/workspace/source/packages/instantsearch.js/src/types/widget.ts:337-348`.
+
+## Widget lifecycle
+
+Widgets go through several lifecycle phases:
+
+<Steps>
+  <Step title="Initialization">
+    The `init()` method is called once before the first search. This is where you set up event listeners and render the initial UI.
+    
+    ```typescript
+    init(options: InitOptions) {
+      const { helper, instantSearchInstance } = options;
+      // Initial setup and rendering
+    }
+    ```
+  </Step>
+  
+  <Step title="Search parameters">
+    The `getWidgetSearchParameters()` method is called to collect search parameters from all widgets before making a search request.
+    
+    ```typescript
+    getWidgetSearchParameters(state: SearchParameters, { uiState }) {
+      return state.setQueryParameter('query', uiState.query || '');
+    }
+    ```
+  </Step>
+  
+  <Step title="Rendering">
+    The `render()` method is called after each search response with the results.
+    
+    ```typescript
+    render(options: RenderOptions) {
+      const { results, instantSearchInstance } = options;
+      // Update UI with results
+    }
+    ```
+  </Step>
+  
+  <Step title="Disposal">
+    The `dispose()` method is called when the widget is removed, allowing it to clean up and remove its search parameters.
+    
+    ```typescript
+    dispose({ state }) {
+      // Clean up event listeners
+      return state.setQueryParameter('query', undefined);
+    }
+    ```
+  </Step>
+</Steps>
+
+## Widget interface
+
+The complete widget interface includes these methods (from `/home/daytona/workspace/source/packages/instantsearch.js/src/types/widget.ts`):
+
+### Type identification
+
+<ParamField path="$$type" type="string" required>
+  Identifier for the widget type, typically in the format `'ais.widgetName'`.
+  
+  ```typescript
+  $$type: 'ais.searchBox'
+  ```
+</ParamField>
+
+<ParamField path="$$widgetType" type="string">
+  Optional identifier for UI widgets (as opposed to connectors).
+</ParamField>
+
+### Lifecycle methods
+
+<ParamField path="init" type="(options: InitOptions) => void">
+  Called once before the first search. Use this to:
+  - Set up event listeners
+  - Render initial UI
+  - Initialize internal state
+  
+  The `InitOptions` include:
+  - `instantSearchInstance`: The InstantSearch instance
+  - `parent`: The parent index widget
+  - `helper`: The Algolia helper
+  - `state`: Current search parameters
+  - `uiState`: Current UI state
+</ParamField>
+
+<ParamField path="render" type="(options: RenderOptions) => void">
+  Called after each search response. Use this to update the UI with new results.
+  
+  The `RenderOptions` include everything from `InitOptions` plus:
+  - `results`: Search results from Algolia
+  - `scopedResults`: Results for all indices
+</ParamField>
+
+<ParamField path="dispose" type="(options: DisposeOptions) => SearchParameters | void">
+  Called when the widget is removed. Return updated search parameters with your widget's parameters removed.
+</ParamField>
+
+### State management
+
+<ParamField path="getWidgetSearchParameters" type="function">
+  Converts UI state to search parameters. Called before each search.
+  
+  ```typescript
+  getWidgetSearchParameters(
+    state: SearchParameters,
+    { uiState }
+  ): SearchParameters {
+    return state.setQueryParameter('query', uiState.query || '');
+  }
+  ```
+</ParamField>
+
+<ParamField path="getWidgetUiState" type="function">
+  Converts search parameters to UI state. Used for routing and state synchronization.
+  
+  ```typescript
+  getWidgetUiState(
+    uiState: IndexUiState,
+    { searchParameters }
+  ): IndexUiState {
+    const query = searchParameters.query || '';
+    if (query === '') return uiState;
+    return { ...uiState, query };
+  }
+  ```
+</ParamField>
+
+### Render state (optional)
+
+<ParamField path="getRenderState" type="function">
+  Returns the complete render state for the index, including this widget's state.
+  
+  ```typescript
+  getRenderState(renderState: IndexRenderState, renderOptions) {
+    return {
+      ...renderState,
+      searchBox: this.getWidgetRenderState(renderOptions),
+    };
+  }
+  ```
+</ParamField>
+
+<ParamField path="getWidgetRenderState" type="function">
+  Returns just this widget's render state.
+  
+  ```typescript
+  getWidgetRenderState(renderOptions) {
+    return {
+      query: renderOptions.state.query || '',
+      refine: (value: string) => helper.setQuery(value).search(),
+      widgetParams,
+    };
+  }
+  ```
+</ParamField>
+
+## Built-in widgets
+
+InstantSearch provides many built-in widgets. Here are the most common ones (from `/home/daytona/workspace/source/packages/instantsearch.js/src/types/widget.ts:99-137`):
+
+<AccordionGroup>
+  <Accordion title="Search widgets">
+    - `ais.searchBox` - Search input
+    - `ais.hits` - Display search results
+    - `ais.infiniteHits` - Infinite scrolling results
+    - `ais.pagination` - Page navigation
+    - `ais.stats` - Search statistics
+  </Accordion>
+  
+  <Accordion title="Refinement widgets">
+    - `ais.refinementList` - Faceted filters
+    - `ais.menu` - Single-selection facets
+    - `ais.hierarchicalMenu` - Hierarchical categories
+    - `ais.rangeSlider` - Numeric range filter
+    - `ais.ratingMenu` - Rating filter
+    - `ais.toggleRefinement` - Boolean filter
+  </Accordion>
+  
+  <Accordion title="Navigation widgets">
+    - `ais.breadcrumb` - Navigation breadcrumb
+    - `ais.currentRefinements` - Active filters
+    - `ais.clearRefinements` - Clear all filters
+    - `ais.sortBy` - Index sorting
+  </Accordion>
+  
+  <Accordion title="Configuration widgets">
+    - `ais.configure` - Set search parameters
+    - `ais.index` - Multi-index search
+    - `ais.dynamicWidgets` - Dynamic facets
+  </Accordion>
+  
+  <Accordion title="Recommendation widgets">
+    - `ais.relatedProducts` - Related items
+    - `ais.frequentlyBoughtTogether` - Product bundles
+    - `ais.trendingItems` - Trending content
+    - `ais.lookingSimilar` - Similar items
+  </Accordion>
+</AccordionGroup>
+
+## Using widgets
+
+<Tabs>
+  <Tab title="JavaScript">
+    ```javascript
+    import instantsearch from 'instantsearch.js';
+    import { searchBox, hits, pagination } from 'instantsearch.js/es/widgets';
+    
+    const search = instantsearch({
+      indexName: 'products',
+      searchClient,
+    });
+    
+    search.addWidgets([
+      searchBox({
+        container: '#searchbox',
+        placeholder: 'Search products...',
+      }),
+      hits({
+        container: '#hits',
+        templates: {
+          item: (hit) => `<h2>${hit.name}</h2>`,
+        },
+      }),
+      pagination({
+        container: '#pagination',
+      }),
+    ]);
+    
+    search.start();
+    ```
+  </Tab>
+  
+  <Tab title="React">
+    ```tsx
+    import { InstantSearch, SearchBox, Hits, Pagination } from 'react-instantsearch';
+    
+    function App() {
+      return (
+        <InstantSearch searchClient={searchClient} indexName="products">
+          <SearchBox placeholder="Search products..." />
+          <Hits hitComponent={HitComponent} />
+          <Pagination />
+        </InstantSearch>
+      );
+    }
+    
+    function HitComponent({ hit }) {
+      return <h2>{hit.name}</h2>;
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Vue">
+    ```vue
+    <template>
+      <ais-instant-search :search-client="searchClient" index-name="products">
+        <ais-search-box placeholder="Search products..." />
+        <ais-hits>
+          <template #item="{ item }">
+            <h2>{{ item.name }}</h2>
+          </template>
+        </ais-hits>
+        <ais-pagination />
+      </ais-instant-search>
+    </template>
+    ```
+  </Tab>
+</Tabs>
+
+## Creating custom widgets
+
+You can create custom widgets by implementing the widget interface:
+
+```javascript
+function customWidget(widgetParams) {
+  return {
+    $$type: 'custom.myWidget',
+    
+    init({ helper, instantSearchInstance }) {
+      // Set up your widget
+      const container = document.querySelector(widgetParams.container);
+      
+      container.addEventListener('click', () => {
+        // Handle user interaction
+        helper.setQuery('new query').search();
+      });
+    },
+    
+    render({ results }) {
+      // Update UI with results
+      const container = document.querySelector(widgetParams.container);
+      container.innerHTML = `Found ${results.nbHits} results`;
+    },
+    
+    dispose() {
+      // Clean up
+      const container = document.querySelector(widgetParams.container);
+      container.innerHTML = '';
+    },
+  };
+}
+
+// Use it
+search.addWidgets([
+  customWidget({ container: '#my-widget' })
+]);
+```
+
+<Tip>
+  For more complex custom widgets, consider using [connectors](/concepts/connectors) to separate business logic from rendering.
+</Tip>
+
+## Widget search parameters
+
+Widgets can modify search parameters through the `getWidgetSearchParameters` method. Common parameters include:
+
+- `query` - Search query
+- `facets`, `disjunctiveFacets`, `hierarchicalFacets` - Facet configuration
+- `facetFilters`, `numericFilters` - Active filters
+- `hitsPerPage` - Results per page
+- `page` - Current page
+- `aroundLatLng`, `aroundRadius` - Geo search
+
+Example from SearchBox connector (from `/home/daytona/workspace/source/packages/instantsearch.js/src/connectors/search-box/connectSearchBox.ts:169-171`):
+
+```typescript
+getWidgetSearchParameters(searchParameters, { uiState }) {
+  return searchParameters.setQueryParameter('query', uiState.query || '');
+}
+```
+
+## Widget dependencies
+
+Widgets can depend on either `search` or `recommend` APIs:
+
+```typescript
+type SearchWidget = {
+  dependsOn?: 'search';
+  getWidgetParameters: (state: SearchParameters) => SearchParameters;
+};
+
+type RecommendWidget = {
+  dependsOn: 'recommend';
+  getWidgetParameters: (state: RecommendParameters) => RecommendParameters;
+};
+```
+
+Recommendation widgets like `relatedProducts` and `frequentlyBoughtTogether` use the `recommend` API.
+
+## Best practices
+
+<CardGroup cols={2}>
+  <Card title="Keep widgets focused" icon="bullseye">
+    Each widget should have a single responsibility. Use multiple widgets for complex UIs.
+  </Card>
+  
+  <Card title="Clean up resources" icon="broom">
+    Always implement `dispose()` to remove event listeners and clean up DOM elements.
+  </Card>
+  
+  <Card title="Use connectors for reusability" icon="plug">
+    Separate business logic with connectors when building custom widgets for multiple frameworks.
+  </Card>
+  
+  <Card title="Leverage render state" icon="code">
+    Implement `getRenderState` and `getWidgetRenderState` for framework integrations and debugging.
+  </Card>
+</CardGroup>
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="Connectors" icon="link" href="/concepts/connectors">
+    Separate business logic from rendering
+  </Card>
+  <Card title="InstantSearch instance" icon="magnifying-glass" href="/concepts/instantsearch-instance">
+    Learn about the main instance
+  </Card>
+  <Card title="Search state" icon="database" href="/concepts/search-state">
+    Understanding UI state management
+  </Card>
+  <Card title="Widget API reference" icon="book" href="/api-reference/widgets">
+    Complete widget documentation
+  </Card>
+</CardGroup>

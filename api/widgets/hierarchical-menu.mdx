@@ -1,0 +1,215 @@
+---
+title: hierarchicalMenu
+description: Filter results with hierarchical categories and subcategories
+---
+
+The hierarchicalMenu widget creates a navigation menu based on a hierarchy of facet attributes. It's commonly used for category navigation with nested levels.
+
+## Usage
+
+```javascript
+const hierarchicalMenu = instantsearch.widgets.hierarchicalMenu({
+  container: '#hierarchical-categories',
+  attributes: [
+    'hierarchicalCategories.lvl0',
+    'hierarchicalCategories.lvl1',
+    'hierarchicalCategories.lvl2',
+  ],
+});
+
+search.addWidget(hierarchicalMenu);
+```
+
+## Examples
+
+### Basic Hierarchical Menu
+
+```javascript
+instantsearch.widgets.hierarchicalMenu({
+  container: '#categories',
+  attributes: [
+    'categories.lvl0',
+    'categories.lvl1',
+    'categories.lvl2',
+  ],
+});
+```
+
+### With Custom Separator
+
+```javascript
+instantsearch.widgets.hierarchicalMenu({
+  container: '#categories',
+  attributes: ['categories.lvl0', 'categories.lvl1'],
+  separator: ' / ',
+});
+```
+
+### With Show More
+
+```javascript
+instantsearch.widgets.hierarchicalMenu({
+  container: '#categories',
+  attributes: ['categories.lvl0', 'categories.lvl1', 'categories.lvl2'],
+  limit: 5,
+  showMore: true,
+  showMoreLimit: 15,
+});
+```
+
+### Without Parent Level
+
+```javascript
+instantsearch.widgets.hierarchicalMenu({
+  container: '#categories',
+  attributes: ['categories.lvl0', 'categories.lvl1'],
+  showParentLevel: false,
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="attributes" type="string[]" required>
+  Array of attribute names representing each hierarchical level.
+  
+  Example: `['categories.lvl0', 'categories.lvl1', 'categories.lvl2']`
+</ParamField>
+
+<ParamField path="separator" type="string" default="' > '">
+  Separator used between levels in the attribute values.
+</ParamField>
+
+<ParamField path="rootPath" type="string">
+  Prefix path to use if the first level is not the root level.
+  
+  Example: `'Cameras & Camcorders > Digital Cameras'`
+</ParamField>
+
+<ParamField path="showParentLevel" type="boolean" default="true">
+  Show siblings of the selected parent level. When `false`, only shows the selected path.
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Maximum number of values to display at each level.
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to display a "Show more" button.
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  Maximum number of values when "Show more" is clicked.
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | function" default="['name:asc']">
+  How to sort refinements. Available values:
+  - `'count:asc'` / `'count:desc'`
+  - `'name:asc'` / `'name:desc'`
+  - `'isRefined'`
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="item" type="Template">
+      Template for each item.
+    </ParamField>
+    <ParamField path="showMoreText" type="Template">
+      Template for the "Show more" button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    <ParamField path="childList" type="string | string[]">
+      CSS class for child list elements.
+    </ParamField>
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item.
+    </ParamField>
+    <ParamField path="selectedItem" type="string | string[]">
+      CSS class for selected items.
+    </ParamField>
+    <ParamField path="parentItem" type="string | string[]">
+      CSS class for parent items.
+    </ParamField>
+    <ParamField path="link" type="string | string[]">
+      CSS class for the link.
+    </ParamField>
+    <ParamField path="label" type="string | string[]">
+      CSS class for the label.
+    </ParamField>
+    <ParamField path="count" type="string | string[]">
+      CSS class for the count.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-HierarchicalMenu">
+  <ul class="ais-HierarchicalMenu-list">
+    <li class="ais-HierarchicalMenu-item ais-HierarchicalMenu-item--selected">
+      <a class="ais-HierarchicalMenu-link" href="#">
+        <span class="ais-HierarchicalMenu-label">Cameras & Camcorders</span>
+        <span class="ais-HierarchicalMenu-count">1,287</span>
+      </a>
+      <ul class="ais-HierarchicalMenu-list ais-HierarchicalMenu-list--child">
+        <li class="ais-HierarchicalMenu-item ais-HierarchicalMenu-item--selected">
+          <a class="ais-HierarchicalMenu-link" href="#">
+            <span class="ais-HierarchicalMenu-label">Digital Cameras</span>
+            <span class="ais-HierarchicalMenu-count">170</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+```
+
+## Data Format
+
+Your records must be formatted hierarchically:
+
+```json
+{
+  "objectID": "123",
+  "name": "Canon EOS",
+  "categories": {
+    "lvl0": "Cameras & Camcorders",
+    "lvl1": "Cameras & Camcorders > Digital Cameras",
+    "lvl2": "Cameras & Camcorders > Digital Cameras > DSLR"
+  }
+}
+```
+
+Each level must include the full path from the root.
+
+## Requirements
+
+<Warning>
+  All hierarchical attributes must be declared as **attributes for faceting** in your Algolia index settings.
+</Warning>

@@ -1,0 +1,164 @@
+---
+title: voiceSearch
+---
+
+Provides voice search capabilities using the Web Speech API, allowing users to perform searches using voice input.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { voiceSearch } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  voiceSearch({
+    container: '#voice-search'
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="searchAsYouSpeak" type="boolean" default="false">
+  If true, searches are triggered on every transcription update. If false, only searches when speech recognition is complete.
+</ParamField>
+
+<ParamField path="language" type="string">
+  The language to use for speech recognition. Uses the browser's language by default.
+  
+  Example: `'en-US'`, `'fr-FR'`, `'es-ES'`
+</ParamField>
+
+<ParamField path="additionalQueryParameters" type="function">
+  Function to return additional query parameters based on the voice input.
+  
+  ```typescript
+  (params: { query: string }) => SearchParameters | void
+  ```
+</ParamField>
+
+<ParamField path="createVoiceSearchHelper" type="function">
+  Function to customize the voice search helper creation. For advanced use cases.
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to use for the widget.
+  
+  <Expandable title="properties">
+    <ParamField path="buttonText" type="string | function">
+      Template for the button text. Receives voice search state.
+    </ParamField>
+    
+    <ParamField path="status" type="string | function">
+      Template for the status message. Receives voice search state including `isListening`, `transcript`, `isSpeechFinal`, `errorCode`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class to add to the root element.
+    </ParamField>
+    
+    <ParamField path="button" type="string | string[]">
+      CSS class to add to the button element.
+    </ParamField>
+    
+    <ParamField path="status" type="string | string[]">
+      CSS class to add to the status element.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Basic voice search
+
+```javascript
+voiceSearch({
+  container: '#voice-search',
+  searchAsYouSpeak: false
+});
+```
+
+### Search as you speak
+
+```javascript
+voiceSearch({
+  container: '#voice-search',
+  searchAsYouSpeak: true,
+  language: 'en-US'
+});
+```
+
+### Custom templates
+
+```javascript
+voiceSearch({
+  container: '#voice-search',
+  templates: {
+    buttonText({ isListening }) {
+      return isListening ? 'Stop' : 'Start voice search';
+    },
+    status({ transcript, isSpeechFinal, errorCode }) {
+      if (errorCode) {
+        return `Error: ${errorCode}`;
+      }
+      if (isSpeechFinal) {
+        return `Searching for: ${transcript}`;
+      }
+      return transcript ? `Listening: ${transcript}` : 'Click to speak';
+    }
+  }
+});
+```
+
+### With additional query parameters
+
+```javascript
+voiceSearch({
+  container: '#voice-search',
+  additionalQueryParameters({ query }) {
+    return {
+      queryLanguages: ['en']
+    };
+  }
+});
+```
+
+## HTML output
+
+```html
+<div class="ais-VoiceSearch">
+  <button class="ais-VoiceSearch-button">
+    Start voice search
+  </button>
+  <div class="ais-VoiceSearch-status">
+    Click to speak
+  </div>
+</div>
+```
+
+## Browser compatibility
+
+This widget requires the Web Speech API, which is supported in:
+- Chrome 25+
+- Edge 79+
+- Safari 14.1+
+- Opera 27+
+
+The widget will indicate when the browser doesn't support voice search.

@@ -1,0 +1,239 @@
+---
+title: '<DynamicWidgets>'
+description: 'Automatically render widgets based on index configuration'
+---
+
+The `<DynamicWidgets>` component automatically renders widgets based on the attributesForFaceting configured in your Algolia index.
+
+## Import
+
+```jsx
+import { DynamicWidgets } from 'react-instantsearch';
+```
+
+## Props
+
+<ParamField path="children" type="ReactNode">
+  The widgets to render dynamically. Each child widget must have an `attribute` or `attributes` prop.
+
+  ```jsx
+  <DynamicWidgets>
+    <RefinementList attribute="brand" />
+    <RefinementList attribute="color" />
+    <Menu attribute="category" />
+  </DynamicWidgets>
+  ```
+</ParamField>
+
+<ParamField path="fallbackComponent" type="ComponentType<{ attribute: string }>">
+  A component to render when an attribute is returned by the API but no corresponding widget is provided in children.
+
+  ```jsx
+  <DynamicWidgets
+    fallbackComponent={({ attribute }) => (
+      <RefinementList attribute={attribute} />
+    )}
+  >
+    {/* ... */}
+  </DynamicWidgets>
+  ```
+</ParamField>
+
+<ParamField path="maxValuesPerFacet" type="number">
+  The maximum number of facet values to retrieve for each facet.
+
+  ```jsx
+  <DynamicWidgets maxValuesPerFacet={20}>
+    {/* ... */}
+  </DynamicWidgets>
+  ```
+</ParamField>
+
+<ParamField path="facets" type="string[]">
+  Specific facets to render. By default, all facets configured in the index are rendered.
+
+  ```jsx
+  <DynamicWidgets facets={['brand', 'color', 'size']}>
+    {/* ... */}
+  </DynamicWidgets>
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: string[]) => string[]">
+  Function to transform the list of attributes to render.
+
+  ```jsx
+  <DynamicWidgets
+    transformItems={(items) => 
+      items.filter((item) => item !== 'internal_field')
+    }
+  >
+    {/* ... */}
+  </DynamicWidgets>
+  ```
+</ParamField>
+
+## Examples
+
+### Basic Usage
+
+```jsx
+import { InstantSearch, DynamicWidgets, RefinementList, Menu } from 'react-instantsearch';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <DynamicWidgets>
+        <RefinementList attribute="brand" />
+        <RefinementList attribute="color" />
+        <Menu attribute="category" />
+        <RefinementList attribute="size" />
+      </DynamicWidgets>
+    </InstantSearch>
+  );
+}
+```
+
+### With Fallback Component
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <DynamicWidgets
+        fallbackComponent={({ attribute }) => (
+          <div>
+            <h3>{attribute}</h3>
+            <RefinementList attribute={attribute} />
+          </div>
+        )}
+      >
+        <RefinementList attribute="brand" />
+        <Menu attribute="category" />
+      </DynamicWidgets>
+    </InstantSearch>
+  );
+}
+```
+
+### Custom Widget Wrapper
+
+```jsx
+function FacetWidget({ attribute, title }) {
+  return (
+    <div className="facet-widget">
+      <h3>{title}</h3>
+      <RefinementList attribute={attribute} />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <DynamicWidgets>
+        <FacetWidget attribute="brand" title="Brands" />
+        <FacetWidget attribute="color" title="Colors" />
+        <FacetWidget attribute="size" title="Sizes" />
+      </DynamicWidgets>
+    </InstantSearch>
+  );
+}
+```
+
+### Filtering Attributes
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <DynamicWidgets
+        facets={['brand', 'color', 'category']}
+        transformItems={(items) => {
+          // Only show items that have results
+          return items.filter((item) => 
+            !item.startsWith('internal_')
+          );
+        }}
+      >
+        <RefinementList attribute="brand" />
+        <RefinementList attribute="color" />
+        <Menu attribute="category" />
+      </DynamicWidgets>
+    </InstantSearch>
+  );
+}
+```
+
+### Dynamic Widgets with Different Types
+
+```jsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <DynamicWidgets
+        fallbackComponent={({ attribute }) => {
+          // Use different widgets based on attribute name
+          if (attribute === 'category') {
+            return <Menu attribute={attribute} />;
+          }
+          return <RefinementList attribute={attribute} />;
+        }}
+      >
+        <RefinementList attribute="brand" />
+        <Menu attribute="category" />
+        <RefinementList attribute="color" />
+        <RangeSlider attribute="price" />
+      </DynamicWidgets>
+    </InstantSearch>
+  );
+}
+```
+
+## How It Works
+
+1. The component fetches the list of facets from your Algolia index configuration
+2. It matches the facets with the widgets you provide as children (by `attribute` or `attributes` prop)
+3. It renders only the widgets for facets that have values in the current search results
+4. If a facet has no matching widget, it uses the `fallbackComponent` if provided
+
+## Index Configuration
+
+For `<DynamicWidgets>` to work, your index must have `attributesForFaceting` configured:
+
+```json
+{
+  "attributesForFaceting": [
+    "brand",
+    "color",
+    "category",
+    "size"
+  ]
+}
+```
+
+## Notes
+
+<Note>
+  Only widgets with an `attribute` or `attributes` prop can be used inside `<DynamicWidgets>`. This includes `<RefinementList>`, `<Menu>`, `<RangeSlider>`, `<ToggleRefinement>`, etc.
+</Note>
+
+<Warning>
+  The `fallbackComponent` prop must be a stable reference. Define it outside your component or use `useCallback` to avoid re-creating widgets on every render.
+</Warning>
+
+<Info>
+  Dynamic Widgets are useful when you have multiple indices with different facets, or when you want to automatically adjust your UI based on the index configuration without code changes.
+</Info>
+
+## Related
+
+- [useDynamicWidgets Hook](/api/react/hooks/use-dynamic-widgets)
+- [RefinementList Widget](/api/react/widgets/refinement-list)
+- [Menu Widget](/api/react/widgets/menu)

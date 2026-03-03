@@ -1,0 +1,95 @@
+---
+title: "connectBreadcrumb"
+description: "Build a custom widget to display hierarchical navigation path"
+---
+
+The **Breadcrumb** connector provides the logic to build a custom widget that displays a breadcrumb navigation for hierarchical facets.
+
+## Usage
+
+```javascript
+import { connectBreadcrumb } from 'instantsearch.js/es/connectors';
+
+const customBreadcrumb = connectBreadcrumb(
+  (renderOptions, isFirstRender) => {
+    const { items, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <ul>
+        <li>
+          <a href="#" data-value="">Home</a>
+        </li>
+        ${items.map((item, index) => `
+          <li>
+            <span>&gt;</span>
+            ${item.value ? `
+              <a href="#" data-value="${item.value}">${item.label}</a>
+            ` : `
+              <span>${item.label}</span>
+            `}
+          </li>
+        `).join('')}
+      </ul>
+    `;
+    
+    container.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        refine(e.target.dataset.value || null);
+      });
+    });
+  }
+);
+
+search.addWidgets([
+  customBreadcrumb({
+    container: document.querySelector('#breadcrumb'),
+    attributes: ['categories.lvl0', 'categories.lvl1', 'categories.lvl2'],
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="attributes" type="string[]" required>
+  Attributes to use to generate the hierarchy of the breadcrumb.
+</ParamField>
+
+<ParamField path="separator" type="string" default="' > '">
+  The level separator used in the records.
+</ParamField>
+
+<ParamField path="rootPath" type="string">
+  Prefix path to use if the first level is not the root level.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<BreadcrumbItem>">
+  Array of objects defining the different values and labels.
+  
+  Each item has:
+  - `label`: Label of the category or subcategory
+  - `value`: Value of breadcrumb item (null for the last item)
+</ParamField>
+
+<ParamField path="refine" type="(value: string | null) => void">
+  Sets the path of the hierarchical filter and triggers a new search.
+</ParamField>
+
+<ParamField path="createURL" type="(value: string | null) => string">
+  Creates the URL for a single item name in the list.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  `true` if refinement can be applied.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

@@ -1,0 +1,219 @@
+---
+title: dynamicWidgets
+---
+
+Automatically displays refinement widgets based on the attributes returned by Algolia's dynamic faceting feature.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { dynamicWidgets, refinementList, menu } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  dynamicWidgets({
+    container: '#dynamic-widgets',
+    widgets: [
+      container => refinementList({
+        container,
+        attribute: 'brand'
+      }),
+      container => menu({
+        container,
+        attribute: 'category'
+      })
+    ]
+  })
+]);
+
+search.start();
+```
+
+## Requirements
+
+Enable dynamic faceting in your Algolia index settings by setting the `attributesToRetrieve` to `['*']` and configuring `maxValuesPerFacet`.
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="widgets" type="function[]" required>
+  Array of widget creator functions. Each function receives a container element and should return a widget.
+  
+  ```typescript
+  Array<(container: HTMLElement) => Widget>
+  ```
+</ParamField>
+
+<ParamField path="fallbackWidget" type="function">
+  Function to create a fallback widget when an attribute isn't found in the `widgets` array.
+  
+  ```typescript
+  ({ attribute: string, container: HTMLElement }) => Widget
+  ```
+</ParamField>
+
+<ParamField path="facets" type="string[]">
+  Array of facets to apply dynamic widgets on. By default, all returned facets are used.
+</ParamField>
+
+<ParamField path="maxValuesPerFacet" type="number">
+  Maximum number of values to retrieve per facet.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the list of attributes to render.
+  
+  ```typescript
+  (items: string[]) => string[]
+  ```
+</ParamField>
+
+## Examples
+
+### Basic dynamic widgets
+
+```javascript
+dynamicWidgets({
+  container: '#dynamic-widgets',
+  widgets: [
+    container => refinementList({
+      container,
+      attribute: 'brand'
+    }),
+    container => refinementList({
+      container,
+      attribute: 'color'
+    }),
+    container => menu({
+      container,
+      attribute: 'category'
+    })
+  ]
+});
+```
+
+### With fallback widget
+
+```javascript
+dynamicWidgets({
+  container: '#dynamic-widgets',
+  widgets: [
+    container => refinementList({
+      container,
+      attribute: 'brand'
+    })
+  ],
+  fallbackWidget({ attribute, container }) {
+    return refinementList({
+      container,
+      attribute,
+      limit: 5
+    });
+  }
+});
+```
+
+### With panel wrapper
+
+```javascript
+import { panel } from 'instantsearch.js/es/widgets';
+
+dynamicWidgets({
+  container: '#dynamic-widgets',
+  widgets: [
+    container => panel({
+      templates: { header: 'Brand' }
+    })(refinementList)({
+      container,
+      attribute: 'brand'
+    }),
+    container => panel({
+      templates: { header: 'Category' }
+    })(menu)({
+      container,
+      attribute: 'category'
+    })
+  ]
+});
+```
+
+### Filter attributes
+
+```javascript
+dynamicWidgets({
+  container: '#dynamic-widgets',
+  transformItems(attributes) {
+    // Only show specific attributes
+    const allowedAttributes = ['brand', 'category', 'color'];
+    return attributes.filter(attr => allowedAttributes.includes(attr));
+  },
+  fallbackWidget({ attribute, container }) {
+    return refinementList({ container, attribute });
+  }
+});
+```
+
+### Specific facets
+
+```javascript
+dynamicWidgets({
+  container: '#dynamic-widgets',
+  facets: ['brand', 'category', 'size', 'color'],
+  maxValuesPerFacet: 20,
+  fallbackWidget({ attribute, container }) {
+    return refinementList({
+      container,
+      attribute,
+      limit: 10
+    });
+  }
+});
+```
+
+### Custom widget based on attribute
+
+```javascript
+dynamicWidgets({
+  container: '#dynamic-widgets',
+  widgets: [],
+  fallbackWidget({ attribute, container }) {
+    // Use different widgets based on attribute type
+    if (attribute === 'price') {
+      return rangeSlider({ container, attribute });
+    }
+    if (attribute === 'rating') {
+      return ratingMenu({ container, attribute });
+    }
+    return refinementList({ container, attribute });
+  }
+});
+```
+
+## HTML output
+
+```html
+<div class="ais-DynamicWidgets">
+  <div class="ais-DynamicWidgets-widget">
+    <!-- First widget (e.g., brand refinementList) -->
+  </div>
+  <div class="ais-DynamicWidgets-widget">
+    <!-- Second widget (e.g., category menu) -->
+  </div>
+  <!-- More widgets based on facetOrdering -->
+</div>
+```
+
+## Notes
+
+- Widgets are displayed in the order defined by `facetOrdering` in your Algolia index.
+- The widget automatically shows/hides based on available facets.
+- Use with `attributesForFaceting` in your index configuration.
+- Each widget receives its own container element.

@@ -1,0 +1,576 @@
+---
+title: "React Server Components"
+description: "Use InstantSearch with React Server Components and Next.js App Router"
+---
+
+React InstantSearch supports React Server Components (RSC) through the `react-instantsearch-nextjs` package.
+
+## Installation
+
+Install the Next.js-specific package:
+
+```bash
+npm install react-instantsearch-nextjs
+# or
+yarn add react-instantsearch-nextjs
+```
+
+## Quick Start
+
+Use `InstantSearchNext` for automatic SSR support:
+
+```tsx app/search/page.tsx
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import { InstantSearchNext } from 'react-instantsearch-nextjs';
+import { SearchBox, Hits } from 'react-instantsearch';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+export default function SearchPage() {
+  return (
+    <InstantSearchNext
+      searchClient={searchClient}
+      indexName="products"
+      routing
+    >
+      <SearchBox />
+      <Hits />
+    </InstantSearchNext>
+  );
+}
+```
+
+<Note>
+`InstantSearchNext` automatically handles server-side rendering and hydration for Next.js App Router.
+</Note>
+
+## App Router Architecture
+
+### Client Components
+
+Search UI components must be marked with `'use client'`:
+
+```tsx app/search/Search.tsx
+'use client';
+
+import { SearchBox, Hits, RefinementList } from 'react-instantsearch';
+import { InstantSearchNext } from 'react-instantsearch-nextjs';
+import { searchClient } from '@/lib/algolia';
+
+export default function Search() {
+  return (
+    <InstantSearchNext
+      searchClient={searchClient}
+      indexName="products"
+      routing
+    >
+      <div className="search-container">
+        <aside>
+          <RefinementList attribute="brand" />
+          <RefinementList attribute="category" />
+        </aside>
+        
+        <main>
+          <SearchBox />
+          <Hits />
+        </main>
+      </div>
+    </InstantSearchNext>
+  );
+}
+```
+
+### Server Page
+
+The page component stays on the server:
+
+```tsx app/search/page.tsx
+import Search from './Search';
+
+export const metadata = {
+  title: 'Product Search',
+  description: 'Search our product catalog',
+};
+
+export default function SearchPage() {
+  return (
+    <div>
+      <h1>Search Products</h1>
+      <Search />
+    </div>
+  );
+}
+```
+
+## Routing
+
+Enable URL synchronization:
+
+```tsx
+<InstantSearchNext
+  searchClient={searchClient}
+  indexName="products"
+  routing={true} // Enable with defaults
+/>
+```
+
+### Custom Routing
+
+Provide custom router configuration:
+
+```tsx
+<InstantSearchNext
+  searchClient={searchClient}
+  indexName="products"
+  routing={{
+    router: {
+      cleanUrlOnDispose: false,
+      windowTitle(routeState) {
+        return `Search: ${routeState.query || 'All products'}`;
+      },
+    },
+    stateMapping: {
+      stateToRoute(uiState) {
+        const indexUiState = uiState.products || {};
+        return {
+          q: indexUiState.query,
+          brands: indexUiState.refinementList?.brand,
+          page: indexUiState.page,
+        };
+      },
+      routeToState(routeState) {
+        return {
+          products: {
+            query: routeState.q,
+            refinementList: {
+              brand: routeState.brands,
+            },
+            page: routeState.page,
+          },
+        };
+      },
+    },
+  }}
+/>
+```
+
+## Dynamic Routes
+
+Handle category pages with dynamic routing:
+
+```tsx app/category/[slug]/page.tsx
+import Search from './Search';
+
+type Props = {
+  params: { slug: string };
+};
+
+export default function CategoryPage({ params }: Props) {
+  return <Search category={params.slug} />;
+}
+```
+
+```tsx app/category/[slug]/Search.tsx
+'use client';
+
+import { Configure } from 'react-instantsearch';
+import { InstantSearchNext } from 'react-instantsearch-nextjs';
+
+type Props = {
+  category: string;
+};
+
+export default function Search({ category }: Props) {
+  return (
+    <InstantSearchNext
+      searchClient={searchClient}
+      indexName="products"
+    >
+      <Configure filters={`category:${category}`} />
+      {/* Rest of search UI */}
+    </InstantSearchNext>
+  );
+}
+```
+
+## Multiple Hooks Warning
+
+When using multiple `InstantSearchNext` instances, suppress the warning:
+
+```tsx
+<InstantSearchNext
+  searchClient={searchClient}
+  indexName="products"
+  ignoreMultipleHooksWarning={true}
+>
+  {/* ... */}
+</InstantSearchNext>
+```
+
+This is useful for:
+- Multiple search interfaces on one page
+- Testing environments
+- Storybook stories
+
+## Layout Persistence
+
+Preserve search state across navigation using layouts:
+
+```tsx app/search/layout.tsx
+import type { ReactNode } from 'react';
+
+export default function SearchLayout({ children }: { children: ReactNode }) {
+  return (
+    <div className="search-layout">
+      <header>
+        <nav>{/* Navigation */}</nav>
+      </header>
+      <main>{children}</main>
+    </div>
+  );
+}
+```
+
+```tsx app/search/page.tsx
+import Search from './Search';
+
+export default function SearchPage() {
+  return <Search />;
+}
+```
+
+The `Search` component maintains state when navigating between pages under the `/search` route.
+
+## Shared Search Client
+
+Create a singleton search client to avoid re-initialization:
+
+```ts lib/algolia.ts
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+export const searchClient = algoliasearch(
+  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!,
+  process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY!
+);
+```
+
+```tsx app/search/Search.tsx
+'use client';
+
+import { searchClient } from '@/lib/algolia';
+import { InstantSearchNext } from 'react-instantsearch-nextjs';
+
+export default function Search() {
+  return (
+    <InstantSearchNext
+      searchClient={searchClient}
+      indexName="products"
+    >
+      {/* ... */}
+    </InstantSearchNext>
+  );
+}
+```
+
+<Warning>
+Never create a new `searchClient` inside a component - it will cause infinite re-renders. Always define it outside or use a singleton.
+</Warning>
+
+## Response Caching
+
+Cache search responses for better performance:
+
+```ts lib/client.ts
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import { createInMemoryCache } from '@algolia/cache-in-memory';
+
+export const responsesCache = createInMemoryCache();
+
+export const searchClient = algoliasearch(
+  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!,
+  process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY!,
+  {
+    responsesCache,
+  }
+);
+```
+
+Clear cache when needed:
+
+```tsx app/search/page.tsx
+import { responsesCache } from '@/lib/client';
+import Search from './Search';
+
+export const dynamic = 'force-dynamic';
+
+export default function SearchPage() {
+  responsesCache.clear();
+  return <Search />;
+}
+```
+
+## Dynamic Widgets
+
+Render widgets based on facet configuration:
+
+```tsx
+'use client';
+
+import { DynamicWidgets, RefinementList } from 'react-instantsearch';
+import { InstantSearchNext } from 'react-instantsearch-nextjs';
+
+function FallbackComponent({ attribute }: { attribute: string }) {
+  return <RefinementList attribute={attribute} />;
+}
+
+export default function Search() {
+  return (
+    <InstantSearchNext
+      searchClient={searchClient}
+      indexName="products"
+    >
+      <DynamicWidgets fallbackComponent={FallbackComponent} />
+      {/* ... */}
+    </InstantSearchNext>
+  );
+}
+```
+
+## SEO Considerations
+
+### Metadata
+
+Use Next.js metadata API:
+
+```tsx app/search/page.tsx
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Product Search',
+  description: 'Search our complete product catalog',
+  openGraph: {
+    title: 'Product Search',
+    description: 'Search our complete product catalog',
+  },
+};
+
+export default function SearchPage() {
+  return <Search />;
+}
+```
+
+### Dynamic Metadata
+
+Generate metadata from search parameters:
+
+```tsx app/search/[category]/page.tsx
+import type { Metadata } from 'next';
+
+type Props = {
+  params: { category: string };
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  return {
+    title: `${params.category} - Product Search`,
+    description: `Search ${params.category} products`,
+  };
+}
+
+export default function CategorySearchPage({ params }: Props) {
+  return <Search category={params.category} />;
+}
+```
+
+## Server Actions
+
+Integrate with Next.js Server Actions:
+
+```tsx app/search/Search.tsx
+'use client';
+
+import { useInstantSearch } from 'react-instantsearch';
+import { saveSearch } from './actions';
+
+function SaveSearchButton() {
+  const { indexUiState } = useInstantSearch();
+
+  const handleSave = async () => {
+    await saveSearch({
+      query: indexUiState.query,
+      filters: indexUiState.refinementList,
+    });
+  };
+
+  return (
+    <button onClick={handleSave}>
+      Save Search
+    </button>
+  );
+}
+```
+
+```ts app/search/actions.ts
+'use server';
+
+import { revalidatePath } from 'next/cache';
+
+export async function saveSearch(searchState: any) {
+  // Save to database
+  await db.savedSearches.create({
+    data: searchState,
+  });
+  
+  revalidatePath('/saved-searches');
+}
+```
+
+## Error Handling
+
+Handle search errors gracefully:
+
+```tsx
+'use client';
+
+import { useInstantSearch } from 'react-instantsearch';
+
+function SearchErrorBoundary({ children }: { children: React.ReactNode }) {
+  const { status, error } = useInstantSearch({ catchError: true });
+
+  if (status === 'error') {
+    return (
+      <div className="error">
+        <h2>Search Error</h2>
+        <p>{error?.message}</p>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+export default function Search() {
+  return (
+    <InstantSearchNext
+      searchClient={searchClient}
+      indexName="products"
+    >
+      <SearchErrorBoundary>
+        <SearchBox />
+        <Hits />
+      </SearchErrorBoundary>
+    </InstantSearchNext>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Minimize Client Bundle
+
+Only import what you need:
+
+```tsx
+// Good
+import { SearchBox, Hits } from 'react-instantsearch';
+
+// Avoid
+import * as ReactInstantSearch from 'react-instantsearch';
+```
+
+### 2. Use Stable References
+
+```tsx
+// Good - defined outside component
+const searchClient = algoliasearch(appId, apiKey);
+
+function Search() {
+  return <InstantSearchNext searchClient={searchClient} />;
+}
+
+// Bad - creates new instance on every render
+function Search() {
+  const searchClient = algoliasearch(appId, apiKey);
+  return <InstantSearchNext searchClient={searchClient} />;
+}
+```
+
+### 3. Code Splitting
+
+Lazy load heavy components:
+
+```tsx
+import dynamic from 'next/dynamic';
+
+const HeavyChart = dynamic(() => import('./HeavyChart'), {
+  ssr: false,
+});
+```
+
+### 4. Streaming
+
+Enable streaming for faster initial load:
+
+```tsx app/search/page.tsx
+import { Suspense } from 'react';
+import Search from './Search';
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<SearchSkeleton />}>
+      <Search />
+    </Suspense>
+  );
+}
+```
+
+## Migration from Pages Router
+
+If migrating from Pages Router:
+
+### Before (Pages Router)
+
+```tsx pages/search.tsx
+import { getServerState } from 'react-instantsearch';
+import { renderToString } from 'react-dom/server';
+
+export async function getServerSideProps({ req }) {
+  const serverState = await getServerState(<Search />, { renderToString });
+  return { props: { serverState } };
+}
+```
+
+### After (App Router)
+
+```tsx app/search/Search.tsx
+'use client';
+
+import { InstantSearchNext } from 'react-instantsearch-nextjs';
+
+export default function Search() {
+  return (
+    <InstantSearchNext
+      searchClient={searchClient}
+      indexName="products"
+    >
+      {/* Components */}
+    </InstantSearchNext>
+  );
+}
+```
+
+No manual `getServerState` needed!
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Next.js Integration" icon="js" href="/react/nextjs-integration">
+    Pages Router and advanced SSR patterns
+  </Card>
+  <Card title="Hooks" icon="code" href="/react/hooks">
+    Build custom components with hooks
+  </Card>
+</CardGroup>

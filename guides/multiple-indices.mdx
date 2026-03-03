@@ -1,0 +1,521 @@
+---
+title: Multiple Indices
+description: Search across multiple Algolia indices in a single interface
+---
+
+Search multiple Algolia indices simultaneously to create federated search experiences, compare results across different data sources, or display related content.
+
+## Overview
+
+The `index` widget lets you target different indices within the same InstantSearch instance. Each index maintains its own search state, widgets, and results.
+
+## Basic Setup
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { index, searchBox, hits, configure } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'main_products',
+  searchClient,
+});
+
+search.addWidgets([
+  // Shared search box
+  searchBox({ container: '#searchbox' }),
+  
+  // Main index results
+  hits({
+    container: '#products-hits',
+    templates: {
+      item: (hit) => `<div>${hit.name}</div>`,
+    },
+  }),
+  
+  // Secondary index for articles
+  index({ indexName: 'articles' }).addWidgets([
+    hits({
+      container: '#articles-hits',
+      templates: {
+        item: (hit) => `<div>${hit.title}</div>`,
+      },
+    }),
+    configure({ hitsPerPage: 5 }),
+  ]),
+]);
+
+search.start();
+```
+
+## Index Widget API
+
+From `src/widgets/index/index.ts`, the index widget provides:
+
+```typescript
+index({
+  indexName: string,      // Required: Algolia index name
+  indexId?: string,       // Optional: Unique ID for URL/state
+})
+```
+
+### Index Methods
+
+```javascript
+const articlesIndex = index({ indexName: 'articles' });
+
+// Add widgets to the index
+articlesIndex.addWidgets([
+  hits({ container: '#articles' }),
+  refinementList({ container: '#categories', attribute: 'category' }),
+]);
+
+// Remove widgets
+articlesIndex.removeWidgets([hitsWidget]);
+
+// Get the index name
+articlesIndex.getIndexName(); // 'articles'
+
+// Get the Helper instance
+const helper = articlesIndex.getHelper();
+
+// Get search results
+const results = articlesIndex.getResults();
+```
+
+## Federated Search Example
+
+Create a federated search interface with products, articles, and FAQ:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: true,
+});
+
+// Shared search box
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+]);
+
+// Products index (main)
+search.addWidgets([
+  configure({ hitsPerPage: 8 }),
+  hits({
+    container: '#products',
+    templates: {
+      item: (hit) => `
+        <article>
+          <img src="${hit.image}" alt="${hit.name}" />
+          <h3>${hit.name}</h3>
+          <p>$${hit.price}</p>
+        </article>
+      `,
+    },
+  }),
+  stats({ container: '#products-stats' }),
+]);
+
+// Articles index
+search.addWidgets([
+  index({ indexName: 'articles' }).addWidgets([
+    configure({ hitsPerPage: 3 }),
+    hits({
+      container: '#articles',
+      templates: {
+        item: (hit) => `
+          <article>
+            <h4>${hit.title}</h4>
+            <p>${hit.excerpt}</p>
+            <a href="${hit.url}">Read more</a>
+          </article>
+        `,
+      },
+    }),
+  ]),
+]);
+
+// FAQ index
+search.addWidgets([
+  index({ indexName: 'faq' }).addWidgets([
+    configure({ hitsPerPage: 3 }),
+    hits({
+      container: '#faq',
+      templates: {
+        item: (hit) => `
+          <div>
+            <strong>${hit.question}</strong>
+            <p>${hit.answer}</p>
+          </div>
+        `,
+      },
+    }),
+  ]),
+]);
+
+search.start();
+```
+
+## Using Index IDs
+
+When using multiple instances of the same index, provide unique IDs:
+
+```javascript
+// Same index, different refinements
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  
+  // Featured products (on sale)
+  index({
+    indexName: 'products',
+    indexId: 'featured',
+  }).addWidgets([
+    configure({
+      filters: 'on_sale:true',
+      hitsPerPage: 4,
+    }),
+    hits({ container: '#featured' }),
+  ]),
+  
+  // All products
+  index({
+    indexName: 'products',
+    indexId: 'all',
+  }).addWidgets([
+    hits({ container: '#all-products' }),
+    refinementList({ container: '#brand', attribute: 'brand' }),
+  ]),
+]);
+```
+
+## Conditional Rendering
+
+Show/hide indices based on results:
+
+```javascript
+const articlesIndex = index({ indexName: 'articles' }).addWidgets([
+  hits({
+    container: '#articles',
+    templates: {
+      empty: () => '',
+      item: (hit) => `<div>${hit.title}</div>`,
+    },
+  }),
+]);
+
+// Listen to results
+articlesIndex.on('render', () => {
+  const results = articlesIndex.getResults();
+  const container = document.querySelector('#articles-section');
+  
+  if (results && results.nbHits > 0) {
+    container.style.display = 'block';
+  } else {
+    container.style.display = 'none';
+  }
+});
+
+search.addWidgets([articlesIndex]);
+```
+
+## Scoped Results
+
+Access results from all indices:
+
+```javascript
+import { connectStats } from 'instantsearch.js/es/connectors';
+
+const renderOverallStats = (renderOptions) => {
+  const { instantSearchInstance } = renderOptions;
+  const scopedResults = instantSearchInstance.mainIndex.getScopedResults();
+  
+  const totalHits = scopedResults.reduce((total, { results }) => {
+    return total + (results?.nbHits || 0);
+  }, 0);
+  
+  document.querySelector('#total-results').innerHTML = `
+    <p>Found ${totalHits} results across all indices</p>
+    <ul>
+      ${scopedResults.map(({ indexId, results }) => `
+        <li>${indexId}: ${results?.nbHits || 0} results</li>
+      `).join('')}
+    </ul>
+  `;
+};
+
+const overallStats = connectStats(renderOverallStats);
+
+search.addWidgets([overallStats({})]);
+```
+
+## Routing with Multiple Indices
+
+Each index's state is namespaced in the URL:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: {
+    stateMapping: {
+      stateToRoute(uiState) {
+        return {
+          products: uiState.products,
+          articles: uiState.articles,
+        };
+      },
+      routeToState(routeState) {
+        return {
+          products: routeState.products || {},
+          articles: routeState.articles || {},
+        };
+      },
+    },
+  },
+});
+
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  hits({ container: '#products' }),
+  
+  index({ indexName: 'articles' }).addWidgets([
+    hits({ container: '#articles' }),
+  ]),
+]);
+```
+
+URL will look like:
+```
+?products[query]=phone&products[page]=2&articles[query]=phone
+```
+
+## Isolated Indices (Experimental)
+
+<Warning>
+The `EXPERIMENTAL_isolated` option is experimental and may change in future versions.
+</Warning>
+
+Isolated indices don't share search state with the main helper:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  hits({ container: '#products' }),
+  
+  // Isolated index with independent state
+  index({
+    indexName: 'recommendations',
+    EXPERIMENTAL_isolated: true,
+  }).addWidgets([
+    configure({
+      filters: 'featured:true',
+      hitsPerPage: 4,
+    }),
+    hits({ container: '#recommendations' }),
+  ]),
+]);
+```
+
+## Performance Optimization
+
+### Limit Results per Index
+
+```javascript
+index({ indexName: 'articles' }).addWidgets([
+  configure({ hitsPerPage: 3 }), // Only fetch 3 results
+  hits({ container: '#articles' }),
+]);
+```
+
+### Conditional Queries
+
+Only search certain indices when there's a query:
+
+```javascript
+const articlesIndex = index({ indexName: 'articles' }).addWidgets([
+  configure({
+    hitsPerPage: 5,
+  }),
+  hits({ container: '#articles' }),
+]);
+
+search.addWidgets([
+  searchBox({
+    container: '#searchbox',
+    queryHook(query, search) {
+      if (query.length > 2) {
+        search(query);
+      }
+    },
+  }),
+  articlesIndex,
+]);
+```
+
+## Sort and Filter per Index
+
+```javascript
+search.addWidgets([
+  // Main products
+  sortBy({
+    container: '#sort-by',
+    items: [
+      { label: 'Relevance', value: 'products' },
+      { label: 'Price Low to High', value: 'products_price_asc' },
+      { label: 'Price High to Low', value: 'products_price_desc' },
+    ],
+  }),
+  refinementList({ container: '#brand', attribute: 'brand' }),
+  
+  // Articles with different sorting
+  index({ indexName: 'articles' }).addWidgets([
+    sortBy({
+      container: '#articles-sort',
+      items: [
+        { label: 'Most Recent', value: 'articles_date_desc' },
+        { label: 'Most Popular', value: 'articles_popular_desc' },
+      ],
+    }),
+    refinementList({ container: '#article-category', attribute: 'category' }),
+  ]),
+]);
+```
+
+## Implementation Details
+
+From `src/widgets/index/index.ts`, each index widget:
+
+1. **Creates its own Helper** for state management
+2. **Uses a derived helper** attached to the main helper for searching
+3. **Manages its own widgets** independently
+4. **Contributes to the URL** via `getWidgetUiState`
+5. **Schedules renders** when results arrive
+
+```typescript
+// Simplified from source
+const index = (widgetParams: IndexWidgetParams): IndexWidget => {
+  const { indexName, indexId = indexName } = widgetParams;
+  let helper: Helper | null = null;
+  let derivedHelper: DerivedHelper | null = null;
+  
+  return {
+    init({ instantSearchInstance, parent, uiState }) {
+      const mainHelper = instantSearchInstance.mainHelper;
+      
+      // Create helper for this index
+      helper = algoliasearchHelper(
+        mainHelper.getClient(),
+        indexName,
+        parameters
+      );
+      
+      // Create derived helper that merges with main helper
+      derivedHelper = mainHelper.derive(() =>
+        mergeSearchParameters(
+          mainHelper.state,
+          ...resolveSearchParameters(this)
+        )
+      );
+      
+      derivedHelper.on('result', ({ results }) => {
+        helper.lastResults = results;
+        instantSearchInstance.scheduleRender();
+      });
+    },
+    
+    getWidgetUiState(uiState) {
+      return {
+        ...uiState,
+        [indexId]: localUiState,
+      };
+    },
+  };
+};
+```
+
+## Complete Example
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import {
+  index,
+  searchBox,
+  hits,
+  configure,
+  stats,
+  refinementList,
+  panel,
+} from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: true,
+});
+
+// Shared widgets
+search.addWidgets([
+  searchBox({
+    container: '#searchbox',
+    placeholder: 'Search products and articles...',
+  }),
+]);
+
+// Main products index
+search.addWidgets([
+  panel({ templates: { header: () => 'Products' } })(stats)({
+    container: '#products-stats',
+  }),
+  hits({
+    container: '#products-hits',
+    templates: {
+      item: (hit, { html, components }) => html`
+        <article>
+          <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+          <p>$${hit.price}</p>
+        </article>
+      `,
+    },
+  }),
+  refinementList({
+    container: '#brand-filter',
+    attribute: 'brand',
+  }),
+]);
+
+// Articles index
+search.addWidgets([
+  index({ indexName: 'articles', indexId: 'articles' }).addWidgets([
+    panel({ templates: { header: () => 'Articles' } })(stats)({
+      container: '#articles-stats',
+    }),
+    configure({ hitsPerPage: 3 }),
+    hits({
+      container: '#articles-hits',
+      templates: {
+        item: (hit, { html, components }) => html`
+          <article>
+            <h4>${components.Highlight({ hit, attribute: 'title' })}</h4>
+            <p>${hit.excerpt}</p>
+            <a href="${hit.url}">Read more →</a>
+          </article>
+        `,
+      },
+    }),
+  ]),
+]);
+
+search.start();
+```
+
+## Related Resources
+
+- [Index widget API](/widgets/index)
+- [Routing guide](/guides/routing)
+- [Configure widget](/widgets/configure)
+- [Algolia Multiple Indices](https://www.algolia.com/doc/guides/building-search-ui/going-further/multiple-indices/js/)

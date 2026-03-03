@@ -1,0 +1,102 @@
+---
+title: "connectRange"
+description: "Build a custom widget for filtering by numeric range"
+---
+
+The **Range** connector provides the logic to build a custom widget that lets users refine results using a numeric range.
+
+## Usage
+
+```javascript
+import { connectRange } from 'instantsearch.js/es/connectors';
+
+const customRange = connectRange(
+  (renderOptions, isFirstRender) => {
+    const { start, range, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    const [min, max] = start;
+    
+    container.innerHTML = `
+      <div>
+        <input 
+          type="number" 
+          id="min" 
+          value="${min !== -Infinity ? min : range.min}" 
+          min="${range.min}" 
+          max="${range.max}"
+        />
+        <span>to</span>
+        <input 
+          type="number" 
+          id="max" 
+          value="${max !== Infinity ? max : range.max}" 
+          min="${range.min}" 
+          max="${range.max}"
+        />
+        <button>Apply</button>
+      </div>
+    `;
+    
+    container.querySelector('button').addEventListener('click', () => {
+      const minValue = parseFloat(container.querySelector('#min').value);
+      const maxValue = parseFloat(container.querySelector('#max').value);
+      refine([minValue, maxValue]);
+    });
+  }
+);
+
+search.addWidgets([
+  customRange({
+    container: document.querySelector('#range'),
+    attribute: 'price',
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="attribute" type="string" required>
+  Name of the attribute for faceting.
+</ParamField>
+
+<ParamField path="min" type="number">
+  Minimal range value, defaults to automatically computed from the result set.
+</ParamField>
+
+<ParamField path="max" type="number">
+  Maximal range value, defaults to automatically computed from the result set.
+</ParamField>
+
+<ParamField path="precision" type="number" default="0">
+  Number of digits after the decimal point to use.
+</ParamField>
+
+## Render Options
+
+<ParamField path="refine" type="(rangeValue: [number | undefined, number | undefined]) => void">
+  Sets a range to filter the results. Both values are optional and will default to the higher and lower bounds. You can use `undefined` to remove a previously set bound or to set an infinite bound.
+</ParamField>
+
+<ParamField path="range" type="{ min: number, max: number }">
+  Maximum range possible for this search.
+</ParamField>
+
+<ParamField path="start" type="[number, number]">
+  Current refinement of the search. The first element is the min value, the second is the max value.
+</ParamField>
+
+<ParamField path="format" type="{ from: (value: number) => string, to: (value: number) => string }">
+  Transform functions for rendering `from` and/or `to` values. Both functions take a number as input and should output a string.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  Indicates whether this widget can be refined.
+</ParamField>
+
+<ParamField path="sendEvent" type="function">
+  Sends an event to the Insights middleware.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

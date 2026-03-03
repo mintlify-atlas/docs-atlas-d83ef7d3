@@ -1,0 +1,89 @@
+---
+title: "connectToggleRefinement"
+description: "Build a custom widget for on/off filtering based on attribute value"
+---
+
+The **ToggleRefinement** connector provides the logic to build a custom widget that provides an on/off filtering feature based on an attribute value or values.
+
+Two modes are implemented:
+- With or without the value filtered
+- Switch between two values
+
+## Usage
+
+```javascript
+import { connectToggleRefinement } from 'instantsearch.js/es/connectors';
+
+const customToggleRefinement = connectToggleRefinement(
+  (renderOptions, isFirstRender) => {
+    const { value, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <label>
+        <input 
+          type="checkbox" 
+          ${value.isRefined ? 'checked' : ''}
+        />
+        ${value.name} (${value.count})
+      </label>
+    `;
+    
+    container.querySelector('input').addEventListener('change', () => {
+      refine({ isRefined: !value.isRefined });
+    });
+  }
+);
+
+search.addWidgets([
+  customToggleRefinement({
+    container: document.querySelector('#toggle'),
+    attribute: 'free_shipping',
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="attribute" type="string" required>
+  Name of the attribute for faceting (e.g., "free_shipping").
+</ParamField>
+
+<ParamField path="on" type="string | number | boolean | Array" default="true">
+  Value to filter on when toggled on.
+</ParamField>
+
+<ParamField path="off" type="string | number | boolean | Array">
+  Value to filter on when toggled off.
+</ParamField>
+
+## Render Options
+
+<ParamField path="value" type="object">
+  The current toggle value with the following properties:
+  - `name`: The attribute name of this toggle
+  - `isRefined`: Whether the current option is "on" (true) or "off" (false)
+  - `count`: Number of results if this option is toggled
+  - `onFacetValue`: Information about the "on" toggle
+  - `offFacetValue`: Information about the "off" toggle
+</ParamField>
+
+<ParamField path="refine" type="(value?: { isRefined: boolean }) => void">
+  Updates to the next state by applying the toggle refinement.
+</ParamField>
+
+<ParamField path="createURL" type="() => string">
+  Creates a URL for the next state.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  Indicates if search state can be refined.
+</ParamField>
+
+<ParamField path="sendEvent" type="function">
+  Sends a "Facet Clicked" Insights event.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

@@ -1,0 +1,481 @@
+---
+title: 'usePagination'
+description: 'Build custom pagination components'
+---
+
+The `usePagination` hook provides the logic to build custom pagination components.
+
+## Import
+
+```jsx
+import { usePagination } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="totalPages" type="number">
+  Maximum number of pages to display. By default, all pages are shown.
+
+  ```jsx
+  const { pages } = usePagination({ totalPages: 20 });
+  ```
+</ParamField>
+
+<ParamField path="padding" type="number" default="3">
+  Number of pages to show around the current page.
+
+  ```jsx
+  const { pages } = usePagination({ padding: 2 });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="currentRefinement" type="number">
+  The current page number (0-indexed).
+
+  ```jsx
+  const { currentRefinement } = usePagination();
+  console.log(currentRefinement); // 0 for first page
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(page: number) => void">
+  Function to navigate to a specific page.
+
+  ```jsx
+  const { refine } = usePagination();
+  refine(5); // Go to page 6 (0-indexed)
+  ```
+</ResponseField>
+
+<ResponseField name="pages" type="number[]">
+  Array of page numbers to display based on padding.
+
+  ```jsx
+  const { pages } = usePagination();
+  console.log(pages); // [0, 1, 2, 3, 4]
+  ```
+</ResponseField>
+
+<ResponseField name="nbHits" type="number">
+  Total number of hits.
+
+  ```jsx
+  const { nbHits } = usePagination();
+  console.log(nbHits); // 1234
+  ```
+</ResponseField>
+
+<ResponseField name="nbPages" type="number">
+  Total number of pages.
+
+  ```jsx
+  const { nbPages } = usePagination();
+  console.log(nbPages); // 25
+  ```
+</ResponseField>
+
+<ResponseField name="isFirstPage" type="boolean">
+  Whether the current page is the first page.
+
+  ```jsx
+  const { isFirstPage } = usePagination();
+  ```
+</ResponseField>
+
+<ResponseField name="isLastPage" type="boolean">
+  Whether the current page is the last page.
+
+  ```jsx
+  const { isLastPage } = usePagination();
+  ```
+</ResponseField>
+
+<ResponseField name="canRefine" type="boolean">
+  Whether pagination can be applied (more than one page).
+
+  ```jsx
+  const { canRefine } = usePagination();
+  if (!canRefine) return null;
+  ```
+</ResponseField>
+
+<ResponseField name="createURL" type="(page: number) => string">
+  Function to create a URL for a specific page.
+
+  ```jsx
+  const { createURL } = usePagination();
+  const url = createURL(5);
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Pagination
+
+```jsx
+import { usePagination } from 'react-instantsearch';
+
+function Pagination() {
+  const { pages, currentRefinement, refine } = usePagination();
+
+  return (
+    <div className="pagination">
+      {pages.map((page) => (
+        <button
+          key={page}
+          onClick={() => refine(page)}
+          disabled={page === currentRefinement}
+        >
+          {page + 1}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+### With Previous/Next Buttons
+
+```jsx
+import { usePagination } from 'react-instantsearch';
+
+function PaginationWithControls() {
+  const {
+    pages,
+    currentRefinement,
+    refine,
+    isFirstPage,
+    isLastPage,
+  } = usePagination();
+
+  return (
+    <div className="pagination">
+      <button
+        onClick={() => refine(currentRefinement - 1)}
+        disabled={isFirstPage}
+      >
+        Previous
+      </button>
+      {pages.map((page) => (
+        <button
+          key={page}
+          onClick={() => refine(page)}
+          className={page === currentRefinement ? 'active' : ''}
+        >
+          {page + 1}
+        </button>
+      ))}
+      <button
+        onClick={() => refine(currentRefinement + 1)}
+        disabled={isLastPage}
+      >
+        Next
+      </button>
+    </div>
+  );
+}
+```
+
+### With First/Last Buttons
+
+```jsx
+import { usePagination } from 'react-instantsearch';
+
+function FullPagination() {
+  const {
+    pages,
+    currentRefinement,
+    nbPages,
+    refine,
+    isFirstPage,
+    isLastPage,
+  } = usePagination();
+
+  return (
+    <div className="pagination">
+      <button onClick={() => refine(0)} disabled={isFirstPage}>
+        First
+      </button>
+      <button
+        onClick={() => refine(currentRefinement - 1)}
+        disabled={isFirstPage}
+      >
+        Previous
+      </button>
+      {pages.map((page) => (
+        <button
+          key={page}
+          onClick={() => refine(page)}
+          className={page === currentRefinement ? 'active' : ''}
+        >
+          {page + 1}
+        </button>
+      ))}
+      <button
+        onClick={() => refine(currentRefinement + 1)}
+        disabled={isLastPage}
+      >
+        Next
+      </button>
+      <button onClick={() => refine(nbPages - 1)} disabled={isLastPage}>
+        Last
+      </button>
+    </div>
+  );
+}
+```
+
+### With Page Info
+
+```jsx
+import { usePagination } from 'react-instantsearch';
+
+function PaginationWithInfo() {
+  const {
+    pages,
+    currentRefinement,
+    nbPages,
+    nbHits,
+    refine,
+  } = usePagination();
+
+  const hitsPerPage = 20;
+  const firstHit = currentRefinement * hitsPerPage + 1;
+  const lastHit = Math.min((currentRefinement + 1) * hitsPerPage, nbHits);
+
+  return (
+    <div>
+      <p>
+        Showing {firstHit}-{lastHit} of {nbHits} results
+      </p>
+      <div className="pagination">
+        {pages.map((page) => (
+          <button
+            key={page}
+            onClick={() => refine(page)}
+            className={page === currentRefinement ? 'active' : ''}
+          >
+            {page + 1}
+          </button>
+        ))}
+      </div>
+      <p>
+        Page {currentRefinement + 1} of {nbPages}
+      </p>
+    </div>
+  );
+}
+```
+
+### Compact Pagination
+
+```jsx
+import { usePagination } from 'react-instantsearch';
+
+function CompactPagination() {
+  const {
+    currentRefinement,
+    nbPages,
+    refine,
+    isFirstPage,
+    isLastPage,
+  } = usePagination();
+
+  return (
+    <div className="compact-pagination">
+      <button
+        onClick={() => refine(currentRefinement - 1)}
+        disabled={isFirstPage}
+      >
+        ‹
+      </button>
+      <span>
+        {currentRefinement + 1} / {nbPages}
+      </span>
+      <button
+        onClick={() => refine(currentRefinement + 1)}
+        disabled={isLastPage}
+      >
+        ›
+      </button>
+    </div>
+  );
+}
+```
+
+### With Ellipsis
+
+```jsx
+import { usePagination } from 'react-instantsearch';
+
+function PaginationWithEllipsis() {
+  const { pages, currentRefinement, nbPages, refine } = usePagination({
+    padding: 2,
+  });
+
+  const showFirstEllipsis = pages[0] > 0;
+  const showLastEllipsis = pages[pages.length - 1] < nbPages - 1;
+
+  return (
+    <div className="pagination">
+      {showFirstEllipsis && (
+        <>
+          <button onClick={() => refine(0)}>1</button>
+          <span>...</span>
+        </>
+      )}
+      {pages.map((page) => (
+        <button
+          key={page}
+          onClick={() => refine(page)}
+          className={page === currentRefinement ? 'active' : ''}
+        >
+          {page + 1}
+        </button>
+      ))}
+      {showLastEllipsis && (
+        <>
+          <span>...</span>
+          <button onClick={() => refine(nbPages - 1)}>{nbPages}</button>
+        </>
+      )}
+    </div>
+  );
+}
+```
+
+### Jump to Page
+
+```jsx
+import { usePagination } from 'react-instantsearch';
+import { useState } from 'react';
+
+function PaginationWithJump() {
+  const { currentRefinement, nbPages, refine, pages } = usePagination();
+  const [inputPage, setInputPage] = useState('');
+
+  const handleJump = (e) => {
+    e.preventDefault();
+    const page = parseInt(inputPage, 10) - 1;
+    if (page >= 0 && page < nbPages) {
+      refine(page);
+      setInputPage('');
+    }
+  };
+
+  return (
+    <div>
+      <div className="pagination">
+        {pages.map((page) => (
+          <button
+            key={page}
+            onClick={() => refine(page)}
+            className={page === currentRefinement ? 'active' : ''}
+          >
+            {page + 1}
+          </button>
+        ))}
+      </div>
+      <form onSubmit={handleJump}>
+        <input
+          type="number"
+          min="1"
+          max={nbPages}
+          value={inputPage}
+          onChange={(e) => setInputPage(e.target.value)}
+          placeholder="Jump to page..."
+        />
+        <button type="submit">Go</button>
+      </form>
+    </div>
+  );
+}
+```
+
+### With Link Navigation
+
+```jsx
+import { usePagination } from 'react-instantsearch';
+import Link from 'next/link';
+
+function LinkPagination() {
+  const { pages, currentRefinement, refine, createURL } = usePagination();
+
+  return (
+    <div className="pagination">
+      {pages.map((page) => (
+        <Link
+          key={page}
+          href={createURL(page)}
+          onClick={(e) => {
+            e.preventDefault();
+            refine(page);
+          }}
+          className={page === currentRefinement ? 'active' : ''}
+        >
+          {page + 1}
+        </Link>
+      ))}
+    </div>
+  );
+}
+```
+
+### Minimal Pagination
+
+```jsx
+import { usePagination } from 'react-instantsearch';
+
+function MinimalPagination() {
+  const { canRefine } = usePagination();
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return <FullPagination />;
+}
+```
+
+## TypeScript
+
+```tsx
+import { usePagination } from 'react-instantsearch';
+import type { UsePaginationProps } from 'react-instantsearch';
+
+function Pagination(props?: UsePaginationProps) {
+  const { pages, currentRefinement, refine } = usePagination(props);
+
+  return (
+    <div>
+      {pages.map((page) => (
+        <button
+          key={page}
+          onClick={() => refine(page)}
+          disabled={page === currentRefinement}
+        >
+          {page + 1}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+## Notes
+
+<Info>
+  Page numbers are 0-indexed internally but typically displayed as 1-indexed to users.
+</Info>
+
+<Warning>
+  Algolia limits results to 1000 hits by default. Configure `paginationLimitedTo` in your index settings if you need more pages.
+</Warning>
+
+## Related
+
+- [Pagination Widget](/api/react/widgets/pagination)
+- [useInfiniteHits Hook](/api/react/hooks/use-infinite-hits)
+- [Configure Component](/api/react/configure)

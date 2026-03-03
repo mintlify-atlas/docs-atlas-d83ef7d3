@@ -1,0 +1,94 @@
+---
+title: Create InstantSearch App
+description: Build InstantSearch apps at the speed of thought with the create-instantsearch-app CLI tool
+---
+
+`create-instantsearch-app` is a command-line utility that helps you quickly scaffold InstantSearch applications using any Algolia InstantSearch flavor.
+
+## What is it?
+
+The CLI generates production-ready InstantSearch applications with:
+- Pre-configured search UI components
+- Best practices built-in
+- Multiple framework support (JavaScript, React, Vue, Angular)
+- Interactive setup or automated configuration
+- TypeScript support (where applicable)
+
+## Quick Start
+
+Create a new InstantSearch app in seconds:
+
+<CodeGroup>
+```bash npm
+npx create-instantsearch-app my-app
+cd my-app
+npm start
+```
+
+```bash yarn
+yarn create instantsearch-app my-app
+cd my-app
+yarn start
+```
+</CodeGroup>
+
+## Requirements
+
+- Node.js >= 10
+- npm >= 5.2.0 (for npx) or Yarn >= 1.0
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Interactive Mode" icon="terminal">
+    Guided setup with prompts for all configuration options
+  </Card>
+  <Card title="Multiple Templates" icon="layer-group">
+    Support for InstantSearch.js, React, Vue, Angular, iOS, and Android
+  </Card>
+  <Card title="Automated Setup" icon="bolt">
+    Use config files to automate app generation
+  </Card>
+  <Card title="Algolia Integration" icon="magnifying-glass">
+    Connect to your Algolia index with search API key
+  </Card>
+</CardGroup>
+
+## Package Info
+
+<ParamField path="version" type="string">
+  7.5.41
+</ParamField>
+
+<ParamField path="license" type="string">
+  MIT
+</ParamField>
+
+<ParamField path="repository" type="string">
+  [algolia/instantsearch](https://github.com/algolia/instantsearch)
+</ParamField>
+
+## What Gets Generated?
+
+When you create a new app, you get:
+
+- A complete search interface with widgets (search box, hits, filters)
+- Package configuration with all dependencies
+- Development server setup
+- Build scripts for production
+- ESLint and Prettier configuration
+- TypeScript configuration (for TS templates)
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Usage Guide" href="/tools/create-instantsearch-app/usage" icon="book">
+    Learn about CLI flags and interactive mode
+  </Card>
+  <Card title="Templates" href="/tools/create-instantsearch-app/templates" icon="palette">
+    Explore available templates for different frameworks
+  </Card>
+  <Card title="Configuration" href="/tools/create-instantsearch-app/configuration" icon="gear">
+    Configure apps using config files
+  </Card>
+</CardGroup>

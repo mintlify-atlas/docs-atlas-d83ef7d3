@@ -1,0 +1,309 @@
+---
+title: filterSuggestions
+---
+
+Provides AI-powered filter suggestions based on the current search context and user behavior.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { filterSuggestions } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  filterSuggestions({
+    container: '#filter-suggestions',
+    agentId: 'YOUR_AGENT_ID',
+    attributes: ['brand', 'category', 'color']
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="agentId" type="string" required>
+  The agent ID for the AI filter suggestions.
+</ParamField>
+
+<ParamField path="attributes" type="string[]" required>
+  Array of attribute names to get filter suggestions for.
+</ParamField>
+
+<ParamField path="maxSuggestions" type="number">
+  Maximum number of filter suggestions to display.
+</ParamField>
+
+<ParamField path="debounceMs" type="number">
+  Debounce time in milliseconds before requesting suggestions.
+</ParamField>
+
+<ParamField path="hitsToSample" type="number">
+  Number of hits to sample for generating suggestions.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the suggestions before rendering.
+  
+  ```typescript
+  (items: FilterSuggestion[]) => FilterSuggestion[]
+  ```
+</ParamField>
+
+<ParamField path="transport" type="object">
+  Custom transport configuration for the suggestions API.
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to use for the widget.
+  
+  <Expandable title="properties">
+    <ParamField path="header" type="string | function | false">
+      Template for the widget header. Set to `false` to hide the header.
+      
+      Receives `{ suggestions, isLoading }`.
+    </ParamField>
+    
+    <ParamField path="item" type="string | function">
+      Template for each filter suggestion item.
+      
+      Receives `{ suggestion, refine }`.
+    </ParamField>
+    
+    <ParamField path="empty" type="string | function">
+      Template to display when there are no suggestions.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    
+    <ParamField path="header" type="string | string[]">
+      CSS class for the header.
+    </ParamField>
+    
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    
+    <ParamField path="item" type="string | string[]">
+      CSS class for each suggestion item.
+    </ParamField>
+    
+    <ParamField path="empty" type="string | string[]">
+      CSS class for the empty state.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Basic usage
+
+```javascript
+filterSuggestions({
+  container: '#filter-suggestions',
+  agentId: 'filter-agent-123',
+  attributes: ['brand', 'category', 'color'],
+  maxSuggestions: 5
+});
+```
+
+### Custom item template
+
+```javascript
+filterSuggestions({
+  container: '#filter-suggestions',
+  agentId: 'filter-agent-123',
+  attributes: ['brand', 'category'],
+  templates: {
+    item({ suggestion, refine }) {
+      return `
+        <button 
+          class="filter-chip"
+          onclick="${() => refine(suggestion)}"
+        >
+          ${suggestion.label}
+          <span class="count">${suggestion.count}</span>
+        </button>
+      `;
+    }
+  }
+});
+```
+
+### With header
+
+```javascript
+filterSuggestions({
+  container: '#filter-suggestions',
+  agentId: 'filter-agent-123',
+  attributes: ['brand', 'category', 'color'],
+  templates: {
+    header({ suggestions, isLoading }) {
+      if (isLoading) {
+        return '<h3>Loading suggestions...</h3>';
+      }
+      return `<h3>Suggested Filters (${suggestions.length})</h3>`;
+    },
+    item({ suggestion, refine }) {
+      return `
+        <div class="suggestion" onclick="${() => refine(suggestion)}">
+          <strong>${suggestion.attribute}</strong>: ${suggestion.value}
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### Empty state
+
+```javascript
+filterSuggestions({
+  container: '#filter-suggestions',
+  agentId: 'filter-agent-123',
+  attributes: ['brand', 'category'],
+  templates: {
+    item({ suggestion, refine }) {
+      return `<button onclick="${() => refine(suggestion)}">${suggestion.label}</button>`;
+    },
+    empty() {
+      return '<p class="no-suggestions">No filter suggestions available.</p>';
+    }
+  }
+});
+```
+
+### Hide header
+
+```javascript
+filterSuggestions({
+  container: '#filter-suggestions',
+  agentId: 'filter-agent-123',
+  attributes: ['brand', 'category'],
+  templates: {
+    header: false,
+    item({ suggestion, refine }) {
+      return `<button onclick="${() => refine(suggestion)}">${suggestion.label}</button>`;
+    }
+  }
+});
+```
+
+### With debounce
+
+```javascript
+filterSuggestions({
+  container: '#filter-suggestions',
+  agentId: 'filter-agent-123',
+  attributes: ['brand', 'category', 'color'],
+  debounceMs: 300,
+  maxSuggestions: 8
+});
+```
+
+### Transform suggestions
+
+```javascript
+filterSuggestions({
+  container: '#filter-suggestions',
+  agentId: 'filter-agent-123',
+  attributes: ['brand', 'category', 'price'],
+  transformItems(suggestions) {
+    // Filter out low-count suggestions
+    return suggestions.filter(s => s.count > 5);
+  },
+  templates: {
+    item({ suggestion, refine }) {
+      return `
+        <button onclick="${() => refine(suggestion)}">
+          ${suggestion.label} (${suggestion.count})
+        </button>
+      `;
+    }
+  }
+});
+```
+
+### Styled as chips
+
+```javascript
+filterSuggestions({
+  container: '#filter-suggestions',
+  agentId: 'filter-agent-123',
+  attributes: ['brand', 'category', 'color', 'size'],
+  templates: {
+    header: 'Refine by',
+    item({ suggestion, refine }, { html }) {
+      return html`
+        <button 
+          class="chip"
+          onclick=${() => refine(suggestion)}
+        >
+          <span class="chip-label">${suggestion.value}</span>
+          <span class="chip-count">${suggestion.count}</span>
+        </button>
+      `;
+    }
+  }
+});
+```
+
+## HTML output
+
+```html
+<div class="ais-FilterSuggestions">
+  <div class="ais-FilterSuggestions-header">
+    Suggested Filters
+  </div>
+  
+  <ul class="ais-FilterSuggestions-list">
+    <li class="ais-FilterSuggestions-item">
+      <!-- Item template content -->
+    </li>
+    <!-- More suggestions -->
+  </ul>
+</div>
+```
+
+### Loading state
+
+```html
+<div class="ais-FilterSuggestions">
+  <div class="ais-FilterSuggestions-header">
+    Loading suggestions...
+  </div>
+  
+  <ul class="ais-FilterSuggestions-list">
+    <li class="ais-FilterSuggestions-item ais-FilterSuggestions-item--skeleton">
+      <!-- Skeleton loader -->
+    </li>
+  </ul>
+</div>
+```
+
+## Notes
+
+- Requires Algolia AI to be enabled on your account.
+- Suggestions are generated based on search context and user behavior.
+- The widget automatically handles loading and empty states.
+- Clicking a suggestion applies the corresponding filter.
+- Perfect for helping users discover relevant filters.
+- Works best with query-based search interfaces.

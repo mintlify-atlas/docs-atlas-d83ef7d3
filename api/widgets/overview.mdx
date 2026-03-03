@@ -1,0 +1,107 @@
+---
+title: Widgets Overview
+description: Complete reference of InstantSearch.js widgets for building search UIs
+---
+
+Widgets are UI components that you can use to build your search interface. Each widget is responsible for rendering a specific part of the UI and communicating with the search state.
+
+## Search Components
+
+<CardGroup cols={2}>
+  <Card title="searchBox" icon="magnifying-glass" href="/api/widgets/search-box">
+    The main search input for entering queries
+  </Card>
+  <Card title="hits" icon="list" href="/api/widgets/hits">
+    Display search results as a list of hits
+  </Card>
+  <Card title="infiniteHits" icon="arrows-down-to-line" href="/api/widgets/infinite-hits">
+    Display search results with infinite scrolling
+  </Card>
+</CardGroup>
+
+## Filtering Widgets
+
+<CardGroup cols={2}>
+  <Card title="refinementList" icon="list-check" href="/api/widgets/refinement-list">
+    Filter results by facet values with checkboxes
+  </Card>
+  <Card title="hierarchicalMenu" icon="sitemap" href="/api/widgets/hierarchical-menu">
+    Filter results with hierarchical categories
+  </Card>
+  <Card title="menu" icon="bars" href="/api/widgets/menu">
+    Filter results with a single-select menu
+  </Card>
+  <Card title="rangeInput" icon="input-numeric" href="/api/widgets/range-input">
+    Filter results by numeric range with inputs
+  </Card>
+  <Card title="rangeSlider" icon="sliders" href="/api/widgets/range-slider">
+    Filter results by numeric range with a slider
+  </Card>
+  <Card title="ratingMenu" icon="star" href="/api/widgets/rating-menu">
+    Filter results by rating values
+  </Card>
+  <Card title="numericMenu" icon="list-ol" href="/api/widgets/numeric-menu">
+    Filter results by predefined numeric ranges
+  </Card>
+  <Card title="toggleRefinement" icon="toggle-on" href="/api/widgets/toggle-refinement">
+    Toggle a boolean filter on or off
+  </Card>
+</CardGroup>
+
+## Refinement Display
+
+<CardGroup cols={2}>
+  <Card title="currentRefinements" icon="filter" href="/api/widgets/current-refinements">
+    Display and remove active refinements
+  </Card>
+  <Card title="clearRefinements" icon="filter-circle-xmark" href="/api/widgets/clear-refinements">
+    Clear all active refinements at once
+  </Card>
+</CardGroup>
+
+## Navigation & Display
+
+<CardGroup cols={2}>
+  <Card title="pagination" icon="ellipsis" href="/api/widgets/pagination">
+    Navigate through search result pages
+  </Card>
+  <Card title="hitsPerPage" icon="list-dropdown" href="/api/widgets/hits-per-page">
+    Control the number of results per page
+  </Card>
+  <Card title="sortBy" icon="arrow-down-a-z" href="/api/widgets/sort-by">
+    Switch between different sorting strategies
+  </Card>
+</CardGroup>
+
+## Widget Categories
+
+### Search & Results
+Widgets that handle the search input and display of results.
+
+### Filters & Facets
+Widgets that allow users to refine search results based on attributes.
+
+### UI Controls
+Widgets that control how results are displayed and navigated.
+
+## Using Widgets
+
+All widgets follow a similar instantiation pattern:
+
+```javascript
+const widget = instantsearch.widgets.widgetName({
+  container: '#selector',
+  // widget-specific options
+});
+
+search.addWidget(widget);
+```
+
+### Common Options
+
+Most widgets support these common options:
+
+- `container` - CSS selector or HTMLElement where the widget will be rendered
+- `cssClasses` - Object to customize CSS classes
+- `templates` - Object to customize rendering templates
+- `transformItems` - Function to transform items before rendering

@@ -1,0 +1,164 @@
+---
+title: hits
+description: Display search results as a list of hits
+---
+
+The hits widget displays a list of search results (hits). It's one of the most essential widgets for displaying your search results.
+
+## Usage
+
+```javascript
+const hits = instantsearch.widgets.hits({
+  container: '#hits',
+  templates: {
+    item: `
+      <div>
+        <h2>{{name}}</h2>
+        <p>{{description}}</p>
+      </div>
+    `,
+  },
+});
+
+search.addWidget(hits);
+```
+
+## Examples
+
+### Basic Hits Display
+
+```javascript
+instantsearch.widgets.hits({
+  container: '#hits',
+  templates: {
+    item: (hit, { html, components }) => html`
+      <article>
+        <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+        <p>${hit.description}</p>
+        <span>$${hit.price}</span>
+      </article>
+    `,
+  },
+});
+```
+
+### With Empty State
+
+```javascript
+instantsearch.widgets.hits({
+  container: '#hits',
+  templates: {
+    item: (hit) => `
+      <div class="hit">
+        <img src="${hit.image}" alt="${hit.name}" />
+        <h4>${hit.name}</h4>
+      </div>
+    `,
+    empty: 'No results found for <q>{{query}}</q>',
+  },
+});
+```
+
+### With Transform Items
+
+```javascript
+instantsearch.widgets.hits({
+  container: '#hits',
+  transformItems: (items) => 
+    items.map(item => ({
+      ...item,
+      formattedPrice: `$${item.price.toFixed(2)}`,
+    })),
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML entities in the hits. When disabled, you can use HTML in your attributes.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="item" type="Template" default="">
+      Template for each hit. Receives the hit object with all its attributes.
+      
+      The hit object includes:
+      - All attributes from your records
+      - `objectID` - The unique identifier
+      - `_highlightResult` - Highlighted attributes
+      - `__position` - The absolute position in the results
+    </ParamField>
+    <ParamField path="empty" type="Template" default="'No Results'">
+      Template displayed when there are no results.
+    </ParamField>
+    <ParamField path="banner" type="Template">
+      Template for displaying a banner (e.g., for merchandising).
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="emptyRoot" type="string | string[]">
+      CSS class for the root element when empty.
+    </ParamField>
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item element.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-Hits">
+  <ol class="ais-Hits-list">
+    <li class="ais-Hits-item">
+      <!-- Your item template -->
+    </li>
+    <li class="ais-Hits-item">
+      <!-- Your item template -->
+    </li>
+  </ol>
+</div>
+```
+
+## Insights
+
+The hits widget automatically sends insights events when users click on results. This data helps improve search relevance through Algolia's AI.
+
+```javascript
+instantsearch.widgets.hits({
+  container: '#hits',
+  templates: {
+    item: (hit, { html, sendEvent }) => html`
+      <article onclick="${sendEvent('click', hit, 'Hit Clicked')}">
+        <h3>${hit.name}</h3>
+      </article>
+    `,
+  },
+});
+```

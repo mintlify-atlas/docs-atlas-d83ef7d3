@@ -1,0 +1,619 @@
+---
+title: "Customization"
+description: "Customize templates, create custom widgets, and extend InstantSearch.js"
+---
+
+InstantSearch.js provides multiple ways to customize your search experience, from simple template modifications to building completely custom widgets.
+
+## Template Customization
+
+### HTML Templates
+
+All widgets accept `templates` for customizing their HTML output:
+
+```javascript
+import { hits } from 'instantsearch.js/es/widgets';
+
+hits({
+  container: '#hits',
+  templates: {
+    item: (hit, { html, components }) => html`
+      <article class="product">
+        <img src="${hit.image}" alt="${hit.name}" />
+        <div class="product-info">
+          <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+          <p class="brand">${hit.brand}</p>
+          <p>${components.Snippet({ hit, attribute: 'description' })}</p>
+          <div class="product-footer">
+            <span class="price">$${hit.price}</span>
+            <span class="rating">★ ${hit.rating}</span>
+          </div>
+        </div>
+      </article>
+    `,
+    empty: ({ html, query }) => html`
+      <div class="no-results">
+        <p>No results found for <strong>"${query}"</strong></p>
+        <p>Try different keywords or clear some filters</p>
+      </div>
+    `,
+  },
+})
+```
+
+### Template Helpers
+
+The template function receives helper utilities:
+
+```javascript
+templates: {
+  item: (hit, { html, components, sendEvent }) => {
+    // html - Tagged template function for rendering
+    // components - Highlight, Snippet, ReverseHighlight, ReverseSnippet
+    // sendEvent - Track insights events
+    
+    return html`
+      <article onClick="${() => sendEvent('click', hit, 'Product Clicked')}">
+        <!-- Highlight matching parts -->
+        ${components.Highlight({ hit, attribute: 'name' })}
+        
+        <!-- Show snippet with highlighting -->
+        ${components.Snippet({ hit, attribute: 'description' })}
+        
+        <!-- Reverse highlighting (show non-matching parts) -->
+        ${components.ReverseHighlight({ hit, attribute: 'tags' })}
+        
+        <!-- Reverse snippet -->
+        ${components.ReverseSnippet({ hit, attribute: 'content' })}
+      </article>
+    `;
+  },
+}
+```
+
+### Component Options
+
+Highlight and Snippet components accept additional options:
+
+```javascript
+components.Highlight({
+  hit,
+  attribute: 'name',
+  highlightedTagName: 'mark', // default: 'mark'
+})
+
+components.Snippet({
+  hit,
+  attribute: 'description',
+  highlightedTagName: 'em',
+})
+```
+
+### Conditional Rendering
+
+Render different templates based on data:
+
+```javascript
+hits({
+  container: '#hits',
+  templates: {
+    item: (hit, { html, components }) => {
+      const hasDiscount = hit.price < hit.originalPrice;
+      const inStock = hit.inventory > 0;
+      
+      return html`
+        <article class="${!inStock ? 'out-of-stock' : ''}">
+          <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+          
+          ${hasDiscount
+            ? html`
+                <span class="original-price">$${hit.originalPrice}</span>
+                <span class="sale-price">$${hit.price}</span>
+                <span class="discount">${Math.round((1 - hit.price / hit.originalPrice) * 100)}% off</span>
+              `
+            : html`<span class="price">$${hit.price}</span>`
+          }
+          
+          ${!inStock
+            ? html`<span class="stock-status">Out of stock</span>`
+            : html`<button>Add to Cart</button>`
+          }
+        </article>
+      `;
+    },
+  },
+})
+```
+
+## Transform Items
+
+Modify widget data before rendering:
+
+```javascript
+import { hits, refinementList } from 'instantsearch.js/es/widgets';
+
+// Transform search results
+hits({
+  container: '#hits',
+  transformItems: (items) =>
+    items.map((item, index) => ({
+      ...item,
+      // Add position for tracking
+      position: index + 1,
+      // Format price
+      formattedPrice: `$${(item.price / 100).toFixed(2)}`,
+      // Add computed fields
+      isNew: Date.now() - item.createdAt < 7 * 24 * 60 * 60 * 1000,
+      hasDiscount: item.price < item.originalPrice,
+    })),
+})
+
+// Transform facet values
+refinementList({
+  container: '#brands',
+  attribute: 'brand',
+  transformItems: (items) =>
+    items
+      .map((item) => ({
+        ...item,
+        // Customize labels
+        label: item.label.toUpperCase(),
+        // Add custom data
+        highlighted: item.count > 100,
+      }))
+      // Sort alphabetically
+      .sort((a, b) => a.label.localeCompare(b.label)),
+})
+```
+
+### Advanced Transformations
+
+Combine transformations with external data:
+
+```javascript
+const brandLogos = {
+  'Apple': '/logos/apple.png',
+  'Samsung': '/logos/samsung.png',
+};
+
+refinementList({
+  container: '#brands',
+  attribute: 'brand',
+  transformItems: (items) =>
+    items.map((item) => ({
+      ...item,
+      logo: brandLogos[item.label] || '/logos/default.png',
+    })),
+  templates: {
+    item: ({ label, count, logo, html }) => html`
+      <label class="brand-item">
+        <input type="checkbox" />
+        <img src="${logo}" alt="${label}" class="brand-logo" />
+        <span>${label} (${count})</span>
+      </label>
+    `,
+  },
+})
+```
+
+## Custom CSS Classes
+
+All widgets accept `cssClasses` for custom styling:
+
+```javascript
+import { searchBox, hits } from 'instantsearch.js/es/widgets';
+
+searchBox({
+  container: '#searchbox',
+  cssClasses: {
+    root: 'custom-searchbox',
+    form: 'custom-searchbox__form',
+    input: 'custom-searchbox__input',
+    submit: 'custom-searchbox__submit',
+    reset: 'custom-searchbox__reset',
+    loadingIndicator: 'custom-searchbox__loading',
+  },
+})
+
+hits({
+  container: '#hits',
+  cssClasses: {
+    root: 'custom-hits',
+    emptyRoot: 'custom-hits--empty',
+    list: 'custom-hits__list',
+    item: 'custom-hits__item',
+  },
+})
+```
+
+### Combining Default and Custom Classes
+
+Custom classes are added alongside default BEM classes:
+
+```javascript
+refinementList({
+  container: '#brands',
+  attribute: 'brand',
+  cssClasses: {
+    root: 'my-facet', // Added to .ais-RefinementList
+    list: 'my-facet__list', // Added to .ais-RefinementList-list
+    item: 'my-facet__item', // Added to .ais-RefinementList-item
+  },
+})
+```
+
+## Custom Widgets with Connectors
+
+Connectors provide the logic without UI, letting you build completely custom widgets:
+
+```javascript
+import { connectSearchBox } from 'instantsearch.js/es/connectors';
+
+const customSearchBox = connectSearchBox((renderOptions, isFirstRender) => {
+  const { query, refine, clear, widgetParams } = renderOptions;
+  const { container } = widgetParams;
+  
+  if (isFirstRender) {
+    // Create HTML on first render
+    const input = document.createElement('input');
+    const button = document.createElement('button');
+    
+    input.placeholder = 'Search...';
+    button.textContent = 'Clear';
+    
+    input.addEventListener('input', (event) => {
+      refine(event.target.value);
+    });
+    
+    button.addEventListener('click', () => {
+      clear();
+      input.value = '';
+    });
+    
+    container.appendChild(input);
+    container.appendChild(button);
+  }
+  
+  // Update on subsequent renders
+  const input = container.querySelector('input');
+  input.value = query;
+});
+
+// Use the custom widget
+search.addWidgets([
+  customSearchBox({
+    container: document.querySelector('#custom-searchbox'),
+  }),
+]);
+```
+
+### React-like Custom Widget
+
+Build widgets with a more declarative approach:
+
+```javascript
+import { connectHits } from 'instantsearch.js/es/connectors';
+
+const customHits = connectHits((renderOptions, isFirstRender) => {
+  const { hits, results, widgetParams } = renderOptions;
+  const { container } = widgetParams;
+  
+  container.innerHTML = `
+    <div class="custom-hits">
+      <p class="custom-hits__count">
+        ${results.nbHits} results found
+      </p>
+      <ul class="custom-hits__list">
+        ${hits
+          .map(
+            (hit) => `
+          <li class="custom-hits__item">
+            <img src="${hit.image}" alt="${hit.name}" />
+            <h3>${hit._highlightResult.name.value}</h3>
+            <p>$${hit.price}</p>
+          </li>
+        `
+          )
+          .join('')}
+      </ul>
+    </div>
+  `;
+});
+
+search.addWidgets([
+  customHits({
+    container: document.querySelector('#custom-hits'),
+  }),
+]);
+```
+
+### Available Connectors
+
+InstantSearch.js provides connectors for all widgets:
+
+```javascript
+import {
+  connectSearchBox,
+  connectHits,
+  connectRefinementList,
+  connectPagination,
+  connectStats,
+  connectSortBy,
+  connectHierarchicalMenu,
+  connectMenu,
+  connectRangeInput,
+  connectRangeSlider,
+  connectToggleRefinement,
+  connectNumericMenu,
+  connectRatingMenu,
+  connectClearRefinements,
+  connectCurrentRefinements,
+  connectInfiniteHits,
+  connectHitsPerPage,
+  connectBreadcrumb,
+  connectGeoSearch,
+  connectPoweredBy,
+} from 'instantsearch.js/es/connectors';
+```
+
+## Widget Composition
+
+### Panel Wrapper
+
+Wrap widgets with headers, footers, and collapsing:
+
+```javascript
+import { panel, refinementList } from 'instantsearch.js/es/widgets';
+
+// Basic panel
+panel({
+  templates: {
+    header: ({ html }) => html`<h3>Filter by Brand</h3>`,
+    footer: ({ html }) => html`<p>Select one or more brands</p>`,
+  },
+})(refinementList)({
+  container: '#brands',
+  attribute: 'brand',
+})
+
+// Conditional panel with collapsing
+panel({
+  templates: {
+    header: ({ items, html }) => html`
+      <h3>Brands (${items.length})</h3>
+    `,
+  },
+  // Hide when no results
+  hidden: ({ results }) => results.nbHits === 0,
+  // Collapse when no query
+  collapsed: ({ state }) => !state.query,
+  cssClasses: {
+    root: 'my-panel',
+    header: 'my-panel__header',
+    body: 'my-panel__body',
+    footer: 'my-panel__footer',
+    collapseButton: 'my-panel__collapse',
+    collapseIcon: 'my-panel__collapse-icon',
+  },
+})(refinementList)({
+  container: '#brands',
+  attribute: 'brand',
+})
+```
+
+### Multiple Panels
+
+Create reusable panel configurations:
+
+```javascript
+import { panel, refinementList, menu } from 'instantsearch.js/es/widgets';
+
+const facetPanel = (title) =>
+  panel({
+    templates: {
+      header: ({ html }) => html`<h3>${title}</h3>`,
+    },
+    hidden: ({ results }) => results.nbHits === 0,
+  });
+
+search.addWidgets([
+  facetPanel('Brands')(refinementList)({
+    container: '#brands',
+    attribute: 'brand',
+  }),
+  
+  facetPanel('Categories')(menu)({
+    container: '#categories',
+    attribute: 'category',
+  }),
+  
+  facetPanel('Colors')(refinementList)({
+    container: '#colors',
+    attribute: 'color',
+  }),
+]);
+```
+
+## Query Hooks
+
+Modify search queries before they're sent:
+
+```javascript
+import { searchBox } from 'instantsearch.js/es/widgets';
+
+// Debounce search queries
+function debounce(fn, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  };
+}
+
+searchBox({
+  container: '#searchbox',
+  queryHook: (query, search) => {
+    const debouncedSearch = debounce(search, 300);
+    debouncedSearch(query);
+  },
+})
+
+// Transform query
+searchBox({
+  container: '#searchbox',
+  queryHook: (query, search) => {
+    // Remove special characters
+    const cleanedQuery = query.replace(/[^a-zA-Z0-9 ]/g, '');
+    search(cleanedQuery);
+  },
+})
+
+// Add query suggestions
+searchBox({
+  container: '#searchbox',
+  queryHook: (query, search) => {
+    // Log query for analytics
+    console.log('User searched for:', query);
+    
+    // Perform the search
+    search(query);
+  },
+})
+```
+
+## Event Handlers
+
+### State Change Handler
+
+React to search state changes:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  onStateChange: ({ uiState, setUiState }) => {
+    // Log state changes
+    console.log('Search state changed:', uiState);
+    
+    // Modify state before applying
+    const modifiedState = {
+      ...uiState,
+      products: {
+        ...uiState.products,
+        // Always limit to 20 results
+        configure: {
+          ...uiState.products?.configure,
+          hitsPerPage: 20,
+        },
+      },
+    };
+    
+    setUiState(modifiedState);
+  },
+});
+```
+
+### Insights Events
+
+Track user interactions:
+
+```javascript
+import { hits } from 'instantsearch.js/es/widgets';
+
+hits({
+  container: '#hits',
+  templates: {
+    item: (hit, { html, sendEvent }) => html`
+      <article>
+        <h3>${hit.name}</h3>
+        
+        <button
+          onClick="${() => {
+            sendEvent('click', hit, 'Product Clicked');
+          }}"
+        >
+          View Details
+        </button>
+        
+        <button
+          onClick="${() => {
+            sendEvent('conversion', hit, 'Product Added to Cart');
+            // Add to cart logic
+          }}"
+        >
+          Add to Cart
+        </button>
+      </article>
+    `,
+  },
+})
+```
+
+## Middleware
+
+Extend InstantSearch.js functionality with middleware:
+
+```javascript
+const analyticsMiddleware = () => {
+  return {
+    onStateChange({ uiState }) {
+      console.log('Analytics: State changed', uiState);
+    },
+    subscribe() {},
+    unsubscribe() {},
+  };
+};
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+search.use(analyticsMiddleware());
+```
+
+### Insights Middleware
+
+The insights middleware enables event tracking:
+
+```javascript
+import { createInsightsMiddleware } from 'instantsearch.js/es/middlewares';
+import aa from 'search-insights';
+
+aa('init', {
+  appId: 'YourApplicationID',
+  apiKey: 'YourSearchOnlyAPIKey',
+});
+
+const insightsMiddleware = createInsightsMiddleware({
+  insightsClient: aa,
+  insightsInitParams: {
+    useCookie: true,
+    userToken: 'user-123',
+  },
+});
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+search.use(insightsMiddleware);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Styling" icon="paintbrush" href="/vanilla/styling">
+    Style your search interface with CSS
+  </Card>
+  <Card title="Custom Connectors" icon="code" href="/guides/custom-connectors">
+    Build advanced custom widgets
+  </Card>
+  <Card title="Routing" icon="link" href="/guides/routing">
+    Synchronize search state with URLs
+  </Card>
+  <Card title="Insights" icon="chart-line" href="/guides/insights-middleware">
+    Track and analyze user behavior
+  </Card>
+</CardGroup>

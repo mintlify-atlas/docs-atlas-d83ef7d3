@@ -1,0 +1,99 @@
+---
+title: Vue InstantSearch API Overview
+description: Complete API reference for Vue InstantSearch components
+---
+
+Vue InstantSearch is the Vue.js library for building search interfaces with Algolia. It provides a set of Vue components that connect to Algolia's search API.
+
+## Core Components
+
+Vue InstantSearch provides several core components for building search experiences:
+
+### Root Components
+
+<CardGroup cols={2}>
+  <Card title="ais-instant-search" icon="magnifying-glass" href="/api/vue/ais-instant-search">
+    Root component that connects your Vue app to Algolia
+  </Card>
+  <Card title="ais-index" icon="folder-tree" href="/api/vue/ais-index">
+    Component for managing multiple indices
+  </Card>
+</CardGroup>
+
+### Configuration Components
+
+<CardGroup cols={2}>
+  <Card title="ais-configure" icon="gear" href="/api/vue/ais-configure">
+    Configure search parameters declaratively
+  </Card>
+</CardGroup>
+
+## Installation
+
+Install Vue InstantSearch with npm or yarn:
+
+```bash
+npm install vue-instantsearch algoliasearch
+```
+
+```bash
+yarn add vue-instantsearch algoliasearch
+```
+
+## Quick Start
+
+Here's a basic example of using Vue InstantSearch:
+
+```vue
+<template>
+  <ais-instant-search
+    :search-client="searchClient"
+    index-name="your_index_name"
+  >
+    <ais-configure :hits-per-page.camel="10" />
+    <!-- Add your search UI components here -->
+  </ais-instant-search>
+</template>
+
+<script>
+import algoliasearch from 'algoliasearch/lite';
+import { AisInstantSearch, AisConfigure } from 'vue-instantsearch';
+
+export default {
+  components: {
+    AisInstantSearch,
+    AisConfigure,
+  },
+  data() {
+    return {
+      searchClient: algoliasearch(
+        'YourApplicationID',
+        'YourSearchOnlyAPIKey'
+      ),
+    };
+  },
+};
+</script>
+```
+
+## Component Naming Convention
+
+All Vue InstantSearch components use the `ais-` prefix (e.g., `ais-search-box`, `ais-hits`). This follows the standard Vue component naming conventions and helps avoid naming conflicts.
+
+## Vue 2 and Vue 3 Support
+
+Vue InstantSearch supports both Vue 2 and Vue 3. The library automatically detects which version you're using and adapts accordingly.
+
+## Server-Side Rendering (SSR)
+
+Vue InstantSearch supports server-side rendering with frameworks like Nuxt.js. For SSR implementations, use the `createServerRootMixin` utility.
+
+## TypeScript Support
+
+Vue InstantSearch is written in JavaScript but provides TypeScript type definitions for better developer experience.
+
+## Related Resources
+
+- [InstantSearch.js Widgets](/api/widgets/overview) - Core widget implementations
+- [Connectors](/api/connectors/overview) - Build custom components
+- [Helpers](/api/helpers/overview) - Utility functions and middleware

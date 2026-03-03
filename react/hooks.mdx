@@ -1,0 +1,607 @@
+---
+title: "Using Hooks"
+description: "Build custom search components with React InstantSearch hooks"
+---
+
+React InstantSearch provides hooks for building custom components while leveraging the library's search state management.
+
+## Core Hooks
+
+### useInstantSearch
+
+Access the global InstantSearch context:
+
+```tsx
+import { useInstantSearch } from 'react-instantsearch';
+
+function SearchStats() {
+  const {
+    results,
+    scopedResults,
+    indexUiState,
+    setIndexUiState,
+    renderState,
+    status,
+    error,
+    refresh,
+  } = useInstantSearch();
+
+  if (status === 'loading' || status === 'stalled') {
+    return <p>Loading...</p>;
+  }
+
+  if (status === 'error') {
+    return <p>Error: {error?.message}</p>;
+  }
+
+  return (
+    <div>
+      <p>{results?.nbHits.toLocaleString()} results</p>
+      <button onClick={() => refresh()}>
+        Refresh results
+      </button>
+    </div>
+  );
+}
+```
+
+**Return Values:**
+
+<ResponseField name="results" type="SearchResults">
+  Current search results for the main index
+</ResponseField>
+
+<ResponseField name="scopedResults" type="ScopedResult[]">
+  Results for all active indices (including nested `<Index>` components)
+</ResponseField>
+
+<ResponseField name="indexUiState" type="object">
+  Current UI state for the current index
+</ResponseField>
+
+<ResponseField name="setIndexUiState" type="function">
+  Update the UI state programmatically
+</ResponseField>
+
+<ResponseField name="uiState" type="object">
+  UI state for all indices
+</ResponseField>
+
+<ResponseField name="setUiState" type="function">
+  Update UI state for all indices
+</ResponseField>
+
+<ResponseField name="status" type="'idle' | 'loading' | 'stalled' | 'error'">
+  Current search status
+</ResponseField>
+
+<ResponseField name="error" type="Error | undefined">
+  Error object if status is 'error'
+</ResponseField>
+
+<ResponseField name="refresh" type="() => void">
+  Clear cache and trigger a new search
+</ResponseField>
+
+### Error Handling
+
+Catch errors with the `catchError` option:
+
+```tsx
+function SearchWithErrorBoundary() {
+  const { status, error } = useInstantSearch({ catchError: true });
+
+  if (status === 'error') {
+    return (
+      <div className="error">
+        <h2>Search Error</h2>
+        <p>{error?.message}</p>
+        <button onClick={() => window.location.reload()}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  return <SearchResults />;
+}
+```
+
+## Connector Hooks
+
+Connector hooks provide direct access to widget state and actions.
+
+### useSearchBox
+
+Build a custom search input:
+
+```tsx
+import { useSearchBox } from 'react-instantsearch';
+import { useState, useRef, useEffect } from 'react';
+
+function CustomSearchBox() {
+  const { query, refine, clear, isSearchStalled } = useSearchBox();
+  const [value, setValue] = useState(query);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync with InstantSearch query
+  useEffect(() => {
+    if (query !== value && document.activeElement !== inputRef.current) {
+      setValue(query);
+    }
+  }, [query]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    refine(value);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        ref={inputRef}
+        type="search"
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+          refine(e.target.value); // Search as you type
+        }}
+        placeholder="Search..."
+      />
+      {isSearchStalled && <span>Loading...</span>}
+      <button type="button" onClick={() => {
+        setValue('');
+        clear();
+      }}>
+        Clear
+      </button>
+    </form>
+  );
+}
+```
+
+**Props:**
+
+<ParamField path="queryHook" type="(query: string, search: (value: string) => void) => void">
+  Modify or debounce queries before searching
+</ParamField>
+
+**Return Values:**
+
+<ResponseField name="query" type="string">
+  Current search query
+</ResponseField>
+
+<ResponseField name="refine" type="(value: string) => void">
+  Update the search query
+</ResponseField>
+
+<ResponseField name="clear" type="() => void">
+  Clear the query
+</ResponseField>
+
+<ResponseField name="isSearchStalled" type="boolean">
+  Whether the search is stalled
+</ResponseField>
+
+### Debounced Search
+
+```tsx
+function DebouncedSearchBox() {
+  const { query, refine } = useSearchBox({
+    queryHook(query, search) {
+      // Debounce for 300ms
+      const timeoutId = setTimeout(() => search(query), 300);
+      return () => clearTimeout(timeoutId);
+    },
+  });
+
+  return (
+    <input
+      type="search"
+      value={query}
+      onChange={(e) => refine(e.target.value)}
+    />
+  );
+}
+```
+
+### useHits
+
+Custom results component:
+
+```tsx
+import { useHits } from 'react-instantsearch';
+import type { BaseHit } from 'instantsearch.js';
+
+interface Product extends BaseHit {
+  name: string;
+  price: number;
+  image: string;
+  inStock: boolean;
+}
+
+function CustomHits() {
+  const { hits, results, sendEvent } = useHits<Product>({
+    escapeHTML: true,
+    transformItems: (items) =>
+      items.filter(item => item.inStock),
+  });
+
+  if (!results) {
+    return <p>No results</p>;
+  }
+
+  return (
+    <div className="grid">
+      {hits.map((hit) => (
+        <article
+          key={hit.objectID}
+          onClick={() => {
+            sendEvent('click', hit, 'Product Clicked');
+          }}
+        >
+          <img src={hit.image} alt={hit.name} />
+          <h3>{hit.name}</h3>
+          <p>${hit.price}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+```
+
+**Props:**
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Escape HTML entities in results
+</ParamField>
+
+<ParamField path="transformItems" type="(items: Hit[]) => Hit[]">
+  Transform hits before rendering
+</ParamField>
+
+**Return Values:**
+
+<ResponseField name="hits" type="Hit[]">
+  Array of search results
+</ResponseField>
+
+<ResponseField name="results" type="SearchResults">
+  Full Algolia search response
+</ResponseField>
+
+<ResponseField name="sendEvent" type="Function">
+  Track Insights events
+</ResponseField>
+
+<ResponseField name="banner" type="object | undefined">
+  Banner from Query Rules (if any)
+</ResponseField>
+
+### useRefinementList
+
+Custom faceted filter:
+
+```tsx
+import { useRefinementList } from 'react-instantsearch';
+
+function CustomRefinementList({ attribute }: { attribute: string }) {
+  const {
+    items,
+    refine,
+    canRefine,
+    isFromSearch,
+    searchForItems,
+    canToggleShowMore,
+    isShowingMore,
+    toggleShowMore,
+  } = useRefinementList({
+    attribute,
+    limit: 5,
+    showMore: true,
+    showMoreLimit: 15,
+    sortBy: ['isRefined', 'count:desc', 'name:asc'],
+  });
+
+  const [query, setQuery] = useState('');
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <div>
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          searchForItems(e.target.value);
+        }}
+        placeholder={`Search ${attribute}...`}
+      />
+
+      <ul>
+        {items.map((item) => (
+          <li key={item.value}>
+            <label>
+              <input
+                type="checkbox"
+                checked={item.isRefined}
+                onChange={() => refine(item.value)}
+              />
+              {item.label} ({item.count})
+            </label>
+          </li>
+        ))}
+      </ul>
+
+      {canToggleShowMore && (
+        <button onClick={toggleShowMore}>
+          {isShowingMore ? 'Show less' : 'Show more'}
+        </button>
+      )}
+
+      {isFromSearch && items.length === 0 && (
+        <p>No results for "{query}"</p>
+      )}
+    </div>
+  );
+}
+```
+
+**Props:**
+
+<ParamField path="attribute" type="string" required>
+  Index attribute to filter on
+</ParamField>
+
+<ParamField path="operator" type="'or' | 'and'" default="'or'">
+  How to combine multiple selections
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Number of items to show
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Enable show more functionality
+</ParamField>
+
+<ParamField path="sortBy" type="string[]">
+  Sort criteria (e.g., `['isRefined', 'count:desc']`)
+</ParamField>
+
+### usePagination
+
+Custom pagination:
+
+```tsx
+import { usePagination } from 'react-instantsearch';
+
+function CustomPagination() {
+  const {
+    currentRefinement,
+    nbPages,
+    pages,
+    isFirstPage,
+    isLastPage,
+    canRefine,
+    refine,
+  } = usePagination({ padding: 2 });
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <nav>
+      <button
+        onClick={() => refine(currentRefinement - 1)}
+        disabled={isFirstPage}
+      >
+        Previous
+      </button>
+
+      {pages.map((page) => (
+        <button
+          key={page}
+          onClick={() => refine(page)}
+          disabled={page === currentRefinement}
+          className={page === currentRefinement ? 'active' : ''}
+        >
+          {page + 1}
+        </button>
+      ))}
+
+      <button
+        onClick={() => refine(currentRefinement + 1)}
+        disabled={isLastPage}
+      >
+        Next
+      </button>
+    </nav>
+  );
+}
+```
+
+### useRange
+
+Numeric range filter:
+
+```tsx
+import { useRange } from 'react-instantsearch';
+
+function CustomPriceRange() {
+  const { start, range, canRefine, refine } = useRange({
+    attribute: 'price',
+  });
+
+  const [values, setValues] = useState([start[0] ?? 0, start[1] ?? 1000]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    refine(values);
+  };
+
+  if (!canRefine) {
+    return null;
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Min: ${range.min}
+        <input
+          type="number"
+          min={range.min}
+          max={range.max}
+          value={values[0]}
+          onChange={(e) => setValues([+e.target.value, values[1]])}
+        />
+      </label>
+      <label>
+        Max: ${range.max}
+        <input
+          type="number"
+          min={range.min}
+          max={range.max}
+          value={values[1]}
+          onChange={(e) => setValues([values[0], +e.target.value])}
+        />
+      </label>
+      <button type="submit">Apply</button>
+    </form>
+  );
+}
+```
+
+## All Available Hooks
+
+### Search Hooks
+- `useSearchBox` - Search input
+- `useAutocomplete` - Autocomplete/suggestions
+- `useVoiceSearch` - Voice search (browser API)
+
+### Results Hooks
+- `useHits` - Search results
+- `useInfiniteHits` - Infinite scroll results
+- `useStats` - Result statistics
+
+### Filter Hooks
+- `useRefinementList` - Multi-select facets
+- `useMenu` - Single-select facets
+- `useHierarchicalMenu` - Nested categories
+- `useRange` - Numeric range
+- `useNumericMenu` - Predefined numeric ranges
+- `useToggleRefinement` - Boolean filter
+- `useCurrentRefinements` - Active filters
+- `useClearRefinements` - Clear filters
+- `useBreadcrumb` - Hierarchical breadcrumb
+
+### Navigation Hooks
+- `usePagination` - Page-based navigation
+- `useSortBy` - Sort order selection
+
+### Advanced Hooks
+- `useConfigure` - Set search parameters
+- `useQueryRules` - Access Query Rules data
+- `useDynamicWidgets` - Dynamically render widgets
+
+### Recommendation Hooks
+- `useFrequentlyBoughtTogether` - Product recommendations
+- `useRelatedProducts` - Related items
+- `useTrendingItems` - Trending content
+- `useLookingSimilar` - Similar items
+
+## Custom Widget Hook
+
+For advanced use cases, create completely custom widgets with `useConnector`:
+
+```tsx
+import { useConnector } from 'react-instantsearch';
+import connectStats from 'instantsearch.js/es/connectors/stats/connectStats';
+
+function useStats() {
+  return useConnector(connectStats);
+}
+
+function CustomStats() {
+  const { nbHits, processingTimeMS, query } = useStats();
+
+  return (
+    <p>
+      {query ? (
+        <>{nbHits.toLocaleString()} results for "{query}"</>
+      ) : (
+        <>{nbHits.toLocaleString()} total results</>
+      )}
+      {' '}in {processingTimeMS}ms
+    </p>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Use TypeScript for Type Safety
+
+```tsx
+import type { BaseHit } from 'instantsearch.js';
+
+interface ProductRecord extends BaseHit {
+  name: string;
+  price: number;
+}
+
+const { hits } = useHits<ProductRecord>();
+// `hits` is now typed as Hit<ProductRecord>[]
+```
+
+### 2. Memoize Callbacks
+
+```tsx
+import { useCallback } from 'react';
+
+const handleClick = useCallback((hit) => {
+  sendEvent('click', hit, 'Product Clicked');
+}, [sendEvent]);
+```
+
+### 3. Handle Loading States
+
+```tsx
+const { status, results } = useInstantSearch();
+
+if (status === 'loading') return <Spinner />;
+if (status === 'stalled') return <SlowSearchIndicator />;
+if (status === 'error') return <ErrorMessage />;
+```
+
+### 4. Sync Local State Carefully
+
+When syncing local state with search state, avoid infinite loops:
+
+```tsx
+const { query, refine } = useSearchBox();
+const [localValue, setLocalValue] = useState(query);
+
+// Only sync when not focused
+useEffect(() => {
+  if (document.activeElement !== inputRef.current) {
+    setLocalValue(query);
+  }
+}, [query]);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Server Components" icon="server" href="/react/server-components">
+    Use hooks with React Server Components
+  </Card>
+  <Card title="Next.js Integration" icon="js" href="/react/nextjs-integration">
+    SSR and App Router patterns
+  </Card>
+</CardGroup>

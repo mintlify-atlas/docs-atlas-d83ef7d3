@@ -1,0 +1,450 @@
+---
+title: 'useInfiniteHits'
+description: 'Build infinite scroll for search results'
+---
+
+The `useInfiniteHits` hook provides the logic to build infinite scroll pagination for search results.
+
+## Import
+
+```jsx
+import { useInfiniteHits } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags in hit string values.
+
+  ```jsx
+  const { items } = useInfiniteHits({ escapeHTML: false });
+  ```
+</ParamField>
+
+<ParamField path="showPrevious" type="boolean" default="false">
+  Enable loading previous results.
+
+  ```jsx
+  const { showPrevious, isFirstPage } = useInfiniteHits({ 
+    showPrevious: true 
+  });
+  ```
+</ParamField>
+
+<ParamField path="transformItems" type="(items: Hit[]) => Hit[]">
+  Function to transform the hits before rendering.
+
+  ```jsx
+  const { items } = useInfiniteHits({
+    transformItems: (items) => 
+      items.map((item) => ({
+        ...item,
+        formattedPrice: `$${item.price.toFixed(2)}`,
+      })),
+  });
+  ```
+</ParamField>
+
+<ParamField path="cache" type="InfiniteHitsCache">
+  Custom cache implementation for storing hits between page navigations.
+
+  ```jsx
+  const cache = {
+    read: ({ state }) => {
+      return sessionStorage.getItem(JSON.stringify(state));
+    },
+    write: ({ state, hits }) => {
+      sessionStorage.setItem(JSON.stringify(state), JSON.stringify(hits));
+    },
+  };
+
+  const hook = useInfiniteHits({ cache });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="items" type="Hit[]">
+  All accumulated hits from the current and previous pages.
+
+  ```jsx
+  const { items } = useInfiniteHits();
+  console.log(items.length); // Total accumulated hits
+  ```
+</ResponseField>
+
+<ResponseField name="hits" type="Hit[]">
+  Alias for `items` (deprecated).
+
+  <Warning>
+    Use `items` instead. The `hits` property is deprecated.
+  </Warning>
+</ResponseField>
+
+<ResponseField name="currentPageHits" type="Hit[]">
+  Hits for the current page only (not accumulated).
+
+  ```jsx
+  const { currentPageHits } = useInfiniteHits();
+  console.log(currentPageHits.length); // Hits on current page
+  ```
+</ResponseField>
+
+<ResponseField name="showMore" type="() => void">
+  Function to load the next page of results.
+
+  ```jsx
+  const { showMore, isLastPage } = useInfiniteHits();
+  
+  <button onClick={showMore} disabled={isLastPage}>
+    Load More
+  </button>
+  ```
+</ResponseField>
+
+<ResponseField name="showPrevious" type="() => void">
+  Function to load the previous page of results.
+
+  ```jsx
+  const { showPrevious, isFirstPage } = useInfiniteHits({ 
+    showPrevious: true 
+  });
+  
+  <button onClick={showPrevious} disabled={isFirstPage}>
+    Load Previous
+  </button>
+  ```
+</ResponseField>
+
+<ResponseField name="isFirstPage" type="boolean">
+  Whether the current page is the first page.
+
+  ```jsx
+  const { isFirstPage } = useInfiniteHits();
+  ```
+</ResponseField>
+
+<ResponseField name="isLastPage" type="boolean">
+  Whether the current page is the last page.
+
+  ```jsx
+  const { isLastPage } = useInfiniteHits();
+  ```
+</ResponseField>
+
+<ResponseField name="results" type="SearchResults | null">
+  The complete search results object from Algolia.
+
+  ```jsx
+  const { results } = useInfiniteHits();
+  console.log(results?.nbHits);
+  ```
+</ResponseField>
+
+<ResponseField name="banner" type="Banner | undefined">
+  The banner to display above the hits.
+
+  ```jsx
+  const { banner } = useInfiniteHits();
+  ```
+</ResponseField>
+
+<ResponseField name="sendEvent" type="SendEventForHits">
+  Function to send events to the Insights API.
+
+  ```jsx
+  const { sendEvent } = useInfiniteHits();
+  sendEvent('click', items[0], 'Product Clicked');
+  ```
+</ResponseField>
+
+<ResponseField name="bindEvent" type="BindEventForHits">
+  Function to bind Insights events to HTML elements.
+
+  ```jsx
+  const { bindEvent } = useInfiniteHits();
+  ```
+</ResponseField>
+
+## Examples
+
+### Basic Infinite Scroll
+
+```jsx
+import { useInfiniteHits } from 'react-instantsearch';
+
+function InfiniteHits() {
+  const { items, showMore, isLastPage } = useInfiniteHits();
+
+  return (
+    <div>
+      <div className="hits">
+        {items.map((item) => (
+          <div key={item.objectID}>
+            <h3>{item.name}</h3>
+            <p>{item.description}</p>
+          </div>
+        ))}
+      </div>
+      {!isLastPage && (
+        <button onClick={showMore}>Load More</button>
+      )}
+    </div>
+  );
+}
+```
+
+### With Intersection Observer
+
+```jsx
+import { useInfiniteHits } from 'react-instantsearch';
+import { useEffect, useRef } from 'react';
+
+function AutoLoadInfiniteHits() {
+  const { items, showMore, isLastPage } = useInfiniteHits();
+  const sentinelRef = useRef(null);
+
+  useEffect(() => {
+    if (!sentinelRef.current || isLastPage) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        showMore();
+      }
+    });
+
+    observer.observe(sentinelRef.current);
+
+    return () => observer.disconnect();
+  }, [showMore, isLastPage]);
+
+  return (
+    <div>
+      <div className="hits">
+        {items.map((item) => (
+          <div key={item.objectID}>
+            <h3>{item.name}</h3>
+          </div>
+        ))}
+      </div>
+      {!isLastPage && <div ref={sentinelRef} className="sentinel" />}
+    </div>
+  );
+}
+```
+
+### With Previous Results
+
+```jsx
+import { useInfiniteHits } from 'react-instantsearch';
+
+function BidirectionalInfiniteHits() {
+  const { 
+    items, 
+    showMore, 
+    showPrevious, 
+    isFirstPage, 
+    isLastPage 
+  } = useInfiniteHits({ showPrevious: true });
+
+  return (
+    <div>
+      {!isFirstPage && (
+        <button onClick={showPrevious}>Load Previous</button>
+      )}
+      <div className="hits">
+        {items.map((item) => (
+          <div key={item.objectID}>
+            <h3>{item.name}</h3>
+          </div>
+        ))}
+      </div>
+      {!isLastPage && (
+        <button onClick={showMore}>Load More</button>
+      )}
+    </div>
+  );
+}
+```
+
+### With Loading State
+
+```jsx
+import { useInfiniteHits, useInstantSearch } from 'react-instantsearch';
+import { useState } from 'react';
+
+function InfiniteHitsWithLoading() {
+  const { items, showMore, isLastPage } = useInfiniteHits();
+  const { status } = useInstantSearch();
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const handleShowMore = async () => {
+    setIsLoadingMore(true);
+    showMore();
+    // Reset loading state after a short delay
+    setTimeout(() => setIsLoadingMore(false), 300);
+  };
+
+  return (
+    <div>
+      <div className="hits">
+        {items.map((item) => (
+          <div key={item.objectID}>
+            <h3>{item.name}</h3>
+          </div>
+        ))}
+      </div>
+      {status === 'loading' && items.length === 0 && (
+        <div>Loading initial results...</div>
+      )}
+      {!isLastPage && (
+        <button onClick={handleShowMore} disabled={isLoadingMore}>
+          {isLoadingMore ? 'Loading...' : 'Load More'}
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### With TypeScript
+
+```tsx
+import { useInfiniteHits } from 'react-instantsearch';
+
+interface Product {
+  objectID: string;
+  name: string;
+  price: number;
+  image: string;
+}
+
+function ProductInfiniteHits() {
+  const { items, showMore, isLastPage } = useInfiniteHits<Product>();
+
+  return (
+    <div>
+      <div className="products">
+        {items.map((item) => (
+          <div key={item.objectID}>
+            <img src={item.image} alt={item.name} />
+            <h3>{item.name}</h3>
+            <p>${item.price.toFixed(2)}</p>
+          </div>
+        ))}
+      </div>
+      {!isLastPage && (
+        <button onClick={showMore}>Load More</button>
+      )}
+    </div>
+  );
+}
+```
+
+### Virtual Scrolling
+
+```jsx
+import { useInfiniteHits } from 'react-instantsearch';
+import { useVirtual } from 'react-virtual';
+import { useRef } from 'react';
+
+function VirtualInfiniteHits() {
+  const { items, showMore, isLastPage } = useInfiniteHits();
+  const parentRef = useRef();
+
+  const rowVirtualizer = useVirtual({
+    size: items.length,
+    parentRef,
+    estimateSize: () => 100,
+    overscan: 5,
+  });
+
+  // Load more when approaching the end
+  const lastItem = rowVirtualizer.virtualItems[
+    rowVirtualizer.virtualItems.length - 1
+  ];
+  
+  if (lastItem && lastItem.index >= items.length - 5 && !isLastPage) {
+    showMore();
+  }
+
+  return (
+    <div ref={parentRef} style={{ height: '600px', overflow: 'auto' }}>
+      <div
+        style={{
+          height: `${rowVirtualizer.totalSize}px`,
+          position: 'relative',
+        }}
+      >
+        {rowVirtualizer.virtualItems.map((virtualRow) => (
+          <div
+            key={items[virtualRow.index].objectID}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              transform: `translateY(${virtualRow.start}px)`,
+            }}
+          >
+            <h3>{items[virtualRow.index].name}</h3>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### With Cache
+
+```jsx
+import { useInfiniteHits } from 'react-instantsearch';
+
+const cache = {
+  read({ state }) {
+    const key = JSON.stringify(state);
+    const cached = sessionStorage.getItem(key);
+    return cached ? JSON.parse(cached) : null;
+  },
+  write({ state, hits }) {
+    const key = JSON.stringify(state);
+    sessionStorage.setItem(key, JSON.stringify(hits));
+  },
+};
+
+function CachedInfiniteHits() {
+  const { items, showMore, isLastPage } = useInfiniteHits({ cache });
+
+  return (
+    <div>
+      <div className="hits">
+        {items.map((item) => (
+          <div key={item.objectID}>
+            <h3>{item.name}</h3>
+          </div>
+        ))}
+      </div>
+      {!isLastPage && (
+        <button onClick={showMore}>Load More</button>
+      )}
+    </div>
+  );
+}
+```
+
+## Notes
+
+<Info>
+  The hook accumulates all hits from previous pages. If you need only the current page hits, use the `currentPageHits` property.
+</Info>
+
+<Warning>
+  Be mindful of memory usage when loading many pages. Consider implementing virtual scrolling or pagination for very large result sets.
+</Warning>
+
+## Related
+
+- [InfiniteHits Widget](/api/react/widgets/infinite-hits)
+- [useHits Hook](/api/react/hooks/use-hits)
+- [usePagination Hook](/api/react/hooks/use-pagination)

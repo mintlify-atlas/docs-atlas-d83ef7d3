@@ -1,0 +1,376 @@
+---
+title: 'useSearchBox'
+description: 'Build custom search box components'
+---
+
+The `useSearchBox` hook provides the logic to build a custom search box component.
+
+## Import
+
+```jsx
+import { useSearchBox } from 'react-instantsearch';
+```
+
+## Parameters
+
+<ParamField path="queryHook" type="(query: string, search: (value: string) => void) => void">
+  A function to intercept the query before searching. Useful for debouncing.
+
+  ```jsx
+  const { query, refine } = useSearchBox({
+    queryHook: (query, search) => {
+      // Debounce the search
+      clearTimeout(timerId);
+      timerId = setTimeout(() => search(query), 500);
+    },
+  });
+  ```
+</ParamField>
+
+## Returns
+
+<ResponseField name="query" type="string">
+  The current search query.
+
+  ```jsx
+  const { query } = useSearchBox();
+  console.log(query); // "iphone"
+  ```
+</ResponseField>
+
+<ResponseField name="refine" type="(value: string) => void">
+  Function to update the search query and trigger a search.
+
+  ```jsx
+  const { refine } = useSearchBox();
+  refine('new query');
+  ```
+</ResponseField>
+
+<ResponseField name="clear" type="() => void">
+  Function to clear the search query.
+
+  ```jsx
+  const { clear } = useSearchBox();
+  clear();
+  ```
+</ResponseField>
+
+<ResponseField name="isSearchStalled" type="boolean">
+  Whether the search is stalled (taking longer than expected).
+
+  ```jsx
+  const { isSearchStalled } = useSearchBox();
+  if (isSearchStalled) {
+    return <div>Loading...</div>;
+  }
+  ```
+
+  <Warning>
+    This property is deprecated. Use `status` from `useInstantSearch()` instead.
+  </Warning>
+</ResponseField>
+
+## Examples
+
+### Basic Search Box
+
+```jsx
+import { useSearchBox } from 'react-instantsearch';
+
+function CustomSearchBox() {
+  const { query, refine, clear } = useSearchBox();
+
+  return (
+    <div className="search-box">
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => refine(e.target.value)}
+        placeholder="Search products..."
+      />
+      {query && (
+        <button onClick={clear} aria-label="Clear search">
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### With Debouncing
+
+```jsx
+import { useSearchBox } from 'react-instantsearch';
+import { useRef } from 'react';
+
+function DebouncedSearchBox() {
+  const timerRef = useRef(null);
+
+  const { query, refine } = useSearchBox({
+    queryHook(query, search) {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => search(query), 500);
+    },
+  });
+
+  return (
+    <input
+      type="search"
+      value={query}
+      onChange={(e) => refine(e.target.value)}
+      placeholder="Search (debounced)..."
+    />
+  );
+}
+```
+
+### Search Box with Voice Input
+
+```jsx
+import { useSearchBox } from 'react-instantsearch';
+import { useState } from 'react';
+
+function VoiceSearchBox() {
+  const { query, refine } = useSearchBox();
+  const [isListening, setIsListening] = useState(false);
+
+  const startVoiceRecognition = () => {
+    const recognition = new window.webkitSpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      refine(transcript);
+    };
+
+    recognition.start();
+  };
+
+  return (
+    <div className="voice-search-box">
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => refine(e.target.value)}
+        placeholder="Search or use voice..."
+      />
+      <button
+        onClick={startVoiceRecognition}
+        disabled={isListening}
+        aria-label="Voice search"
+      >
+        {isListening ? '🎤 Listening...' : '🎤'}
+      </button>
+    </div>
+  );
+}
+```
+
+### Search Box with Autocomplete
+
+```jsx
+import { useSearchBox } from 'react-instantsearch';
+import { useState, useRef, useEffect } from 'react';
+
+function AutocompleteSearchBox({ suggestions = [] }) {
+  const { query, refine } = useSearchBox();
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const inputRef = useRef(null);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => 
+        Math.min(prev + 1, suggestions.length - 1)
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.max(prev - 1, -1));
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      refine(suggestions[selectedIndex]);
+      setShowSuggestions(false);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
+
+  return (
+    <div className="autocomplete-search-box">
+      <input
+        ref={inputRef}
+        type="search"
+        value={query}
+        onChange={(e) => {
+          refine(e.target.value);
+          setShowSuggestions(true);
+          setSelectedIndex(-1);
+        }}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setShowSuggestions(true)}
+        placeholder="Search..."
+      />
+      {showSuggestions && suggestions.length > 0 && (
+        <ul className="suggestions">
+          {suggestions.map((suggestion, index) => (
+            <li
+              key={suggestion}
+              className={index === selectedIndex ? 'selected' : ''}
+              onClick={() => {
+                refine(suggestion);
+                setShowSuggestions(false);
+              }}
+            >
+              {suggestion}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+### Search Box with Submit Button
+
+```jsx
+import { useSearchBox } from 'react-instantsearch';
+import { useState } from 'react';
+
+function SearchBoxWithSubmit() {
+  const { refine } = useSearchBox();
+  const [inputValue, setInputValue] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    refine(inputValue);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="search"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        placeholder="Search..."
+      />
+      <button type="submit">Search</button>
+    </form>
+  );
+}
+```
+
+### Search Box with Loading State
+
+```jsx
+import { useSearchBox, useInstantSearch } from 'react-instantsearch';
+
+function SearchBoxWithLoading() {
+  const { query, refine, clear } = useSearchBox();
+  const { status } = useInstantSearch();
+
+  const isLoading = status === 'loading' || status === 'stalled';
+
+  return (
+    <div className="search-box">
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => refine(e.target.value)}
+        placeholder="Search..."
+        disabled={isLoading}
+      />
+      {isLoading && <div className="loading-spinner" />}
+      {query && !isLoading && (
+        <button onClick={clear}>Clear</button>
+      )}
+    </div>
+  );
+}
+```
+
+### Search Box with Recent Searches
+
+```jsx
+import { useSearchBox } from 'react-instantsearch';
+import { useState, useEffect } from 'react';
+
+function SearchBoxWithHistory() {
+  const { query, refine } = useSearchBox();
+  const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    // Load history from localStorage
+    const saved = localStorage.getItem('searchHistory');
+    if (saved) {
+      setHistory(JSON.parse(saved));
+    }
+  }, []);
+
+  const handleSearch = (value) => {
+    refine(value);
+    if (value && !history.includes(value)) {
+      const newHistory = [value, ...history].slice(0, 5);
+      setHistory(newHistory);
+      localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+    }
+  };
+
+  return (
+    <div className="search-box-with-history">
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => handleSearch(e.target.value)}
+        onFocus={() => setShowHistory(true)}
+        onBlur={() => setTimeout(() => setShowHistory(false), 200)}
+        placeholder="Search..."
+      />
+      {showHistory && history.length > 0 && (
+        <ul className="search-history">
+          {history.map((item) => (
+            <li key={item} onClick={() => handleSearch(item)}>
+              🕐 {item}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+## TypeScript
+
+```tsx
+import { useSearchBox } from 'react-instantsearch';
+import type { UseSearchBoxProps } from 'react-instantsearch';
+
+function CustomSearchBox(props?: UseSearchBoxProps) {
+  const { query, refine, clear } = useSearchBox(props);
+
+  return (
+    <input
+      type="search"
+      value={query}
+      onChange={(e) => refine(e.target.value)}
+    />
+  );
+}
+```
+
+## Related
+
+- [SearchBox Widget](/api/react/widgets/search-box)
+- [useInstantSearch Hook](/api/react/hooks/use-instant-search)
+- [Query Suggestions Guide](/guides/query-suggestions)

@@ -1,0 +1,447 @@
+---
+title: E-Commerce Search Example
+description: Build a complete product search interface with faceted filtering, sorting, and pagination
+---
+
+This example demonstrates a full-featured e-commerce search experience with product listings, multiple filters, sorting options, and responsive design.
+
+## Overview
+
+The e-commerce example includes:
+
+- **Product search** with highlighting and snippeting
+- **Faceted navigation** (categories, brands, ratings, price)
+- **Sorting** by relevance, price ascending/descending
+- **Pagination** for browsing results
+- **URL routing** to sync search state with the browser URL
+- **Responsive design** with mobile-optimized filters
+
+<Frame>
+  <img src="/images/examples/ecommerce-demo.png" alt="E-commerce search interface" />
+</Frame>
+
+## Live Demo
+
+<Card title="Try the Live Demo" icon="play" href="https://www.algolia.com/demos/instantsearch/">
+  Experience the e-commerce search example in action
+</Card>
+
+## Implementation
+
+### JavaScript Example
+
+<Tabs>
+  <Tab title="Basic Setup">
+    
+Initialize InstantSearch with the search client and routing:
+
+```typescript
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import instantsearch from 'instantsearch.js';
+import getRouting from './routing';
+
+const searchClient = algoliasearch(
+  'latency',
+  '6be0576ff61c053d5f9a3225e2a90f76'
+);
+
+const search = instantsearch({
+  searchClient,
+  indexName: 'instant_search',
+  routing: getRouting({ indexName: 'instant_search' }),
+  insights: true,
+});
+```
+
+  </Tab>
+  <Tab title="Add Widgets">
+    
+Add search widgets for the complete experience:
+
+```typescript
+import {
+  searchBox,
+  hits,
+  refinementList,
+  hierarchicalMenu,
+  rangeSlider,
+  pagination,
+  sortBy,
+  hitsPerPage,
+} from 'instantsearch.js/es/widgets';
+
+search.addWidgets([
+  searchBox({
+    container: '#search-box',
+    placeholder: 'Search for products...',
+  }),
+  
+  hierarchicalMenu({
+    container: '#categories',
+    attributes: [
+      'hierarchicalCategories.lvl0',
+      'hierarchicalCategories.lvl1',
+    ],
+  }),
+  
+  refinementList({
+    container: '#brands',
+    attribute: 'brand',
+    searchable: true,
+    searchablePlaceholder: 'Search for brands…',
+  }),
+  
+  rangeSlider({
+    container: '#price-range',
+    attribute: 'price',
+    tooltips: {
+      format(value) {
+        return `$${Math.round(value)}`;
+      },
+    },
+  }),
+  
+  sortBy({
+    container: '#sort-by',
+    items: [
+      { label: 'Featured', value: 'instant_search' },
+      { label: 'Price (asc)', value: 'instant_search_price_asc' },
+      { label: 'Price (desc)', value: 'instant_search_price_desc' },
+    ],
+  }),
+  
+  hits({
+    container: '#products',
+    templates: {
+      item(hit, { html, components }) {
+        return html`
+          <article class="hit">
+            <img src="${hit.image}" alt="${hit.name}" />
+            <div>
+              <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+              <p class="price">$${hit.price}</p>
+              <div class="rating">⭐ ${hit.rating}</div>
+            </div>
+          </article>
+        `;
+      },
+    },
+  }),
+  
+  pagination({
+    container: '#pagination',
+  }),
+]);
+
+search.start();
+```
+
+  </Tab>
+  <Tab title="Product Template">
+    
+Customize the product display with a detailed template:
+
+```typescript
+import { hits } from 'instantsearch.js/es/widgets';
+
+const products = hits({
+  container: '[data-widget="hits"]',
+  templates: {
+    item(hit, { html, components }) {
+      return html`
+        <article class="hit">
+          <header class="hit-image-container">
+            <img src="${hit.image}" alt="${hit.name}" class="hit-image" />
+          </header>
+
+          <div class="hit-info-container">
+            <p class="hit-category">${hit.categories[0]}</p>
+            <h1>${components.Highlight({ hit, attribute: 'name' })}</h1>
+            <p class="hit-description">
+              ${components.Snippet({ attribute: 'description', hit })}
+            </p>
+
+            <footer>
+              <p>
+                <span class="hit-em">$</span>
+                <strong>${hit.price.toLocaleString()}</strong>
+                <span class="hit-em hit-rating">
+                  ⭐ ${hit.rating}
+                </span>
+              </p>
+            </footer>
+          </div>
+        </article>
+      `;
+    },
+  },
+});
+```
+
+  </Tab>
+</Tabs>
+
+### React Example
+
+The React implementation uses InstantSearch components:
+
+```tsx
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import {
+  Configure,
+  HierarchicalMenu,
+  Hits,
+  HitsPerPage,
+  InstantSearch,
+  Pagination,
+  RefinementList,
+  SearchBox,
+  SortBy,
+  ToggleRefinement,
+  Highlight,
+  Snippet,
+} from 'react-instantsearch';
+
+const searchClient = algoliasearch(
+  'latency',
+  '6be0576ff61c053d5f9a3225e2a90f76'
+);
+
+function Hit({ hit }) {
+  return (
+    <article className="hit">
+      <img src={hit.image} alt={hit.name} />
+      <div>
+        <h3>
+          <Highlight attribute="name" hit={hit} />
+        </h3>
+        <p className="description">
+          <Snippet attribute="description" hit={hit} />
+        </p>
+        <div className="price">${hit.price}</div>
+      </div>
+    </article>
+  );
+}
+
+export function App() {
+  return (
+    <InstantSearch
+      searchClient={searchClient}
+      indexName="instant_search"
+      insights={true}
+    >
+      <Configure hitsPerPage={16} />
+      
+      <div className="search-panel">
+        <div className="filters">
+          <HierarchicalMenu
+            attributes={[
+              'hierarchicalCategories.lvl0',
+              'hierarchicalCategories.lvl1',
+            ]}
+          />
+          
+          <RefinementList
+            attribute="brand"
+            searchable={true}
+            searchablePlaceholder="Search brands…"
+          />
+          
+          <ToggleRefinement
+            attribute="free_shipping"
+            label="Free shipping"
+          />
+        </div>
+        
+        <div className="results">
+          <SearchBox placeholder="Search products…" />
+          
+          <div className="options">
+            <SortBy
+              items={[
+                { label: 'Featured', value: 'instant_search' },
+                { label: 'Price (asc)', value: 'instant_search_price_asc' },
+                { label: 'Price (desc)', value: 'instant_search_price_desc' },
+              ]}
+            />
+            <HitsPerPage
+              items={[
+                { label: '16 per page', value: 16, default: true },
+                { label: '32 per page', value: 32 },
+                { label: '64 per page', value: 64 },
+              ]}
+            />
+          </div>
+          
+          <Hits hitComponent={Hit} />
+          <Pagination />
+        </div>
+      </div>
+    </InstantSearch>
+  );
+}
+```
+
+## Key Features
+
+### Hierarchical Categories
+
+Navigate through nested product categories:
+
+```javascript
+hierarchicalMenu({
+  container: '#categories',
+  attributes: [
+    'hierarchicalCategories.lvl0',
+    'hierarchicalCategories.lvl1',
+    'hierarchicalCategories.lvl2',
+  ],
+})
+```
+
+### Price Range Slider
+
+Filter products by price with a visual slider:
+
+```javascript
+rangeSlider({
+  container: '#price',
+  attribute: 'price',
+  pips: false,
+  tooltips: {
+    format(value) {
+      return `$${Math.round(value).toLocaleString()}`;
+    },
+  },
+})
+```
+
+### Searchable Facets
+
+Allow users to search within large facet lists:
+
+```javascript
+refinementList({
+  container: '#brands',
+  attribute: 'brand',
+  searchable: true,
+  searchablePlaceholder: 'Search for brands…',
+  showMore: true,
+  showMoreLimit: 50,
+})
+```
+
+### Rating Filter
+
+Filter by minimum rating:
+
+```javascript
+ratingMenu({
+  container: '#ratings',
+  attribute: 'rating',
+  max: 5,
+})
+```
+
+## Responsive Design
+
+The example includes mobile-optimized filtering:
+
+```javascript
+// Mobile filter toggle
+const openFiltersButton = document.querySelector('[data-action="open-overlay"]');
+const closeFiltersButton = document.querySelector('[data-action="close-overlay"]');
+
+openFiltersButton.addEventListener('click', () => {
+  document.body.classList.add('filtering');
+});
+
+closeFiltersButton.addEventListener('click', () => {
+  document.body.classList.remove('filtering');
+});
+```
+
+## Index Configuration
+
+The example uses multiple replica indices for sorting:
+
+- `instant_search` - Default relevance ranking
+- `instant_search_price_asc` - Price ascending
+- `instant_search_price_desc` - Price descending
+
+<Note>
+  Configure replica indices in your Algolia dashboard under Index > Replicas
+</Note>
+
+## Running the Example
+
+<Tabs>
+  <Tab title="JavaScript">
+    
+```bash
+cd examples/js/e-commerce
+yarn install
+yarn start
+```
+
+  </Tab>
+  <Tab title="React">
+    
+```bash
+cd examples/react/e-commerce
+yarn install
+yarn start
+```
+
+  </Tab>
+  <Tab title="Vue">
+    
+```bash
+cd examples/vue/e-commerce
+yarn install
+yarn dev
+```
+
+  </Tab>
+</Tabs>
+
+## Customization Tips
+
+<AccordionGroup>
+  <Accordion title="Change the product data structure">
+    Modify the hit template to match your product schema. Update attribute names in widgets to match your index configuration.
+  </Accordion>
+  
+  <Accordion title="Add more filters">
+    Include additional `refinementList` widgets for attributes like color, size, or material.
+  </Accordion>
+  
+  <Accordion title="Customize styling">
+    The example uses custom CSS built on top of InstantSearch CSS themes. Modify the styles to match your brand.
+  </Accordion>
+  
+  <Accordion title="Add to cart functionality">
+    Integrate with your e-commerce platform by adding click handlers to product items.
+  </Accordion>
+</AccordionGroup>
+
+## Related Examples
+
+- [URL Routing](/examples/routing) - See how search state syncs with URLs
+- [Multi-Index Search](/examples/multi-index) - Search across products and categories
+- [Next.js SSR](/examples/ssr-nextjs) - Server-side rendering for e-commerce
+
+## Source Code
+
+<CardGroup cols={3}>
+  <Card title="JavaScript" icon="js" href="https://github.com/algolia/instantsearch/tree/master/examples/js/e-commerce">
+    View source
+  </Card>
+  <Card title="React" icon="react" href="https://github.com/algolia/instantsearch/tree/master/examples/react/e-commerce">
+    View source
+  </Card>
+  <Card title="Vue" icon="vuejs" href="https://github.com/algolia/instantsearch/tree/master/examples/vue/e-commerce">
+    View source
+  </Card>
+</CardGroup>

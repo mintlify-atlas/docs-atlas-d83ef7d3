@@ -1,0 +1,89 @@
+---
+title: "connectHits"
+description: "Build a custom widget to display search results"
+---
+
+The **Hits** connector provides the logic to build a custom widget that displays search results.
+
+## Usage
+
+```javascript
+import { connectHits } from 'instantsearch.js/es/connectors';
+
+const customHits = connectHits(
+  (renderOptions, isFirstRender) => {
+    const { items, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <div class="hits">
+        ${items.map(item => `
+          <div class="hit">
+            <h3>${item.name}</h3>
+            <p>${item.description}</p>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+);
+
+search.addWidgets([
+  customHits({
+    container: document.querySelector('#hits'),
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags from hits string values.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+  
+  ```javascript
+  transformItems(items) {
+    return items.map(item => ({
+      ...item,
+      title: item.name.toUpperCase(),
+    }));
+  }
+  ```
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<Hit>">
+  The matched hits from the Algolia API.
+</ParamField>
+
+<ParamField path="hits" type="Array<Hit>">
+  The matched hits from the Algolia API.
+  
+  <Warning>
+    This parameter is deprecated. Use `items` instead.
+  </Warning>
+</ParamField>
+
+<ParamField path="results" type="SearchResults">
+  The complete response from the Algolia API.
+</ParamField>
+
+<ParamField path="banner" type="Banner">
+  The banner to display above the hits.
+</ParamField>
+
+<ParamField path="sendEvent" type="(eventType: string, hits: object | object[], eventName?: string) => void">
+  Sends an event to the Insights middleware.
+</ParamField>
+
+<ParamField path="bindEvent" type="(eventType: string, hits: object | object[], eventName?: string) => string">
+  Returns a string for the `data-insights-event` attribute for the Insights middleware.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

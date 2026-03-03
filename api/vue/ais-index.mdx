@@ -1,0 +1,287 @@
+---
+title: ais-index
+description: Component for searching in multiple Algolia indices
+---
+
+`<ais-index>` is a component that allows you to search in multiple Algolia indices within the same InstantSearch instance. This is useful for federated search, where you want to display results from different indices (e.g., products, articles, categories) in the same interface.
+
+## Usage
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient">
+    <!-- Primary index -->
+    <ais-index index-name="products">
+      <ais-search-box />
+      <ais-hits />
+    </ais-index>
+    
+    <!-- Secondary index -->
+    <ais-index index-name="articles">
+      <ais-hits />
+    </ais-index>
+  </ais-instant-search>
+</template>
+
+<script>
+import algoliasearch from 'algoliasearch/lite';
+import { AisInstantSearch, AisIndex, AisSearchBox, AisHits } from 'vue-instantsearch';
+
+export default {
+  components: { AisInstantSearch, AisIndex, AisSearchBox, AisHits },
+  data() {
+    return {
+      searchClient: algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey'),
+    };
+  },
+};
+</script>
+```
+
+## Props
+
+<ParamField path="indexName" type="string" required>
+  The name of the Algolia index to search in.
+  
+  ```vue
+  <ais-index index-name="products">
+    <!-- Components searching in "products" index -->
+  </ais-index>
+  ```
+</ParamField>
+
+<ParamField path="indexId" type="string">
+  A custom identifier for this index widget. This is useful when you want to have multiple `ais-index` components with the same `indexName` but different search parameters.
+  
+  ```vue
+  <ais-index index-name="products" index-id="products_top_rated">
+    <ais-configure :filters="'rating >= 4'" />
+    <ais-hits />
+  </ais-index>
+  
+  <ais-index index-name="products" index-id="products_on_sale">
+    <ais-configure :filters="'on_sale = true'" />
+    <ais-hits />
+  </ais-index>
+  ```
+</ParamField>
+
+## Slots
+
+<ParamField path="default" type="slot">
+  The default slot contains all search components that should query this specific index.
+  
+  ```vue
+  <ais-index index-name="products">
+    <ais-configure :hits-per-page.camel="8" />
+    <ais-refinement-list attribute="brand" />
+    <ais-hits />
+  </ais-index>
+  ```
+</ParamField>
+
+## How It Works
+
+The `ais-index` component creates a separate search context for each index. All child components within an `ais-index` will query that specific index.
+
+### Search State Isolation
+
+Each `ais-index` maintains its own search state:
+- Refinements, filters, and pagination are independent
+- Only the search query is shared across all indices (if `ais-search-box` is outside index components)
+- Each index can have its own configuration via `ais-configure`
+
+### Index Hierarchy
+
+```vue
+<ais-instant-search :search-client="searchClient">
+  <!-- Shared search box affects all indices -->
+  <ais-search-box />
+  
+  <ais-index index-name="products">
+    <!-- Only affects products index -->
+    <ais-configure :hits-per-page.camel="10" />
+    <ais-refinement-list attribute="brand" />
+    <ais-hits />
+  </ais-index>
+  
+  <ais-index index-name="categories">
+    <!-- Only affects categories index -->
+    <ais-configure :hits-per-page.camel="5" />
+    <ais-hits />
+  </ais-index>
+</ais-instant-search>
+```
+
+## CSS Classes
+
+The component renders with these CSS classes:
+
+- `ais-Index` - Root container class
+
+## Examples
+
+### Federated Search
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient">
+    <ais-search-box placeholder="Search products and articles..." />
+    
+    <div class="results-container">
+      <section class="products-section">
+        <h2>Products</h2>
+        <ais-index index-name="products">
+          <ais-configure :hits-per-page.camel="5" />
+          <ais-hits>
+            <template v-slot="{ items }">
+              <div v-for="item in items" :key="item.objectID">
+                {{ item.name }}
+              </div>
+            </template>
+          </ais-hits>
+        </ais-index>
+      </section>
+      
+      <section class="articles-section">
+        <h2>Articles</h2>
+        <ais-index index-name="articles">
+          <ais-configure :hits-per-page.camel="3" />
+          <ais-hits>
+            <template v-slot="{ items }">
+              <div v-for="item in items" :key="item.objectID">
+                {{ item.title }}
+              </div>
+            </template>
+          </ais-hits>
+        </ais-index>
+      </section>
+    </div>
+  </ais-instant-search>
+</template>
+```
+
+### Multiple Indices with Different Filters
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient">
+    <ais-search-box />
+    
+    <div class="product-categories">
+      <div class="bestsellers">
+        <h3>Bestsellers</h3>
+        <ais-index index-name="products" index-id="bestsellers">
+          <ais-configure 
+            :filters="'bestseller:true'"
+            :hits-per-page.camel="4"
+          />
+          <ais-hits />
+        </ais-index>
+      </div>
+      
+      <div class="new-arrivals">
+        <h3>New Arrivals</h3>
+        <ais-index index-name="products" index-id="new_arrivals">
+          <ais-configure 
+            :filters="'isNew:true'"
+            :hits-per-page.camel="4"
+          />
+          <ais-hits />
+        </ais-index>
+      </div>
+    </div>
+  </ais-instant-search>
+</template>
+```
+
+### Index with Independent Refinements
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient">
+    <!-- Global search box -->
+    <ais-search-box />
+    
+    <!-- Products with brand filter -->
+    <ais-index index-name="products">
+      <h2>Products</h2>
+      <ais-refinement-list attribute="brand" />
+      <ais-range-slider attribute="price" />
+      <ais-hits />
+      <ais-pagination />
+    </ais-index>
+    
+    <!-- Articles with category filter -->
+    <ais-index index-name="articles">
+      <h2>Articles</h2>
+      <ais-menu attribute="category" />
+      <ais-hits />
+    </ais-index>
+  </ais-instant-search>
+</template>
+```
+
+### Sort By with Multiple Indices
+
+```vue
+<template>
+  <ais-instant-search :search-client="searchClient">
+    <ais-index index-name="products">
+      <ais-search-box />
+      <ais-sort-by
+        :items="[
+          { value: 'products', label: 'Most relevant' },
+          { value: 'products_price_asc', label: 'Lowest price' },
+          { value: 'products_price_desc', label: 'Highest price' },
+        ]"
+      />
+      <ais-hits />
+    </ais-index>
+  </ais-instant-search>
+</template>
+```
+
+## Index Composition
+
+You can nest `ais-index` components, though this is rarely needed:
+
+```vue
+<ais-instant-search :search-client="searchClient">
+  <ais-index index-name="products">
+    <!-- Products content -->
+    
+    <ais-index index-name="products_recommendations">
+      <!-- Nested index for recommendations -->
+    </ais-index>
+  </ais-index>
+</ais-instant-search>
+```
+
+## Routing with Multiple Indices
+
+When using routing with multiple indices, the URL state includes all index states:
+
+```javascript
+// URL state example with multiple indices
+{
+  products: {
+    query: 'laptop',
+    refinementList: {
+      brand: ['Apple']
+    },
+    page: 2
+  },
+  articles: {
+    query: 'laptop',
+    menu: {
+      category: 'reviews'
+    }
+  }
+}
+```
+
+## Related Components
+
+- [ais-instant-search](/api/vue/ais-instant-search) - Root search component
+- [ais-configure](/api/vue/ais-configure) - Configure index search parameters

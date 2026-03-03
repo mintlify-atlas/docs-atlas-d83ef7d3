@@ -1,0 +1,272 @@
+---
+title: trendingItems
+---
+
+Displays trending items recommendations using Algolia's Recommend API.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { trendingItems } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  trendingItems({
+    container: '#trending-items'
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="facetName" type="string">
+  The facet attribute to get recommendations for (optional, for facet-specific trending).
+</ParamField>
+
+<ParamField path="facetValue" type="string">
+  The facet value to get recommendations for (required if `facetName` is provided).
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Number of recommendations to retrieve.
+</ParamField>
+
+<ParamField path="threshold" type="number">
+  Threshold for the recommendations confidence score (between 0 and 100).
+</ParamField>
+
+<ParamField path="queryParameters" type="object">
+  Additional search parameters to send to the Algolia API.
+</ParamField>
+
+<ParamField path="fallbackParameters" type="object">
+  Search parameters to use when not enough recommendations are available.
+</ParamField>
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML tags from items string values.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```typescript
+  (items: Hit[], { results: RecommendResponse }) => Hit[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to use for the widget.
+  
+  <Expandable title="properties">
+    <ParamField path="item" type="string | function">
+      Template for each trending item. Receives the hit data.
+    </ParamField>
+    
+    <ParamField path="empty" type="string | function">
+      Template to display when there are no results.
+    </ParamField>
+    
+    <ParamField path="header" type="string | function">
+      Template for the widget header. Receives `{ items, cssClasses }`.
+    </ParamField>
+    
+    <ParamField path="layout" type="function">
+      Template to wrap all items. Receives `{ items, templates, cssClasses }`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    
+    <ParamField path="emptyRoot" type="string | string[]">
+      CSS class for the root when there are no results.
+    </ParamField>
+    
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Global trending items
+
+```javascript
+trendingItems({
+  container: '#trending-items',
+  limit: 6,
+  templates: {
+    item(hit, { html }) {
+      return html`
+        <div>
+          <img src="${hit.image}" alt="${hit.name}" />
+          <h3>${hit.name}</h3>
+          <p>$${hit.price}</p>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### Trending in a category
+
+```javascript
+trendingItems({
+  container: '#trending-items',
+  facetName: 'category',
+  facetValue: 'Electronics',
+  limit: 4,
+  templates: {
+    header: 'Trending in Electronics',
+    item(hit) {
+      return `
+        <article>
+          <img src="${hit.image}" />
+          <h4>${hit.name}</h4>
+          <span class="price">$${hit.price}</span>
+        </article>
+      `;
+    }
+  }
+});
+```
+
+### With header and count
+
+```javascript
+trendingItems({
+  container: '#trending-items',
+  templates: {
+    header({ items }) {
+      return `<h2>Trending Now (${items.length})</h2>`;
+    },
+    item(hit) {
+      return `
+        <div class="trending-product">
+          <img src="${hit.image}" />
+          <div>${hit.name}</div>
+          <div class="price">$${hit.price}</div>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### With empty state
+
+```javascript
+trendingItems({
+  container: '#trending-items',
+  templates: {
+    item(hit) {
+      return `<div class="product">${hit.name}</div>`;
+    },
+    empty() {
+      return '<p>No trending items available right now.</p>';
+    }
+  }
+});
+```
+
+### Transform items to add badges
+
+```javascript
+trendingItems({
+  container: '#trending-items',
+  transformItems(items) {
+    return items.map((item, index) => ({
+      ...item,
+      trendingRank: index + 1,
+      badge: index < 3 ? 'Hot' : 'Trending'
+    }));
+  },
+  templates: {
+    item(hit) {
+      return `
+        <div>
+          <span class="badge">${hit.badge} #${hit.trendingRank}</span>
+          <h4>${hit.name}</h4>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### Specific brand trending
+
+```javascript
+trendingItems({
+  container: '#trending-items',
+  facetName: 'brand',
+  facetValue: 'Apple',
+  limit: 5,
+  templates: {
+    header: 'Trending Apple Products',
+    item(hit) {
+      return `<div>${hit.name} - $${hit.price}</div>`;
+    }
+  }
+});
+```
+
+### With threshold
+
+```javascript
+trendingItems({
+  container: '#trending-items',
+  threshold: 80,
+  limit: 8,
+  templates: {
+    item(hit) {
+      return `<div class="item">${hit.name}</div>`;
+    }
+  }
+});
+```
+
+## HTML output
+
+```html
+<div class="ais-TrendingItems">
+  <ol class="ais-TrendingItems-list">
+    <li class="ais-TrendingItems-item">
+      <!-- Item template content -->
+    </li>
+    <!-- More items -->
+  </ol>
+</div>
+```
+
+## Notes
+
+- Requires Algolia Recommend to be enabled on your account.
+- The widget uses the Trending Items model.
+- Can show global trends or facet-specific trends.
+- Both `facetName` and `facetValue` must be provided together.
+- Results are based on user behavior and item popularity.

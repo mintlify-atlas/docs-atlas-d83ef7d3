@@ -1,0 +1,655 @@
+---
+title: 'Server-side rendering'
+description: 'Learn how to implement server-side rendering (SSR) with InstantSearch for better performance and SEO.'
+keywords: ['ssr', 'server-side rendering', 'nextjs', 'performance', 'seo', 'hydration']
+---
+
+Server-side rendering (SSR) in InstantSearch pre-renders search results on the server, improving initial page load performance and SEO. The server generates HTML with search results, which is then hydrated on the client for interactivity.
+
+## Why use SSR?
+
+Server-side rendering provides several benefits:
+
+<CardGroup cols={2}>
+  <Card title="SEO optimization" icon="magnifying-glass-chart">
+    Search engines can index your search results, improving discoverability.
+  </Card>
+  
+  <Card title="Faster initial load" icon="gauge-high">
+    Users see content immediately without waiting for JavaScript to load and execute.
+  </Card>
+  
+  <Card title="Better perceived performance" icon="eye">
+    Content appears faster even if total load time is similar to client-side rendering.
+  </Card>
+  
+  <Card title="Social media previews" icon="share-nodes">
+    Link previews on social platforms show actual search results.
+  </Card>
+</CardGroup>
+
+## How SSR works in InstantSearch
+
+<Steps>
+  <Step title="Server: Get server state">
+    Render your InstantSearch app on the server to collect search requests and fetch results.
+  </Step>
+  
+  <Step title="Server: Render with results">
+    Render the app again with the fetched results to generate HTML.
+  </Step>
+  
+  <Step title="Client: Hydrate">
+    Send the server state to the client and hydrate the InstantSearch instance with the cached results.
+  </Step>
+  
+  <Step title="Client: Interactive">
+    Once hydrated, the client takes over and new searches happen on the client side.
+  </Step>
+</Steps>
+
+## React with Next.js (App Router)
+
+The simplest way to use SSR is with Next.js App Router and `InstantSearchNext`:
+
+```tsx
+// app/search/page.tsx
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import { InstantSearchNext } from 'react-instantsearch-nextjs';
+import { SearchBox, Hits, RefinementList } from 'react-instantsearch';
+
+const searchClient = algoliasearch('YourAppID', 'YourSearchKey');
+
+export default function Search() {
+  return (
+    <InstantSearchNext
+      searchClient={searchClient}
+      indexName="products"
+      routing
+    >
+      <SearchBox />
+      <RefinementList attribute="brand" />
+      <Hits />
+    </InstantSearchNext>
+  );
+}
+```
+
+<Info>
+  `InstantSearchNext` automatically handles SSR, hydration, and routing in Next.js App Router. No additional configuration needed!
+</Info>
+
+## React with Next.js (Pages Router)
+
+For Next.js Pages Router, use `getServerState` with `InstantSearchSSRProvider`:
+
+```tsx
+// pages/search.tsx
+import { GetServerSideProps } from 'next';
+import { renderToString } from 'react-dom/server';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import {
+  InstantSearch,
+  InstantSearchSSRProvider,
+  getServerState,
+  SearchBox,
+  Hits,
+  RefinementList,
+} from 'react-instantsearch';
+
+const searchClient = algoliasearch('YourAppID', 'YourSearchKey');
+
+type SearchPageProps = {
+  serverState?: any;
+  url?: string;
+};
+
+export default function SearchPage({ serverState, url }: SearchPageProps) {
+  return (
+    <InstantSearchSSRProvider {...serverState}>
+      <InstantSearch
+        searchClient={searchClient}
+        indexName="products"
+        routing={{ router: { createURL: () => url || '' } }}
+      >
+        <SearchBox />
+        <RefinementList attribute="brand" />
+        <Hits />
+      </InstantSearch>
+    </InstantSearchSSRProvider>
+  );
+}
+
+export const getServerSideProps: GetServerSideProps<SearchPageProps> = async ({
+  req,
+}) => {
+  const protocol = req.headers.referer?.split('://')[0] || 'https';
+  const url = `${protocol}://${req.headers.host}${req.url}`;
+  
+  const serverState = await getServerState(
+    <SearchPage url={url} />,
+    { renderToString }
+  );
+  
+  return {
+    props: {
+      serverState,
+      url,
+    },
+  };
+};
+```
+
+### How it works
+
+<Steps>
+  <Step title="getServerSideProps">
+    Next.js calls this on the server for each request.
+  </Step>
+  
+  <Step title="getServerState">
+    Renders your app, collects search requests, fetches results, and returns serialized state.
+  </Step>
+  
+  <Step title="InstantSearchSSRProvider">
+    Provides the server state to the client InstantSearch instance.
+  </Step>
+  
+  <Step title="Hydration">
+    Client renders with cached results, avoiding duplicate requests.
+  </Step>
+</Steps>
+
+## getServerState API
+
+The `getServerState` function is the core of SSR (based on `/home/daytona/workspace/source/packages/react-instantsearch-core/src/components/InstantSearchSSRProvider.tsx:9-11`):
+
+```typescript
+type InstantSearchServerState = {
+  initialResults: InitialResults;
+};
+
+function getServerState(
+  children: ReactElement,
+  options: { renderToString: (element: ReactElement) => string }
+): Promise<InstantSearchServerState>
+```
+
+Usage:
+
+```typescript
+import { renderToString } from 'react-dom/server';
+import { getServerState } from 'react-instantsearch';
+
+const serverState = await getServerState(
+  <App />,
+  { renderToString }
+);
+```
+
+## InstantSearchSSRProvider API
+
+Provides server state to the client (from `/home/daytona/workspace/source/packages/react-instantsearch-core/src/components/InstantSearchSSRProvider.tsx:18-26`):
+
+```tsx
+type InstantSearchSSRProviderProps = Partial<InstantSearchServerState> & {
+  children?: ReactNode;
+};
+
+function InstantSearchSSRProvider(props: InstantSearchSSRProviderProps)
+```
+
+Usage:
+
+```tsx
+<InstantSearchSSRProvider {...serverState}>
+  <InstantSearch searchClient={searchClient} indexName="products">
+    {/* widgets */}
+  </InstantSearch>
+</InstantSearchSSRProvider>
+```
+
+## React with other SSR frameworks
+
+### Remix
+
+```tsx
+// routes/search.tsx
+import { json, LoaderFunction } from '@remix-run/node';
+import { useLoaderData } from '@remix-run/react';
+import { renderToString } from 'react-dom/server';
+import {
+  InstantSearch,
+  InstantSearchSSRProvider,
+  getServerState,
+} from 'react-instantsearch';
+
+export const loader: LoaderFunction = async ({ request }) => {
+  const url = new URL(request.url);
+  
+  const serverState = await getServerState(
+    <SearchPage url={url.toString()} />,
+    { renderToString }
+  );
+  
+  return json({ serverState, url: url.toString() });
+};
+
+export default function Search() {
+  const { serverState, url } = useLoaderData<typeof loader>();
+  
+  return <SearchPage serverState={serverState} url={url} />;
+}
+
+function SearchPage({ serverState, url }) {
+  return (
+    <InstantSearchSSRProvider {...serverState}>
+      <InstantSearch
+        searchClient={searchClient}
+        indexName="products"
+        routing={{ router: { createURL: () => url } }}
+      >
+        <SearchBox />
+        <Hits />
+      </InstantSearch>
+    </InstantSearchSSRProvider>
+  );
+}
+```
+
+### Express
+
+```javascript
+import express from 'express';
+import { renderToString } from 'react-dom/server';
+import { getServerState } from 'react-instantsearch';
+
+const app = express();
+
+app.get('/search', async (req, res) => {
+  const url = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  
+  const serverState = await getServerState(
+    <App url={url} />,
+    { renderToString }
+  );
+  
+  const html = renderToString(
+    <InstantSearchSSRProvider {...serverState}>
+      <App url={url} />
+    </InstantSearchSSRProvider>
+  );
+  
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <body>
+        <div id="root">${html}</div>
+        <script>
+          window.__SERVER_STATE__ = ${JSON.stringify(serverState)};
+        </script>
+        <script src="/bundle.js"></script>
+      </body>
+    </html>
+  `);
+});
+```
+
+## Vue SSR
+
+For Vue, use the standard InstantSearch instance with initial results:
+
+```javascript
+// server.js
+import { renderToString } from '@vue/server-renderer';
+import { createSSRApp } from 'vue';
+import InstantSearch from 'vue-instantsearch/vue3/es';
+
+const app = createSSRApp({
+  // Your app component
+});
+
+app.use(InstantSearch);
+
+// Render on server
+const html = await renderToString(app);
+```
+
+## Initial results format
+
+The server state contains initial results in this format:
+
+```typescript
+type InitialResults = {
+  [indexId: string]: {
+    // Search results
+    results?: SearchResults[];
+    
+    // Recommendation results
+    recommend?: {
+      results: RecommendResponse[];
+    };
+  };
+};
+```
+
+Example:
+
+```javascript
+{
+  products: {
+    results: [
+      {
+        hits: [...],
+        nbHits: 1000,
+        page: 0,
+        nbPages: 50,
+        // ... other result properties
+      }
+    ]
+  }
+}
+```
+
+## Handling routing with SSR
+
+When using routing with SSR, pass the current URL:
+
+```tsx
+import { history } from 'instantsearch.js/es/lib/routers';
+
+function SearchPage({ url }) {
+  const routing = {
+    router: history({
+      createURL({ qsModule, routeState }) {
+        // Generate URLs using the server URL
+        const queryString = qsModule.stringify(routeState);
+        return `${url.split('?')[0]}?${queryString}`;
+      },
+    }),
+  };
+  
+  return (
+    <InstantSearch
+      searchClient={searchClient}
+      indexName="products"
+      routing={routing}
+    >
+      {/* widgets */}
+    </InstantSearch>
+  );
+}
+```
+
+## Optimizing SSR performance
+
+### Cache search client
+
+Create the search client once and reuse it:
+
+```javascript
+// searchClient.js
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+export const searchClient = algoliasearch(
+  process.env.ALGOLIA_APP_ID,
+  process.env.ALGOLIA_SEARCH_KEY
+);
+```
+
+### Use search client cache
+
+The search client caches requests automatically. Ensure you're using the same client instance:
+
+```javascript
+// Server and client use same instance
+import { searchClient } from './searchClient';
+```
+
+### Limit initial results
+
+Fetch fewer results on the server:
+
+```tsx
+<Configure hitsPerPage={10} />
+```
+
+### Deduplicate requests
+
+InstantSearch automatically deduplicates identical requests during SSR.
+
+## Common SSR patterns
+
+### Conditional SSR
+
+Only use SSR for certain routes:
+
+```tsx
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
+  // Only SSR if there are search parameters
+  if (Object.keys(query).length === 0) {
+    return { props: {} };
+  }
+  
+  const serverState = await getServerState(
+    <SearchPage />,
+    { renderToString }
+  );
+  
+  return { props: { serverState } };
+};
+```
+
+### SSR with authentication
+
+Use secured API keys based on user:
+
+```tsx
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const user = await getUser(req);
+  
+  const searchClient = algoliasearch(
+    'YourAppID',
+    generateSecuredApiKey(user)
+  );
+  
+  const serverState = await getServerState(
+    <SearchPage searchClient={searchClient} />,
+    { renderToString }
+  );
+  
+  return { props: { serverState } };
+};
+```
+
+### Progressive hydration
+
+Hydrate only critical widgets first:
+
+```tsx
+<InstantSearch searchClient={searchClient} indexName="products">
+  {/* Always rendered */}
+  <SearchBox />
+  <Hits />
+  
+  {/* Lazy loaded */}
+  {isClient && (
+    <>
+      <RefinementList attribute="brand" />
+      <Pagination />
+    </>
+  )}
+</InstantSearch>
+```
+
+## Debugging SSR
+
+### Check server state
+
+```typescript
+const serverState = await getServerState(<App />, { renderToString });
+console.log('Server state:', JSON.stringify(serverState, null, 2));
+```
+
+### Verify hydration
+
+React will warn about hydration mismatches in the console. Common causes:
+
+- Different state on server and client
+- Missing `InstantSearchSSRProvider`
+- Incorrect URL passed to routing
+- Non-deterministic rendering (random values, dates, etc.)
+
+### Compare server and client HTML
+
+```javascript
+// Server
+const serverHtml = renderToString(
+  <InstantSearchSSRProvider {...serverState}>
+    <App />
+  </InstantSearchSSRProvider>
+);
+
+console.log('Server HTML:', serverHtml);
+
+// Client should produce identical HTML on first render
+```
+
+## Best practices
+
+<CardGroup cols={2}>
+  <Card title="Use InstantSearchNext for Next.js" icon="rocket">
+    The `InstantSearchNext` component handles all SSR complexity automatically in Next.js App Router.
+  </Card>
+  
+  <Card title="Cache the search client" icon="database">
+    Create a single search client instance and reuse it on server and client.
+  </Card>
+  
+  <Card title="Pass consistent URLs" icon="link">
+    Ensure the URL passed to routing is the same on server and client to avoid hydration issues.
+  </Card>
+  
+  <Card title="Handle loading states" icon="spinner">
+    Show loading indicators during hydration for a better user experience.
+  </Card>
+  
+  <Card title="Limit initial requests" icon="filter">
+    Use `Configure` to limit results and reduce server response time.
+  </Card>
+  
+  <Card title="Monitor performance" icon="chart-line">
+    Track server response times and optimize slow SSR renders.
+  </Card>
+</CardGroup>
+
+## Limitations
+
+<Warning>
+  **DynamicWidgets**: The `DynamicWidgets` component requires a two-pass render to discover attributes. This works automatically but doubles the server rendering time.
+</Warning>
+
+<Warning>
+  **Recommendation widgets**: Recommendation widgets (RelatedProducts, TrendingItems, etc.) are supported but add additional requests during SSR.
+</Warning>
+
+<Info>
+  **Browser-only features**: Some features like geolocation-based search may not work during SSR and need client-side initialization.
+</Info>
+
+## SSR vs Static Site Generation (SSG)
+
+<Columns cols={2}>
+  <div>
+    ### Use SSR when:
+    
+    - Content changes frequently
+    - User-specific results (authentication)
+    - Real-time data requirements
+    - Personalized search
+  </div>
+  
+  <div>
+    ### Use SSG when:
+    
+    - Content is mostly static
+    - Same results for all users
+    - Build-time generation is acceptable
+    - Maximum performance needed
+  </div>
+</Columns>
+
+For Next.js, use `getStaticProps` instead of `getServerSideProps` for SSG:
+
+```tsx
+export const getStaticProps: GetStaticProps = async () => {
+  const serverState = await getServerState(
+    <SearchPage />,
+    { renderToString }
+  );
+  
+  return {
+    props: { serverState },
+    revalidate: 3600, // Regenerate every hour
+  };
+};
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Hydration mismatch errors">
+    **Cause**: Server and client render differently.
+    
+    **Solution**: Ensure:
+    - Same search client on server and client
+    - Correct URL passed to routing
+    - No browser-only code in initial render
+    - `InstantSearchSSRProvider` wraps your app
+  </Accordion>
+  
+  <Accordion title="Duplicate requests on client">
+    **Cause**: Server state not properly hydrated.
+    
+    **Solution**: Verify:
+    - `InstantSearchSSRProvider` has `serverState` prop
+    - Server state is serialized correctly
+    - No unmount/remount of InstantSearch
+  </Accordion>
+  
+  <Accordion title="Empty results on server">
+    **Cause**: Search client not configured correctly.
+    
+    **Solution**: Check:
+    - API credentials are accessible on server
+    - Search client is created before `getServerState`
+    - Network requests are allowed from server
+  </Accordion>
+  
+  <Accordion title="Slow server responses">
+    **Cause**: Too many widgets or large result sets.
+    
+    **Solution**:
+    - Reduce `hitsPerPage`
+    - Limit number of widgets
+    - Use caching
+    - Consider SSG instead
+  </Accordion>
+</AccordionGroup>
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="Routing" icon="route" href="/concepts/routing">
+    URL synchronization with SSR
+  </Card>
+  <Card title="Search state" icon="database" href="/concepts/search-state">
+    Understanding state structure
+  </Card>
+  <Card title="Next.js guide" icon="book" href="/guides/nextjs">
+    Complete Next.js integration guide
+  </Card>
+  <Card title="InstantSearch instance" icon="magnifying-glass" href="/concepts/instantsearch-instance">
+    Core instance configuration
+  </Card>
+</CardGroup>

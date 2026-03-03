@@ -1,0 +1,215 @@
+---
+title: infiniteHits
+description: Display search results with infinite scrolling
+---
+
+The infiniteHits widget displays search results with infinite scrolling or "Load more" buttons. It's ideal for creating engaging, continuous browsing experiences.
+
+## Usage
+
+```javascript
+const infiniteHits = instantsearch.widgets.infiniteHits({
+  container: '#infinite-hits',
+  templates: {
+    item: `
+      <div>
+        <h2>{{name}}</h2>
+        <p>{{description}}</p>
+      </div>
+    `,
+  },
+});
+
+search.addWidget(infiniteHits);
+```
+
+## Examples
+
+### Basic Infinite Hits
+
+```javascript
+instantsearch.widgets.infiniteHits({
+  container: '#infinite-hits',
+  templates: {
+    item: (hit, { html, components }) => html`
+      <article>
+        <img src="${hit.image}" alt="${hit.name}" />
+        <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+        <p>$${hit.price}</p>
+      </article>
+    `,
+  },
+});
+```
+
+### With Show Previous Button
+
+```javascript
+instantsearch.widgets.infiniteHits({
+  container: '#infinite-hits',
+  showPrevious: true,
+  templates: {
+    showPreviousText: 'Show previous results',
+    showMoreText: 'Load more results',
+  },
+});
+```
+
+### With Caching
+
+```javascript
+const sessionStorageCache = {
+  read({ state }) {
+    return JSON.parse(
+      window.sessionStorage.getItem(
+        `ais.infiniteHits.${state.index}.${state.page}`
+      )
+    );
+  },
+  write({ state, hits }) {
+    window.sessionStorage.setItem(
+      `ais.infiniteHits.${state.index}.${state.page}`,
+      JSON.stringify(hits)
+    );
+  },
+};
+
+instantsearch.widgets.infiniteHits({
+  container: '#infinite-hits',
+  cache: sessionStorageCache,
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="escapeHTML" type="boolean" default="true">
+  Whether to escape HTML entities in the hits.
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+</ParamField>
+
+<ParamField path="showPrevious" type="boolean" default="false">
+  Whether to display a "Show previous" button to load previous results.
+</ParamField>
+
+<ParamField path="cache" type="object">
+  Reads and writes hits from/to cache. Helps restore scroll position when users navigate back.
+  
+  ```javascript
+  {
+    read: ({ state }) => hits[],
+    write: ({ state, hits }) => void
+  }
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="item" type="Template">
+      Template for each hit. Receives the hit object with `__position` for the absolute position.
+    </ParamField>
+    <ParamField path="empty" type="Template">
+      Template displayed when there are no results.
+    </ParamField>
+    <ParamField path="showPreviousText" type="Template" default="'Show previous results'">
+      Template for the "Show previous" button label.
+    </ParamField>
+    <ParamField path="showMoreText" type="Template" default="'Show more results'">
+      Template for the "Show more" button label.
+    </ParamField>
+    <ParamField path="banner" type="Template">
+      Template for displaying a banner.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="emptyRoot" type="string | string[]">
+      CSS class for the root element when empty.
+    </ParamField>
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item element.
+    </ParamField>
+    <ParamField path="loadPrevious" type="string | string[]">
+      CSS class for the "Show previous" button.
+    </ParamField>
+    <ParamField path="disabledLoadPrevious" type="string | string[]">
+      CSS class for the disabled "Show previous" button.
+    </ParamField>
+    <ParamField path="loadMore" type="string | string[]">
+      CSS class for the "Show more" button.
+    </ParamField>
+    <ParamField path="disabledLoadMore" type="string | string[]">
+      CSS class for the disabled "Show more" button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-InfiniteHits">
+  <button class="ais-InfiniteHits-loadPrevious">
+    Show previous results
+  </button>
+  <ol class="ais-InfiniteHits-list">
+    <li class="ais-InfiniteHits-item">
+      <!-- Your item template -->
+    </li>
+    <!-- More items... -->
+  </ol>
+  <button class="ais-InfiniteHits-loadMore">
+    Show more results
+  </button>
+</div>
+```
+
+## Automatic Infinite Scrolling
+
+To trigger automatic loading when scrolling to the bottom:
+
+```javascript
+const infiniteHits = instantsearch.widgets.infiniteHits({
+  container: '#infinite-hits',
+});
+
+// Get the showMore function from the widget
+const showMore = () => {
+  const button = document.querySelector('.ais-InfiniteHits-loadMore');
+  if (button && !button.disabled) {
+    button.click();
+  }
+};
+
+// Trigger on scroll
+window.addEventListener('scroll', () => {
+  const scrollTop = window.scrollY;
+  const windowHeight = window.innerHeight;
+  const documentHeight = document.documentElement.scrollHeight;
+  
+  if (scrollTop + windowHeight >= documentHeight - 100) {
+    showMore();
+  }
+});
+```

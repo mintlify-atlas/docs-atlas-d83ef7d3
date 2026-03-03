@@ -1,0 +1,470 @@
+---
+title: 'Basic usage'
+description: 'Learn core concepts and components of Vue InstantSearch'
+keywords: ['vue', 'components', 'instant-search', 'search-box', 'hits', 'refinement']
+---
+
+## Core concepts
+
+Vue InstantSearch is built around three core concepts:
+
+<CardGroup cols={3}>
+  <Card title="Widgets" icon="puzzle">
+    Vue components that render search UI elements like search boxes, hits, and filters
+  </Card>
+  <Card title="Connectors" icon="plug">
+    Logic layer that manages widget state and search parameters
+  </Card>
+  <Card title="InstantSearch instance" icon="bolt">
+    The root component that coordinates all widgets and manages the search state
+  </Card>
+</CardGroup>
+
+## The InstantSearch wrapper
+
+Every Vue InstantSearch implementation requires the `<ais-instant-search>` component as the root wrapper. This component manages the search state and coordinates all child widgets.
+
+### Required props
+
+<Fields>
+  <Field name="search-client" type="object" required>
+    The Algolia search client created with `algoliasearch()`
+  </Field>
+  <Field name="index-name" type="string" required>
+    The name of your Algolia index to search
+  </Field>
+</Fields>
+
+### Common props
+
+<Fields>
+  <Field name="routing" type="object | boolean">
+    Enable URL synchronization with custom routing configuration
+  </Field>
+  <Field name="insights" type="boolean | object">
+    Enable Algolia Insights for click and conversion tracking
+  </Field>
+  <Field name="stalled-search-delay" type="number" default="200">
+    Time in ms before a search is considered stalled
+  </Field>
+  <Field name="initial-ui-state" type="object">
+    Set the initial search state (query, filters, page, etc.)
+  </Field>
+  <Field name="search-function" type="function">
+    Custom function to control when searches are triggered
+  </Field>
+</Fields>
+
+### Basic example
+
+```vue
+<template>
+  <ais-instant-search
+    :search-client="searchClient"
+    index-name="products"
+    :insights="true"
+    :routing="routing"
+  >
+    <!-- Your search widgets go here -->
+  </ais-instant-search>
+</template>
+
+<script>
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+
+export default {
+  data() {
+    return {
+      searchClient: algoliasearch('YourAppID', 'YourSearchKey'),
+      routing: {
+        router: {
+          // Custom router implementation
+        },
+      },
+    };
+  },
+};
+</script>
+```
+
+## Essential components
+
+### Search box
+
+The `<ais-search-box>` component provides a search input field.
+
+<Fields>
+  <Field name="placeholder" type="string">
+    Placeholder text for the input
+  </Field>
+  <Field name="autofocus" type="boolean" default="false">
+    Automatically focus the input on mount
+  </Field>
+  <Field name="show-loading-indicator" type="boolean" default="true">
+    Show a loading spinner during search
+  </Field>
+  <Field name="submit-title" type="string">
+    Title attribute for the submit button
+  </Field>
+  <Field name="reset-title" type="string">
+    Title attribute for the reset button
+  </Field>
+</Fields>
+
+```vue
+<ais-search-box
+  placeholder="Search for products..."
+  :autofocus="true"
+  submit-title="Submit search"
+  reset-title="Clear search"
+/>
+```
+
+#### Custom rendering with slots
+
+```vue
+<ais-search-box>
+  <template #submit-icon>
+    <svg><!-- Custom submit icon --></svg>
+  </template>
+  <template #reset-icon>
+    <svg><!-- Custom reset icon --></svg>
+  </template>
+  <template #loading-indicator>
+    <span class="custom-loader">Loading...</span>
+  </template>
+</ais-search-box>
+```
+
+### Hits
+
+The `<ais-hits>` component displays search results.
+
+<Fields>
+  <Field name="transform-items" type="function">
+    Transform the items before rendering
+  </Field>
+  <Field name="escape-html" type="boolean" default="true">
+    Escape HTML in hit attributes
+  </Field>
+  <Field name="show-banner" type="boolean" default="true">
+    Show promotional banners if available
+  </Field>
+</Fields>
+
+```vue
+<ais-hits>
+  <template #item="{ item }">
+    <article>
+      <img :src="item.image" :alt="item.name" />
+      <h2>
+        <ais-highlight :hit="item" attribute="name" />
+      </h2>
+      <p>{{ item.price }}</p>
+    </article>
+  </template>
+</ais-hits>
+```
+
+<Tip>
+The `item` slot receives the full hit object with all attributes from your Algolia index.
+</Tip>
+
+### Refinement list
+
+The `<ais-refinement-list>` component creates a list of facet filters.
+
+<Fields>
+  <Field name="attribute" type="string" required>
+    The facet attribute to create filters for
+  </Field>
+  <Field name="searchable" type="boolean" default="false">
+    Enable search within facet values
+  </Field>
+  <Field name="searchable-placeholder" type="string">
+    Placeholder for the facet search input
+  </Field>
+  <Field name="operator" type="'or' | 'and'" default="'or'">
+    How multiple selections are combined
+  </Field>
+  <Field name="limit" type="number">
+    Maximum number of items to display
+  </Field>
+  <Field name="show-more" type="boolean" default="false">
+    Enable show more/less functionality
+  </Field>
+  <Field name="show-more-limit" type="number">
+    Number of items when "show more" is active
+  </Field>
+  <Field name="sort-by" type="array | function">
+    Custom sorting for facet values
+  </Field>
+</Fields>
+
+```vue
+<ais-refinement-list
+  attribute="brand"
+  :searchable="true"
+  searchable-placeholder="Search brands..."
+  operator="or"
+  :limit="10"
+  :show-more="true"
+  :show-more-limit="20"
+/>
+```
+
+### Configure
+
+The `<ais-configure>` component sets search parameters without rendering UI.
+
+```vue
+<ais-configure
+  :hits-per-page.camel="20"
+  :attributes-to-snippet.camel="['description:50']"
+  :snippet-ellipsis-text.camel="'...'"
+  :remove-words-if-no-result.camel="'allOptional'"
+/>
+```
+
+<Note>
+Use the `.camel` modifier for props with camelCase names in Vue 2. Vue 3 handles this automatically.
+</Note>
+
+## Highlighting and snippeting
+
+### Highlight component
+
+Highlight matching terms in search results:
+
+```vue
+<ais-highlight
+  :hit="item"
+  attribute="name"
+  highlighted-tag-name="mark"
+/>
+```
+
+### Snippet component
+
+Display text snippets with highlighted matches:
+
+```vue
+<ais-snippet
+  :hit="item"
+  attribute="description"
+  highlighted-tag-name="em"
+/>
+```
+
+## Pagination
+
+Add pagination controls with `<ais-pagination>`:
+
+```vue
+<ais-pagination
+  :padding="3"
+  :show-first="true"
+  :show-last="true"
+/>
+```
+
+Custom pagination rendering:
+
+```vue
+<ais-pagination>
+  <template #default="{ pages, currentRefinement, refine, createURL }">
+    <ul>
+      <li v-for="page in pages" :key="page">
+        <a
+          :href="createURL(page)"
+          :class="{ active: page === currentRefinement }"
+          @click.prevent="refine(page)"
+        >
+          {{ page + 1 }}
+        </a>
+      </li>
+    </ul>
+  </template>
+</ais-pagination>
+```
+
+## Multi-index search
+
+Search across multiple indices using the `<ais-index>` component:
+
+```vue
+<ais-instant-search
+  :search-client="searchClient"
+  index-name="products"
+>
+  <!-- Main index -->
+  <ais-search-box />
+  <ais-hits>
+    <template #item="{ item }">
+      <div>{{ item.name }}</div>
+    </template>
+  </ais-hits>
+
+  <!-- Secondary index for suggestions -->
+  <ais-index
+    index-name="query_suggestions"
+    index-id="suggestions"
+  >
+    <ais-hits>
+      <template #item="{ item }">
+        <div>{{ item.query }}</div>
+      </template>
+    </ais-hits>
+  </ais-index>
+</ais-instant-search>
+```
+
+## Customizing widget UI
+
+All widgets support custom rendering through scoped slots:
+
+```vue
+<ais-stats>
+  <template #default="{ nbHits, processingTimeMS }">
+    <p>
+      Found <strong>{{ nbHits.toLocaleString() }}</strong> results
+      in {{ processingTimeMS }}ms
+    </p>
+  </template>
+</ais-stats>
+```
+
+## Controlled components
+
+Control widget state from parent components:
+
+```vue
+<template>
+  <ais-search-box v-model="query" />
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      query: 'initial search',
+    };
+  },
+};
+</script>
+```
+
+## Conditional search
+
+Control when searches execute using `search-function`:
+
+```vue
+<template>
+  <ais-instant-search
+    :search-client="searchClient"
+    index-name="products"
+    :search-function="searchFunction"
+  >
+    <ais-search-box />
+    <ais-hits />
+  </ais-instant-search>
+</template>
+
+<script>
+export default {
+  methods: {
+    searchFunction(helper) {
+      // Only search if query has at least 3 characters
+      if (helper.state.query.length >= 3) {
+        helper.search();
+      }
+    },
+  },
+};
+</script>
+```
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Use the lite client for better performance">
+    Import `liteClient` instead of the full client:
+    
+    ```javascript
+    import { liteClient as algoliasearch } from 'algoliasearch/lite';
+    ```
+    
+    The lite client is optimized for search-only operations and reduces bundle size.
+  </Accordion>
+
+  <Accordion title="Reuse the search client instance">
+    Create the search client once and reuse it:
+    
+    ```javascript
+    // ✅ Good: Create once
+    const searchClient = algoliasearch('appId', 'apiKey');
+    
+    export default {
+      data() {
+        return { searchClient };
+      },
+    };
+    
+    // ❌ Bad: Creates new instance on every render
+    export default {
+      data() {
+        return {
+          searchClient: algoliasearch('appId', 'apiKey'),
+        };
+      },
+    };
+    ```
+  </Accordion>
+
+  <Accordion title="Use transformItems for custom sorting or filtering">
+    Transform items before rendering:
+    
+    ```vue
+    <ais-hits :transform-items="transformItems">
+      <template #item="{ item }">
+        <!-- ... -->
+      </template>
+    </ais-hits>
+    
+    <script>
+    export default {
+      methods: {
+        transformItems(items) {
+          return items.map(item => ({
+            ...item,
+            formattedPrice: `$${item.price.toFixed(2)}`,
+          }));
+        },
+      },
+    };
+    </script>
+    ```
+  </Accordion>
+
+  <Accordion title="Configure search parameters with ais-configure">
+    Set global search parameters once:
+    
+    ```vue
+    <ais-configure
+      :hits-per-page.camel="20"
+      :attributes-to-retrieve.camel="['name', 'price', 'image']"
+    />
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Vue 2 vs Vue 3" icon="git-compare" href="/vue/vue2-vs-vue3">
+    Learn about version-specific differences
+  </Card>
+  <Card title="Server-side rendering" icon="server" href="/vue/server-side-rendering">
+    Implement SSR with Vue InstantSearch
+  </Card>
+</Columns>

@@ -1,0 +1,563 @@
+---
+title: Multi-Index Search Example
+description: Search across multiple Algolia indices simultaneously with federated search
+---
+
+This example demonstrates how to search across multiple indices at the same time, enabling federated search experiences where you can query different types of content simultaneously.
+
+## Overview
+
+Multi-index search allows you to:
+
+- **Search multiple indices** with a single query
+- **Display different result types** (products, articles, categories)
+- **Apply index-specific filters** and refinements
+- **Maintain separate pagination** for each index
+- **Share search state** across indices
+
+<Frame>
+  <img src="/images/examples/multi-index-demo.png" alt="Multi-index search interface" />
+</Frame>
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="E-commerce" icon="shopping-bag">
+    Search products, categories, and help articles together
+  </Card>
+  <Card title="Content Sites" icon="newspaper">
+    Query blog posts, documentation, and FAQs simultaneously
+  </Card>
+  <Card title="Media Libraries" icon="photo-film">
+    Search videos, images, and audio files in one interface
+  </Card>
+  <Card title="Marketplaces" icon="store">
+    Find listings, sellers, and categories together
+  </Card>
+</CardGroup>
+
+## Implementation
+
+### React Example with Index Component
+
+<Tabs>
+  <Tab title="Basic Setup">
+    
+Use the `Index` component to query multiple indices:
+
+```tsx
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import {
+  InstantSearch,
+  Index,
+  SearchBox,
+  Hits,
+  RefinementList,
+  Configure,
+} from 'react-instantsearch';
+
+const searchClient = algoliasearch(
+  'latency',
+  '6be0576ff61c053d5f9a3225e2a90f76'
+);
+
+function App() {
+  return (
+    <InstantSearch
+      searchClient={searchClient}
+      indexName="instant_search"
+      insights={true}
+    >
+      <Configure hitsPerPage={5} />
+      <SearchBox placeholder="Search products and categories..." />
+      
+      {/* Main products index */}
+      <section>
+        <h2>Products</h2>
+        <Hits hitComponent={ProductHit} />
+      </section>
+      
+      {/* Secondary categories index */}
+      <Index indexName="instant_search_categories">
+        <section>
+          <h2>Categories</h2>
+          <Configure hitsPerPage={3} />
+          <Hits hitComponent={CategoryHit} />
+        </section>
+      </Index>
+      
+      {/* Tertiary articles index */}
+      <Index indexName="instant_search_articles">
+        <section>
+          <h2>Help Articles</h2>
+          <Configure hitsPerPage={3} />
+          <Hits hitComponent={ArticleHit} />
+        </section>
+      </Index>
+    </InstantSearch>
+  );
+}
+```
+
+  </Tab>
+  <Tab title="Hit Components">
+    
+Create specific components for each content type:
+
+```tsx
+import { Highlight } from 'react-instantsearch';
+
+function ProductHit({ hit }) {
+  return (
+    <article className="product-hit">
+      <img src={hit.image} alt={hit.name} />
+      <div>
+        <h3>
+          <Highlight attribute="name" hit={hit} />
+        </h3>
+        <p className="price">${hit.price}</p>
+        <p className="rating">⭐ {hit.rating}</p>
+      </div>
+    </article>
+  );
+}
+
+function CategoryHit({ hit }) {
+  return (
+    <article className="category-hit">
+      <h3>
+        <Highlight attribute="name" hit={hit} />
+      </h3>
+      <p>{hit.productCount} products</p>
+    </article>
+  );
+}
+
+function ArticleHit({ hit }) {
+  return (
+    <article className="article-hit">
+      <h3>
+        <Highlight attribute="title" hit={hit} />
+      </h3>
+      <p>
+        <Snippet attribute="content" hit={hit} />
+      </p>
+      <span className="category">{hit.category}</span>
+    </article>
+  );
+}
+```
+
+  </Tab>
+  <Tab title="Index-Specific Filters">
+    
+Apply different filters to each index:
+
+```tsx
+function App() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      
+      <div className="search-results">
+        {/* Products with brand filter */}
+        <section>
+          <h2>Products</h2>
+          <RefinementList attribute="brand" />
+          <Hits hitComponent={ProductHit} />
+        </section>
+        
+        {/* Categories with type filter */}
+        <Index indexName="categories">
+          <section>
+            <h2>Categories</h2>
+            <RefinementList attribute="type" />
+            <Hits hitComponent={CategoryHit} />
+          </section>
+        </Index>
+      </div>
+    </InstantSearch>
+  );
+}
+```
+
+  </Tab>
+</Tabs>
+
+### JavaScript Example with index() Method
+
+```javascript
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import instantsearch from 'instantsearch.js';
+import { searchBox, hits, index, configure } from 'instantsearch.js/es/widgets';
+
+const searchClient = algoliasearch(
+  'latency',
+  '6be0576ff61c053d5f9a3225e2a90f76'
+);
+
+const search = instantsearch({
+  searchClient,
+  indexName: 'instant_search',
+});
+
+// Main index widgets
+search.addWidgets([
+  searchBox({
+    container: '#search-box',
+  }),
+  
+  configure({
+    hitsPerPage: 5,
+  }),
+  
+  hits({
+    container: '#products',
+    templates: {
+      item(hit, { html, components }) {
+        return html`
+          <div class="product">
+            <img src="${hit.image}" />
+            <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+            <p>$${hit.price}</p>
+          </div>
+        `;
+      },
+    },
+  }),
+]);
+
+// Add widgets for secondary index
+search.addWidgets([
+  index({ indexName: 'instant_search_categories' }).addWidgets([
+    configure({
+      hitsPerPage: 3,
+    }),
+    
+    hits({
+      container: '#categories',
+      templates: {
+        item(hit, { html, components }) {
+          return html`
+            <div class="category">
+              <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+              <p>${hit.productCount} products</p>
+            </div>
+          `;
+        },
+      },
+    }),
+  ]),
+]);
+
+search.start();
+```
+
+## React SSR Multi-Index Example
+
+From the actual SSR example showing multi-index search:
+
+```tsx
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import React from 'react';
+import {
+  Configure,
+  Highlight,
+  Hits,
+  Index,
+  InstantSearch,
+  InstantSearchSSRProvider,
+  Pagination,
+  RefinementList,
+  SearchBox,
+} from 'react-instantsearch';
+import { history } from 'instantsearch.js/es/lib/routers';
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+
+const searchClient = algoliasearch(
+  'latency',
+  '6be0576ff61c053d5f9a3225e2a90f76'
+);
+
+function Hit({ hit }) {
+  return <Highlight hit={hit} attribute="name" />;
+}
+
+function App({ serverState, location }) {
+  return (
+    <InstantSearchSSRProvider {...serverState}>
+      <InstantSearch
+        indexName="instant_search"
+        searchClient={searchClient}
+        routing={{
+          stateMapping: simple(),
+          router: history({ cleanUrlOnDispose: false }),
+        }}
+        insights={true}
+      >
+        <Configure hitsPerPage={10} />
+        
+        <div className="search-panel">
+          <div className="filters">
+            <RefinementList
+              attribute="brand"
+              searchable={true}
+              showMore={true}
+            />
+          </div>
+          
+          <div className="results">
+            <SearchBox placeholder="Search" />
+            
+            {/* Main index */}
+            <section>
+              <h2>Products</h2>
+              <Hits hitComponent={Hit} />
+            </section>
+            
+            {/* Secondary index with its own filters */}
+            <Index indexName="instant_search_price_asc">
+              <section>
+                <h2>Products by Price</h2>
+                <RefinementList
+                  attribute="categories"
+                  searchable={true}
+                  showMore={true}
+                />
+                <Hits hitComponent={Hit} />
+              </section>
+            </Index>
+            
+            <Pagination />
+          </div>
+        </div>
+      </InstantSearch>
+    </InstantSearchSSRProvider>
+  );
+}
+
+export default App;
+```
+
+## Shared vs. Scoped State
+
+### Shared State
+
+Some UI state is shared across all indices:
+
+- **Query**: The search query applies to all indices
+- **Routing**: URL state can sync all indices
+
+```tsx
+<InstantSearch searchClient={searchClient} indexName="products">
+  {/* This query searches all indices */}
+  <SearchBox />
+  
+  <Hits /> {/* Products index */}
+  
+  <Index indexName="articles">
+    <Hits /> {/* Articles index, same query */}
+  </Index>
+</InstantSearch>
+```
+
+### Scoped State
+
+Other state is scoped to specific indices:
+
+- **Filters**: Each index has independent refinements
+- **Pagination**: Separate page numbers per index
+- **Configuration**: Different hitsPerPage, etc.
+
+```tsx
+<InstantSearch searchClient={searchClient} indexName="products">
+  {/* Products: brand filter, 10 per page */}
+  <RefinementList attribute="brand" />
+  <Configure hitsPerPage={10} />
+  <Hits />
+  <Pagination />
+  
+  <Index indexName="articles">
+    {/* Articles: category filter, 5 per page */}
+    <RefinementList attribute="category" />
+    <Configure hitsPerPage={5} />
+    <Hits />
+    <Pagination />
+  </Index>
+</InstantSearch>
+```
+
+## Performance Considerations
+
+### Request Batching
+
+InstantSearch automatically batches requests to multiple indices:
+
+```javascript
+// Single network request for all indices
+search.addWidgets([
+  hits({ container: '#products' }),
+  index({ indexName: 'categories' }).addWidgets([
+    hits({ container: '#categories' }),
+  ]),
+  index({ indexName: 'articles' }).addWidgets([
+    hits({ container: '#articles' }),
+  ]),
+]);
+```
+
+### Conditional Rendering
+
+Only show secondary indices when there's a query:
+
+```tsx
+function App() {
+  const [query, setQuery] = useState('');
+  
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox onQueryChange={setQuery} />
+      
+      <Hits /> {/* Always show products */}
+      
+      {/* Only search articles when there's a query */}
+      {query && (
+        <Index indexName="articles">
+          <Hits />
+        </Index>
+      )}
+    </InstantSearch>
+  );
+}
+```
+
+## Routing with Multiple Indices
+
+Sync multiple indices with URL state:
+
+```javascript
+import { history } from 'instantsearch.js/es/lib/routers';
+
+const routing = {
+  stateMapping: {
+    stateToRoute(uiState) {
+      return {
+        query: uiState['products'].query,
+        products_page: uiState['products'].page,
+        articles_page: uiState['articles']?.page,
+      };
+    },
+    
+    routeToState(routeState) {
+      return {
+        products: {
+          query: routeState.query,
+          page: routeState.products_page,
+        },
+        articles: {
+          query: routeState.query,
+          page: routeState.articles_page,
+        },
+      };
+    },
+  },
+};
+```
+
+## Layout Patterns
+
+### Tabbed Interface
+
+Switch between indices with tabs:
+
+```tsx
+function TabbedSearch() {
+  const [activeTab, setActiveTab] = useState('products');
+  
+  return (
+    <InstantSearch searchClient={searchClient} indexName="products">
+      <SearchBox />
+      
+      <div className="tabs">
+        <button onClick={() => setActiveTab('products')}>Products</button>
+        <button onClick={() => setActiveTab('articles')}>Articles</button>
+      </div>
+      
+      {activeTab === 'products' && <Hits />}
+      
+      {activeTab === 'articles' && (
+        <Index indexName="articles">
+          <Hits />
+        </Index>
+      )}
+    </InstantSearch>
+  );
+}
+```
+
+### Carousel Layout
+
+Show each index in a horizontal carousel:
+
+```css
+.multi-index-results {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.index-section {
+  width: 100%;
+}
+
+.index-section h2 {
+  margin-bottom: 1rem;
+}
+
+.index-hits {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+```
+
+## Running the Example
+
+```bash
+cd examples/react/ssr
+yarn install
+yarn start
+```
+
+## Customization Tips
+
+<AccordionGroup>
+  <Accordion title="Add result count per index">
+    Use the `Stats` widget to show how many results each index returned.
+  </Accordion>
+  
+  <Accordion title="Implement 'See All' links">
+    Add links to dedicated pages for each content type when there are many results.
+  </Accordion>
+  
+  <Accordion title="Prioritize index display">
+    Show indices with more results first, or hide indices with zero results.
+  </Accordion>
+  
+  <Accordion title="Different layouts per index">
+    Use grid for products, list for articles, etc.
+  </Accordion>
+</AccordionGroup>
+
+## Related Examples
+
+- [E-Commerce Search](/examples/e-commerce) - Single index patterns
+- [Next.js SSR](/examples/ssr-nextjs) - SSR with multiple indices
+- [Routing](/examples/routing) - URL sync for multi-index
+
+## Source Code
+
+<Card title="React SSR Example" icon="react" href="https://github.com/algolia/instantsearch/tree/master/examples/react/ssr">
+  View the multi-index SSR example on GitHub
+</Card>

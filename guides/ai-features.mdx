@@ -1,0 +1,748 @@
+---
+title: AI-Powered Features
+description: Implement conversational search with chat and AI filter suggestions
+---
+
+Algolia's AI-powered features bring conversational search and intelligent filter suggestions to your application. Use the Chat and Filter Suggestions connectors to create modern, AI-enhanced search experiences.
+
+## Overview
+
+InstantSearch provides two AI-powered connectors:
+
+- **Chat**: Conversational search interface powered by AI agents
+- **Filter Suggestions**: AI-generated filter recommendations based on search context
+
+Both features use Algolia's Agent Studio or custom AI endpoints.
+
+## Chat
+
+Create a conversational search experience where users can ask questions in natural language.
+
+### Basic Setup
+
+```javascript
+import { connectChat } from 'instantsearch.js/es/connectors';
+
+const renderChat = (renderOptions, isFirstRender) => {
+  const {
+    messages,
+    status,
+    sendMessage,
+    input,
+    setInput,
+  } = renderOptions;
+  
+  if (isFirstRender) {
+    const container = document.querySelector('#chat');
+    
+    container.innerHTML = `
+      <div id="messages"></div>
+      <div class="input-area">
+        <input id="chat-input" type="text" placeholder="Ask a question..." />
+        <button id="send-btn">Send</button>
+      </div>
+    `;
+    
+    document.querySelector('#send-btn').addEventListener('click', () => {
+      const input = document.querySelector('#chat-input');
+      sendMessage(input.value);
+      input.value = '';
+    });
+  }
+  
+  // Render messages
+  const messagesContainer = document.querySelector('#messages');
+  messagesContainer.innerHTML = messages.map(msg => `
+    <div class="message ${msg.role}">
+      ${msg.parts.map(part => 
+        part.type === 'text' ? `<p>${part.text}</p>` : ''
+      ).join('')}
+    </div>
+  `).join('');
+  
+  // Show loading state
+  if (status === 'loading') {
+    messagesContainer.innerHTML += '<div class="loading">Thinking...</div>';
+  }
+};
+
+const chatWidget = connectChat(renderChat);
+
+search.addWidgets([
+  chatWidget({
+    agentId: 'your-agent-id', // From Algolia Agent Studio
+  }),
+]);
+```
+
+### Chat with Custom Transport
+
+Use a custom AI endpoint:
+
+```javascript
+const chatWidget = connectChat(renderChat);
+
+search.addWidgets([
+  chatWidget({
+    transport: {
+      api: 'https://your-ai-api.com/chat',
+      headers: {
+        'Authorization': 'Bearer YOUR_TOKEN',
+      },
+      prepareSendMessagesRequest({ messages, trigger }) {
+        return {
+          body: {
+            messages,
+            stream: true,
+          },
+        };
+      },
+    },
+  }),
+]);
+```
+
+### Chat State Management
+
+From `src/connectors/chat/connectChat.ts`, the chat connector provides:
+
+```typescript
+type ChatRenderState = {
+  // Current chat messages
+  messages: UIMessage[];
+  
+  // Chat status: 'idle' | 'loading' | 'streaming' | 'error'
+  status: string;
+  
+  // Send a message
+  sendMessage: (message: string) => void;
+  
+  // Regenerate last response
+  regenerate: () => void;
+  
+  // Stop ongoing generation
+  stop: () => void;
+  
+  // Clear error state
+  clearError: () => void;
+  
+  // Error if any
+  error: Error | null;
+  
+  // Current input value
+  input: string;
+  
+  // Set input value
+  setInput: (input: string) => void;
+  
+  // Current search state
+  indexUiState: IndexUiState;
+  
+  // Set search state
+  setIndexUiState: (state: IndexUiState) => void;
+};
+```
+
+### Tool Integration
+
+Implement custom tools for the AI to use:
+
+```javascript
+const chatWidget = connectChat(renderChat);
+
+search.addWidgets([
+  chatWidget({
+    agentId: 'your-agent-id',
+    tools: {
+      search_index: {
+        onToolCall({ toolCall, addToolResult }) {
+          // AI wants to search the index
+          const { query, facetFilters } = toolCall.args;
+          
+          // Perform search
+          performSearch(query, facetFilters).then(results => {
+            addToolResult({
+              output: JSON.stringify(results.hits.slice(0, 5)),
+            });
+          });
+        },
+      },
+      
+      get_product_details: {
+        onToolCall({ toolCall, addToolResult }) {
+          const { productId } = toolCall.args;
+          
+          fetch(`/api/products/${productId}`).then(res => res.json()).then(product => {
+            addToolResult({
+              output: JSON.stringify(product),
+            });
+          });
+        },
+      },
+    },
+  }),
+]);
+```
+
+### Apply Filters from Chat
+
+The connector provides methods to apply filters from AI suggestions:
+
+```typescript
+// From src/connectors/chat/connectChat.ts
+function updateStateFromSearchToolInput(
+  params: { query?: string; facetFilters?: string[][] },
+  helper: AlgoliaSearchHelper
+) {
+  // Clear existing filters
+  const attributesToClear = getAttributesToClear({ results: helper.lastResults!, helper });
+  helper.setState(clearRefinements({ helper, attributesToClear }));
+
+  // Apply new facet filters
+  if (params.facetFilters) {
+    const attributes = flat(params.facetFilters).map((filter) => {
+      const [attribute, value] = filter.split(':');
+      return { attribute, value };
+    });
+
+    attributes.forEach(({ attribute, value }) => {
+      if (!helper.state.isDisjunctiveFacet(attribute)) {
+        const s = helper.state.addDisjunctiveFacet(attribute);
+        helper.setState(s);
+      }
+      helper.toggleFacetRefinement(attribute, value);
+    });
+  }
+
+  // Set query
+  if (params.query) {
+    helper.setQuery(params.query);
+  }
+
+  helper.search();
+}
+```
+
+### Chat with Suggestions
+
+Extract and display suggestions from AI responses:
+
+```javascript
+const renderChat = (renderOptions, isFirstRender) => {
+  const { messages, suggestions, sendMessage } = renderOptions;
+  
+  // Render messages...
+  
+  // Render suggestions
+  if (suggestions && suggestions.length > 0) {
+    const suggestionsHtml = `
+      <div class="suggestions">
+        <p>You might also ask:</p>
+        ${suggestions.map(suggestion => `
+          <button onClick="${() => sendMessage(suggestion)}">
+            ${suggestion}
+          </button>
+        `).join('')}
+      </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', suggestionsHtml);
+  }
+};
+```
+
+## Filter Suggestions
+
+AI-powered filter recommendations that help users refine their search.
+
+### Basic Setup
+
+```javascript
+import { connectFilterSuggestions } from 'instantsearch.js/es/connectors';
+
+const renderFilterSuggestions = (renderOptions, isFirstRender) => {
+  const { suggestions, isLoading, refine } = renderOptions;
+  const container = document.querySelector('#filter-suggestions');
+  
+  if (isLoading) {
+    container.innerHTML = '<div class="loading">Loading suggestions...</div>';
+    return;
+  }
+  
+  if (!suggestions.length) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="filter-suggestions">
+      <h4>Suggested Filters</h4>
+      <div class="suggestions-list">
+        ${suggestions.map(({ attribute, value, label, count }) => `
+          <button
+            class="suggestion-chip"
+            onClick="${() => refine(attribute, value)}"
+          >
+            ${label}
+            <span class="count">${count}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+};
+
+const filterSuggestionsWidget = connectFilterSuggestions(renderFilterSuggestions);
+
+search.addWidgets([
+  filterSuggestionsWidget({
+    agentId: 'your-agent-id',
+    maxSuggestions: 3,
+    attributes: ['brand', 'category', 'color'], // Optional: limit to specific attributes
+  }),
+]);
+```
+
+### How Filter Suggestions Work
+
+From `src/connectors/filter-suggestions/connectFilterSuggestions.ts`:
+
+1. **Debounced requests** - Waits for search state to stabilize
+2. **Context-aware** - Sends query, hits sample, and current refinements
+3. **Minimum skeleton duration** - Shows loading for at least 300ms to avoid flashing
+
+```typescript
+const fetchSuggestions = (results: SearchResults, renderOptions: RenderOptions) => {
+  if (!results?.hits?.length) {
+    suggestions = [];
+    isLoading = false;
+    return;
+  }
+
+  const loadingStartTime = Date.now();
+  isLoading = true;
+  
+  // Prepare request payload
+  const messageText = JSON.stringify({
+    query: results.query,
+    facets: facetsToSend,
+    hitsSample: results.hits.slice(0, hitsToSample),
+    currentRefinements,
+    maxSuggestions,
+  });
+
+  fetch(endpoint, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [{
+        id: `sr-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        role: 'user',
+        parts: [{ type: 'text', text: messageText }],
+      }],
+    }),
+  })
+  .then(response => response.json())
+  .then(data => {
+    const parsedSuggestions = JSON.parse(data.parts[1].text);
+    suggestions = parsedSuggestions.slice(0, maxSuggestions);
+  })
+  .finally(() => {
+    // Ensure minimum skeleton duration
+    const elapsed = Date.now() - loadingStartTime;
+    const remainingDelay = Math.max(0, MIN_SKELETON_DURATION_MS - elapsed);
+    
+    setTimeout(() => {
+      isLoading = false;
+      renderFn(getWidgetRenderState(renderOptions), false);
+    }, remainingDelay);
+  });
+};
+```
+
+### Custom Transport
+
+Use your own AI endpoint:
+
+```javascript
+const filterSuggestionsWidget = connectFilterSuggestions(renderFilterSuggestions);
+
+search.addWidgets([
+  filterSuggestionsWidget({
+    transport: {
+      api: 'https://your-ai-api.com/suggestions',
+      headers: {
+        'Authorization': 'Bearer YOUR_TOKEN',
+      },
+      prepareSendMessagesRequest(body) {
+        return {
+          body: {
+            ...body,
+            model: 'gpt-4',
+          },
+        };
+      },
+    },
+    maxSuggestions: 5,
+    debounceMs: 500,
+  }),
+]);
+```
+
+### Debouncing
+
+Control how quickly suggestions are fetched:
+
+```javascript
+filterSuggestionsWidget({
+  agentId: 'your-agent-id',
+  debounceMs: 500, // Wait 500ms after search state changes
+  hitsToSample: 10, // Send 10 hits for context
+})
+```
+
+### Transform Suggestions
+
+Filter or modify suggestions before rendering:
+
+```javascript
+filterSuggestionsWidget({
+  agentId: 'your-agent-id',
+  transformItems(suggestions) {
+    return suggestions
+      .filter(s => s.count > 0) // Only show suggestions with results
+      .map(s => ({
+        ...s,
+        label: s.label.toUpperCase(), // Transform label
+      }));
+  },
+})
+```
+
+## Complete AI Search Example
+
+Combining chat and filter suggestions:
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import {
+  searchBox,
+  hits,
+  refinementList,
+} from 'instantsearch.js/es/widgets';
+import {
+  connectChat,
+  connectFilterSuggestions,
+} from 'instantsearch.js/es/connectors';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: true,
+});
+
+// Chat interface
+const renderChat = (renderOptions, isFirstRender) => {
+  const {
+    messages,
+    status,
+    error,
+    sendMessage,
+    regenerate,
+    stop,
+    clearError,
+    suggestions,
+  } = renderOptions;
+  
+  const container = document.querySelector('#chat');
+  
+  if (isFirstRender) {
+    container.innerHTML = `
+      <div id="chat-messages"></div>
+      <div id="chat-suggestions"></div>
+      <div class="chat-input">
+        <input id="chat-input" placeholder="Ask about products..." />
+        <button id="send-btn">Send</button>
+      </div>
+    `;
+    
+    const input = document.querySelector('#chat-input');
+    const sendBtn = document.querySelector('#send-btn');
+    
+    sendBtn.addEventListener('click', () => {
+      if (input.value.trim()) {
+        sendMessage(input.value);
+        input.value = '';
+      }
+    });
+    
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        sendMessage(input.value);
+        input.value = '';
+      }
+    });
+  }
+  
+  // Render messages
+  const messagesContainer = document.querySelector('#chat-messages');
+  messagesContainer.innerHTML = messages.map((msg, index) => {
+    const isLast = index === messages.length - 1;
+    const parts = msg.parts || [];
+    
+    return `
+      <div class="message ${msg.role}">
+        ${parts.map(part => {
+          if (part.type === 'text') {
+            return `<p>${part.text}</p>`;
+          }
+          return '';
+        }).join('')}
+        
+        ${isLast && msg.role === 'assistant' ? `
+          <div class="message-actions">
+            <button onClick="${regenerate}">Regenerate</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+  
+  // Show loading/error states
+  if (status === 'loading' || status === 'streaming') {
+    messagesContainer.innerHTML += `
+      <div class="message assistant loading">
+        <div class="typing-indicator">Thinking...</div>
+        <button onClick="${stop}">Stop</button>
+      </div>
+    `;
+  }
+  
+  if (error) {
+    messagesContainer.innerHTML += `
+      <div class="error">
+        <p>Error: ${error.message}</p>
+        <button onClick="${clearError}">Dismiss</button>
+      </div>
+    `;
+  }
+  
+  // Render suggestions
+  const suggestionsContainer = document.querySelector('#chat-suggestions');
+  if (suggestions && suggestions.length > 0) {
+    suggestionsContainer.innerHTML = `
+      <div class="suggestions">
+        <p>You might also ask:</p>
+        ${suggestions.map(suggestion => `
+          <button onClick="${() => {
+            sendMessage(suggestion);
+          }}">
+            ${suggestion}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  } else {
+    suggestionsContainer.innerHTML = '';
+  }
+};
+
+// Filter suggestions
+const renderFilterSuggestions = (renderOptions) => {
+  const { suggestions, isLoading, refine } = renderOptions;
+  const container = document.querySelector('#filter-suggestions');
+  
+  if (isLoading) {
+    container.innerHTML = `
+      <div class="filter-suggestions loading">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+    `;
+    return;
+  }
+  
+  if (!suggestions.length) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="filter-suggestions">
+      <h4>Suggested Filters</h4>
+      ${suggestions.map(({ attribute, value, label, count }) => `
+        <button
+          class="suggestion-chip"
+          onClick="${() => refine(attribute, value)}"
+        >
+          <span class="label">${label}</span>
+          <span class="count">${count.toLocaleString()}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+};
+
+// Initialize widgets
+const chatWidget = connectChat(renderChat);
+const filterSuggestionsWidget = connectFilterSuggestions(renderFilterSuggestions);
+
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  
+  // AI Chat
+  chatWidget({
+    agentId: 'your-agent-id',
+    tools: {
+      search_index: {
+        onToolCall({ toolCall, addToolResult, applyFilters }) {
+          // Apply filters from AI
+          applyFilters(toolCall.args);
+          
+          // Return results to AI
+          addToolResult({
+            output: 'Filters applied',
+          });
+        },
+      },
+    },
+  }),
+  
+  // Filter Suggestions
+  filterSuggestionsWidget({
+    agentId: 'your-agent-id',
+    maxSuggestions: 3,
+    debounceMs: 400,
+    attributes: ['brand', 'category', 'color', 'size'],
+    hitsToSample: 5,
+  }),
+  
+  // Standard widgets
+  hits({
+    container: '#hits',
+    templates: {
+      item: (hit, { html, components }) => html`
+        <article>
+          <img src="${hit.image}" alt="${hit.name}" />
+          <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+          <p>$${hit.price}</p>
+        </article>
+      `,
+    },
+  }),
+  
+  refinementList({
+    container: '#brand',
+    attribute: 'brand',
+  }),
+]);
+
+search.start();
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Provide Context" icon="message">
+    Send relevant hits and current refinements for better AI suggestions.
+  </Card>
+  <Card title="Handle Errors" icon="triangle-exclamation">
+    Always implement error handling and display user-friendly messages.
+  </Card>
+  <Card title="Debounce Requests" icon="clock">
+    Use appropriate debounce delays to avoid excessive API calls.
+  </Card>
+  <Card title="Show Loading States" icon="spinner">
+    Provide visual feedback during AI operations.
+  </Card>
+</CardGroup>
+
+## Styling
+
+```css
+/* Chat Interface */
+.message {
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+}
+
+.message.user {
+  background: #e3f2fd;
+  margin-left: 40px;
+}
+
+.message.assistant {
+  background: #f5f5f5;
+  margin-right: 40px;
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Filter Suggestions */
+.filter-suggestions {
+  margin: 16px 0;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.suggestion-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin: 4px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.suggestion-chip:hover {
+  background: #e0e0e0;
+  transform: translateY(-1px);
+}
+
+.suggestion-chip .count {
+  background: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.875em;
+}
+
+/* Loading skeleton */
+.skeleton {
+  height: 32px;
+  margin: 8px 0;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 16px;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+```
+
+## Related Resources
+
+- [Chat Connector API](/connectors/chat)
+- [Filter Suggestions Connector API](/connectors/filter-suggestions)
+- [Algolia Agent Studio](https://www.algolia.com/doc/guides/ai-search/agent-studio/)
+- [Custom Connectors guide](/guides/custom-connectors)

@@ -1,0 +1,509 @@
+---
+title: Custom Widgets
+description: Build your own widgets with full control over rendering and behavior
+---
+
+Custom widgets give you complete control over your search UI. While InstantSearch provides many built-in widgets, you can create your own to implement unique designs or behaviors.
+
+## Overview
+
+A widget is an object with lifecycle methods that interact with the InstantSearch instance. At minimum, a widget needs either an `init` or `render` method.
+
+## Widget Anatomy
+
+```javascript
+const myWidget = {
+  // Required: Unique identifier for the widget
+  $$type: 'custom.myWidget',
+  
+  // Optional: Called once when InstantSearch starts
+  init(initOptions) {
+    const { instantSearchInstance, helper, state } = initOptions;
+    // Setup logic
+  },
+  
+  // Optional: Called on every search response
+  render(renderOptions) {
+    const { results, state, helper } = renderOptions;
+    // Render UI based on results
+  },
+  
+  // Optional: Called when widget is removed
+  dispose(disposeOptions) {
+    const { state, helper } = disposeOptions;
+    // Cleanup logic
+    return state; // Return modified state if needed
+  },
+  
+  // Optional: Add search parameters
+  getWidgetSearchParameters(searchParameters, { uiState }) {
+    return searchParameters.setQueryParameter('param', 'value');
+  },
+  
+  // Optional: Contribute to URL/UI state
+  getWidgetUiState(uiState, { searchParameters }) {
+    return {
+      ...uiState,
+      myWidget: {
+        customValue: searchParameters.getQueryParameter('param'),
+      },
+    };
+  },
+};
+```
+
+## Simple Custom Widget
+
+Let's create a widget that displays the current query:
+
+```javascript
+function queryDisplay({ container }) {
+  const containerNode = document.querySelector(container);
+  
+  return {
+    $$type: 'custom.queryDisplay',
+    
+    render({ results }) {
+      const query = results.query || '';
+      containerNode.innerHTML = query
+        ? `<p>You searched for: <strong>${query}</strong></p>`
+        : '<p>Start typing to search</p>';
+    },
+  };
+}
+
+// Usage
+search.addWidgets([
+  queryDisplay({ container: '#query-display' }),
+]);
+```
+
+## Interactive Widget Example
+
+Create a custom refinement widget:
+
+```javascript
+function customRefinement({ container, attribute }) {
+  const containerNode = document.querySelector(container);
+  let helper;
+  
+  return {
+    $$type: 'custom.refinement',
+    
+    init({ helper: helperInstance }) {
+      helper = helperInstance;
+    },
+    
+    render({ results }) {
+      const facetValues = results.getFacetValues(attribute) || [];
+      
+      containerNode.innerHTML = `
+        <div class="custom-refinement">
+          <h3>${attribute}</h3>
+          <ul>
+            ${facetValues.map(({ name, count, isRefined }) => `
+              <li>
+                <label>
+                  <input
+                    type="checkbox"
+                    value="${name}"
+                    ${isRefined ? 'checked' : ''}
+                  />
+                  ${name} (${count})
+                </label>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+      
+      // Add event listeners
+      containerNode.querySelectorAll('input').forEach((checkbox) => {
+        checkbox.addEventListener('change', (event) => {
+          const value = event.target.value;
+          helper
+            .toggleFacetRefinement(attribute, value)
+            .search();
+        });
+      });
+    },
+    
+    getWidgetSearchParameters(searchParameters) {
+      return searchParameters.addDisjunctiveFacet(attribute);
+    },
+    
+    dispose() {
+      containerNode.innerHTML = '';
+    },
+  };
+}
+
+// Usage
+search.addWidgets([
+  customRefinement({ container: '#brand-filter', attribute: 'brand' }),
+]);
+```
+
+## Widget with UI State
+
+Manage widget state in the URL:
+
+```javascript
+function customPagination({ container }) {
+  const containerNode = document.querySelector(container);
+  let helper;
+  
+  return {
+    $$type: 'custom.pagination',
+    
+    init({ helper: helperInstance }) {
+      helper = helperInstance;
+    },
+    
+    render({ results, state }) {
+      const currentPage = state.page || 0;
+      const nbPages = results.nbPages;
+      
+      containerNode.innerHTML = `
+        <div class="pagination">
+          <button id="prev" ${currentPage === 0 ? 'disabled' : ''}>
+            Previous
+          </button>
+          <span>Page ${currentPage + 1} of ${nbPages}</span>
+          <button id="next" ${currentPage >= nbPages - 1 ? 'disabled' : ''}>
+            Next
+          </button>
+        </div>
+      `;
+      
+      containerNode.querySelector('#prev')?.addEventListener('click', () => {
+        helper.previousPage().search();
+      });
+      
+      containerNode.querySelector('#next')?.addEventListener('click', () => {
+        helper.nextPage().search();
+      });
+    },
+    
+    getWidgetUiState(uiState, { searchParameters }) {
+      const page = searchParameters.page;
+      
+      if (!page) {
+        return uiState;
+      }
+      
+      return {
+        ...uiState,
+        page: page + 1,
+      };
+    },
+    
+    getWidgetSearchParameters(searchParameters, { uiState }) {
+      const page = uiState.page ? uiState.page - 1 : 0;
+      return searchParameters.setPage(page);
+    },
+  };
+}
+```
+
+## Using Connectors
+
+For complex widgets, use connectors to separate business logic from rendering:
+
+```javascript
+import { connectStats } from 'instantsearch.js/es/connectors';
+
+const renderStats = (renderOptions, isFirstRender) => {
+  const { nbHits, processingTimeMS, widgetParams } = renderOptions;
+  const { container } = widgetParams;
+  
+  if (isFirstRender) {
+    const div = document.createElement('div');
+    div.id = 'custom-stats';
+    document.querySelector(container).appendChild(div);
+  }
+  
+  document.querySelector('#custom-stats').innerHTML = `
+    <p>
+      <strong>${nbHits.toLocaleString()}</strong> results found in
+      <strong>${processingTimeMS}ms</strong>
+    </p>
+  `;
+};
+
+const customStatsWidget = connectStats(renderStats);
+
+search.addWidgets([
+  customStatsWidget({ container: '#stats' }),
+]);
+```
+
+## Widget Factory Pattern
+
+Create reusable widget factories:
+
+```javascript
+function createCustomWidget({
+  container,
+  attribute,
+  transformItems = (items) => items,
+}) {
+  const containerNode = document.querySelector(container);
+  let helper;
+  
+  return {
+    $$type: 'custom.widget',
+    
+    init(initOptions) {
+      helper = initOptions.helper;
+      
+      // Initial render
+      this.render(initOptions);
+    },
+    
+    render({ results }) {
+      const items = results.getFacetValues(attribute) || [];
+      const transformedItems = transformItems(items);
+      
+      containerNode.innerHTML = `
+        <div class="custom-widget">
+          ${transformedItems.map(item => `
+            <div class="item">${item.name}: ${item.count}</div>
+          `).join('')}
+        </div>
+      `;
+    },
+    
+    getWidgetSearchParameters(searchParameters) {
+      return searchParameters
+        .addFacet(attribute)
+        .setQueryParameters({
+          maxValuesPerFacet: 100,
+        });
+    },
+    
+    dispose({ state }) {
+      containerNode.innerHTML = '';
+      return state.removeFacet(attribute);
+    },
+  };
+}
+
+// Usage
+search.addWidgets([
+  createCustomWidget({
+    container: '#categories',
+    attribute: 'categories',
+    transformItems(items) {
+      return items.slice(0, 10);
+    },
+  }),
+]);
+```
+
+## Lifecycle Hooks
+
+### init(initOptions)
+
+Called once when InstantSearch starts:
+
+```javascript
+init(initOptions) {
+  const {
+    instantSearchInstance,
+    helper,
+    state,
+    parent,
+    uiState,
+  } = initOptions;
+  
+  // Setup event listeners
+  // Initialize local state
+  // First render if needed
+}
+```
+
+### render(renderOptions)
+
+Called on every search result:
+
+```javascript
+render(renderOptions) {
+  const {
+    results,
+    state,
+    helper,
+    instantSearchInstance,
+  } = renderOptions;
+  
+  // Update UI based on results
+}
+```
+
+### dispose(disposeOptions)
+
+Called when widget is removed:
+
+```javascript
+dispose(disposeOptions) {
+  const { state, helper } = disposeOptions;
+  
+  // Remove event listeners
+  // Clean up DOM
+  // Return modified state to remove parameters
+  return state.removeDisjunctiveFacet('brand');
+}
+```
+
+## Advanced: Render State
+
+Contribute to InstantSearch's render state for better integration:
+
+```javascript
+const myWidget = {
+  $$type: 'custom.myWidget',
+  
+  getRenderState(renderState, renderOptions) {
+    return {
+      ...renderState,
+      myWidget: this.getWidgetRenderState(renderOptions),
+    };
+  },
+  
+  getWidgetRenderState({ results, state, helper }) {
+    return {
+      items: results?.hits || [],
+      isLoading: results === null,
+      refine: (value) => {
+        helper.setQuery(value).search();
+      },
+    };
+  },
+};
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Connectors" icon="plug">
+    Separate business logic from rendering for testability and reusability.
+  </Card>
+  <Card title="Clean Up" icon="broom">
+    Always implement `dispose` to remove event listeners and clean up DOM.
+  </Card>
+  <Card title="Manage State" icon="database">
+    Use `getWidgetUiState` and `getWidgetSearchParameters` for URL persistence.
+  </Card>
+  <Card title="Type Safety" icon="shield">
+    Assign a unique `$$type` to each widget for debugging and identification.
+  </Card>
+</CardGroup>
+
+## Complete Example
+
+```javascript
+import instantsearch from 'instantsearch.js';
+
+function customFacetWidget({ container, attribute, title }) {
+  const containerNode = document.querySelector(container);
+  let helper;
+  
+  return {
+    $$type: 'custom.facet',
+    
+    init({ helper: helperInstance, instantSearchInstance }) {
+      helper = helperInstance;
+      
+      // Add facet to search parameters
+      const currentState = helper.state;
+      helper.setState(
+        currentState.addDisjunctiveFacet(attribute)
+      );
+    },
+    
+    render({ results, state }) {
+      const facetValues = results.getFacetValues(attribute) || [];
+      const refinements = state.getDisjunctiveRefinements(attribute);
+      
+      containerNode.innerHTML = `
+        <div class="custom-facet">
+          <h3>${title || attribute}</h3>
+          <ul>
+            ${facetValues.map(({ name, count }) => {
+              const isRefined = refinements.includes(name);
+              return `
+                <li>
+                  <label class="${isRefined ? 'refined' : ''}">
+                    <input
+                      type="checkbox"
+                      value="${name}"
+                      ${isRefined ? 'checked' : ''}
+                    />
+                    <span class="name">${name}</span>
+                    <span class="count">${count}</span>
+                  </label>
+                </li>
+              `;
+            }).join('')}
+          </ul>
+        </div>
+      `;
+      
+      // Attach event listeners
+      containerNode.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener('change', (event) => {
+          helper
+            .toggleFacetRefinement(attribute, event.target.value)
+            .search();
+        });
+      });
+    },
+    
+    getWidgetSearchParameters(searchParameters) {
+      return searchParameters.addDisjunctiveFacet(attribute);
+    },
+    
+    getWidgetUiState(uiState, { searchParameters }) {
+      const refinements = searchParameters.getDisjunctiveRefinements(attribute);
+      
+      if (!refinements.length) {
+        return uiState;
+      }
+      
+      return {
+        ...uiState,
+        refinementList: {
+          ...uiState.refinementList,
+          [attribute]: refinements,
+        },
+      };
+    },
+    
+    dispose({ state }) {
+      containerNode.innerHTML = '';
+      return state.removeDisjunctiveFacet(attribute);
+    },
+  };
+}
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+search.addWidgets([
+  customFacetWidget({
+    container: '#brand-facet',
+    attribute: 'brand',
+    title: 'Filter by Brand',
+  }),
+]);
+
+search.start();
+```
+
+## Related Resources
+
+- [Custom Connectors guide](/guides/custom-connectors)
+- [Widget API Reference](/api-reference/widget)
+- [Helper API Reference](/api-reference/helper)

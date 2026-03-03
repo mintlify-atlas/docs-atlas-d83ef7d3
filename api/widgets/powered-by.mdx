@@ -1,0 +1,94 @@
+---
+title: poweredBy
+---
+
+Displays the Algolia logo to redirect to the Algolia website.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { poweredBy } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  poweredBy({
+    container: '#powered-by'
+  })
+]);
+
+search.start();
+```
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="theme" type="'light' | 'dark'" default="light">
+  The theme of the logo. Choose between light or dark theme.
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class to add to the root element.
+    </ParamField>
+    
+    <ParamField path="link" type="string | string[]">
+      CSS class to add to the link element.
+    </ParamField>
+    
+    <ParamField path="logo" type="string | string[]">
+      CSS class to add to the SVG logo.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Dark theme
+
+```javascript
+poweredBy({
+  container: '#powered-by',
+  theme: 'dark'
+});
+```
+
+### Custom CSS classes
+
+```javascript
+poweredBy({
+  container: '#powered-by',
+  theme: 'light',
+  cssClasses: {
+    root: 'my-powered-by',
+    link: 'my-powered-by-link'
+  }
+});
+```
+
+## HTML output
+
+```html
+<div class="ais-PoweredBy ais-PoweredBy--light">
+  <a class="ais-PoweredBy-link" href="https://www.algolia.com/" target="_blank" rel="noopener noreferrer">
+    <span>Search by</span>
+    <svg class="ais-PoweredBy-logo">...</svg>
+  </a>
+</div>
+```
+
+## Notes
+
+- The logo is displayed as an SVG.
+- The link opens in a new tab with appropriate security attributes.
+- The theme changes the logo color to match your design.

@@ -1,0 +1,160 @@
+---
+title: menu
+description: Filter results with a single-select menu
+---
+
+The menu widget displays a list of facet values where users can select only one value at a time. It's ideal for mutually exclusive filters like product type or department.
+
+## Usage
+
+```javascript
+const menu = instantsearch.widgets.menu({
+  container: '#category-menu',
+  attribute: 'category',
+});
+
+search.addWidget(menu);
+```
+
+## Examples
+
+### Basic Menu
+
+```javascript
+instantsearch.widgets.menu({
+  container: '#category',
+  attribute: 'category',
+  limit: 10,
+});
+```
+
+### With Show More
+
+```javascript
+instantsearch.widgets.menu({
+  container: '#brands',
+  attribute: 'brand',
+  limit: 5,
+  showMore: true,
+  showMoreLimit: 20,
+});
+```
+
+### With Custom Sorting
+
+```javascript
+instantsearch.widgets.menu({
+  container: '#types',
+  attribute: 'type',
+  sortBy: ['count:desc', 'name:asc'],
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="attribute" type="string" required>
+  The name of the attribute in your records. Must be declared as an attribute for faceting.
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Maximum number of facet values to display.
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to display a "Show more" button.
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  Maximum number of facet values when "Show more" is clicked.
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | function" default="['name:asc']">
+  How to sort refinements. Available values:
+  - `'count:asc'` / `'count:desc'`
+  - `'name:asc'` / `'name:desc'`
+  - `'isRefined'`
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="item" type="Template">
+      Template for each item. Receives `count`, `label`, `value`, `isRefined`, `url`.
+    </ParamField>
+    <ParamField path="showMoreText" type="Template">
+      Template for the "Show more" button. Receives `isShowingMore`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="noRefinementRoot" type="string | string[]">
+      CSS class when no refinements are available.
+    </ParamField>
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item.
+    </ParamField>
+    <ParamField path="selectedItem" type="string | string[]">
+      CSS class for the selected item.
+    </ParamField>
+    <ParamField path="link" type="string | string[]">
+      CSS class for the link.
+    </ParamField>
+    <ParamField path="label" type="string | string[]">
+      CSS class for the label.
+    </ParamField>
+    <ParamField path="count" type="string | string[]">
+      CSS class for the count.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-Menu">
+  <ul class="ais-Menu-list">
+    <li class="ais-Menu-item ais-Menu-item--selected">
+      <a class="ais-Menu-link" href="#">
+        <span class="ais-Menu-label">Electronics</span>
+        <span class="ais-Menu-count">4,123</span>
+      </a>
+    </li>
+    <li class="ais-Menu-item">
+      <a class="ais-Menu-link" href="#">
+        <span class="ais-Menu-label">Clothing</span>
+        <span class="ais-Menu-count">2,984</span>
+      </a>
+    </li>
+  </ul>
+  <button class="ais-Menu-showMore">Show more</button>
+</div>
+```
+
+## Requirements
+
+<Warning>
+  The attribute must be declared as an **attribute for faceting** in your Algolia index settings.
+</Warning>

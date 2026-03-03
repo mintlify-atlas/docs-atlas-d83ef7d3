@@ -1,0 +1,277 @@
+---
+title: Configuration
+description: Automate app generation with configuration files
+---
+
+You can automate the generation of InstantSearch apps using a JSON configuration file.
+
+## Using a Config File
+
+Create a configuration file and pass it with the `--config` flag:
+
+```bash
+npx create-instantsearch-app my-app --config config.json
+```
+
+## Configuration Format
+
+Create a JSON file with your app configuration:
+
+```json config.json
+{
+  "name": "my-app",
+  "template": "InstantSearch.js",
+  "libraryVersion": "4.0.0",
+  "appId": "MY_APP_ID",
+  "apiKey": "MY_SEARCH_API_KEY",
+  "indexName": "products",
+  "searchPlaceholder": "Search for products",
+  "attributesToDisplay": ["name", "description", "price"],
+  "imageAttribute": "image_url",
+  "attributesForFaceting": ["brand", "category", "color"],
+  "enableInsights": true
+}
+```
+
+## Configuration Options
+
+### Required Options
+
+<ParamField path="name" type="string" required>
+  The name of your application
+  
+  Example: `"my-search-app"`
+</ParamField>
+
+<ParamField path="template" type="string" required>
+  The InstantSearch template to use
+  
+  Options: `"InstantSearch.js"`, `"React InstantSearch"`, `"Vue InstantSearch"`, etc.
+  
+  See [Templates](/tools/create-instantsearch-app/templates) for full list
+</ParamField>
+
+### Library Configuration
+
+<ParamField path="libraryVersion" type="string">
+  Specific version of the InstantSearch library
+  
+  Example: `"4.0.0"`
+  
+  If omitted, you'll be prompted to select a version
+</ParamField>
+
+### Algolia Connection
+
+<ParamField path="appId" type="string">
+  Your Algolia application ID
+  
+  Default: `"latency"` (demo app)
+</ParamField>
+
+<ParamField path="apiKey" type="string">
+  Your Algolia search API key (public, search-only)
+  
+  Default: `"6be0576ff61c053d5f9a3225e2a90f76"` (demo key)
+  
+  <Warning>
+    Never use your Admin API key in client-side code
+  </Warning>
+</ParamField>
+
+<ParamField path="indexName" type="string">
+  The name of your Algolia index
+  
+  Default: `"instant_search"`
+</ParamField>
+
+### Search UI Configuration
+
+<ParamField path="searchPlaceholder" type="string">
+  Placeholder text for the search box
+  
+  Default: `"Search"`
+</ParamField>
+
+<ParamField path="attributesToDisplay" type="string[]">
+  Array of attribute names to show in search results
+  
+  Example: `["name", "description", "price"]`
+</ParamField>
+
+<ParamField path="imageAttribute" type="string">
+  Attribute name containing image URLs for result thumbnails
+  
+  Example: `"image_url"`
+</ParamField>
+
+<ParamField path="attributesForFaceting" type="string[]">
+  Array of attributes to use as filters
+  
+  Example: `["brand", "category", "color"]`
+  
+  Use `"ais.dynamicWidgets"` to enable dynamic widgets (auto-generated filters)
+</ParamField>
+
+### Advanced Options
+
+<ParamField path="enableInsights" type="boolean">
+  Enable Algolia Insights for event tracking
+  
+  Default: `false`
+  
+  Requires InstantSearch.js >= 4.55, React InstantSearch >= 7.0, or Vue InstantSearch >= 4.9.0
+</ParamField>
+
+<ParamField path="searchInputType" type="string">
+  Type of search input to use
+  
+  Options: `"autocomplete"` or `"searchbox"`
+  
+  Only available for InstantSearch.js >= 4.52
+</ParamField>
+
+<ParamField path="querySuggestionsIndexName" type="string">
+  Index name for Query Suggestions (required when using autocomplete)
+  
+  Example: `"products_query_suggestions"`
+</ParamField>
+
+<ParamField path="autocompleteLibraryVersion" type="string">
+  Version of Autocomplete.js to use (when searchInputType is "autocomplete")
+  
+  Example: `"1.11.0"`
+</ParamField>
+
+## Configuration Examples
+
+### React App with Insights
+
+```json
+{
+  "name": "ecommerce-search",
+  "template": "React InstantSearch",
+  "libraryVersion": "7.0.0",
+  "appId": "YOUR_APP_ID",
+  "apiKey": "YOUR_SEARCH_KEY",
+  "indexName": "products",
+  "attributesToDisplay": ["name", "brand", "price"],
+  "imageAttribute": "image",
+  "attributesForFaceting": ["brand", "category", "rating"],
+  "enableInsights": true
+}
+```
+
+### Vue App with Dynamic Widgets
+
+```json
+{
+  "name": "product-finder",
+  "template": "Vue InstantSearch",
+  "libraryVersion": "4.5.0",
+  "appId": "YOUR_APP_ID",
+  "apiKey": "YOUR_SEARCH_KEY",
+  "indexName": "inventory",
+  "attributesToDisplay": ["title", "description"],
+  "attributesForFaceting": ["ais.dynamicWidgets"],
+  "enableInsights": true
+}
+```
+
+### InstantSearch.js with Autocomplete
+
+```json
+{
+  "name": "search-demo",
+  "template": "InstantSearch.js",
+  "libraryVersion": "4.60.0",
+  "appId": "latency",
+  "apiKey": "6be0576ff61c053d5f9a3225e2a90f76",
+  "indexName": "instant_search",
+  "searchInputType": "autocomplete",
+  "querySuggestionsIndexName": "instant_search_demo_query_suggestions",
+  "autocompleteLibraryVersion": "1.11.0",
+  "attributesToDisplay": ["name", "description"],
+  "imageAttribute": "image",
+  "attributesForFaceting": ["brand", "type"]
+}
+```
+
+### Widget Development
+
+```json
+{
+  "name": "my-custom-widget",
+  "template": "InstantSearch.js widget",
+  "organization": "my-company",
+  "description": "A custom InstantSearch widget for advanced filtering"
+}
+```
+
+## Programmatic API
+
+You can also use `create-instantsearch-app` programmatically:
+
+```javascript
+const createInstantSearchApp = require('create-instantsearch-app');
+
+const app = createInstantSearchApp('~/projects/my-app', {
+  template: 'InstantSearch.js',
+  libraryVersion: '4.0.0',
+  appId: 'latency',
+  apiKey: '6be0576ff61c053d5f9a3225e2a90f76',
+  indexName: 'instant_search',
+  attributesToDisplay: ['name', 'description'],
+  imageAttribute: 'image',
+  attributesForFaceting: ['brand', 'category'],
+  enableInsights: true,
+});
+
+app.create().then(() => console.log('App generated!'));
+```
+
+## Best Practices
+
+<Card title="Use version control" icon="git">
+  Store configuration files in your repository to ensure consistent app generation across teams
+</Card>
+
+<Card title="Separate configs for environments" icon="layer-group">
+  Create different config files for development, staging, and production
+  
+  ```bash
+  npx create-instantsearch-app dev-app --config config.dev.json
+  npx create-instantsearch-app prod-app --config config.prod.json
+  ```
+</Card>
+
+<Card title="Start with demo credentials" icon="flask">
+  Use Algolia's demo app (`latency`) to test templates before connecting your own index
+</Card>
+
+<Card title="Use semantic versioning" icon="code-branch">
+  Pin library versions in config files to ensure reproducible builds
+</Card>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Config file not found">
+    Ensure the path to your config file is correct. Use absolute paths or paths relative to your current directory.
+    
+    ```bash
+    npx create-instantsearch-app my-app --config ./configs/config.json
+    ```
+  </Accordion>
+  
+  <Accordion title="Invalid JSON format">
+    Validate your JSON using a linter or online validator. Common issues:
+    - Trailing commas
+    - Missing quotes around strings
+    - Invalid escape characters
+  </Accordion>
+  
+  <Accordion title="Unsupported template version">
+    Check the supported version range for your chosen template in the [Templates](/tools/create-instantsearch-app/templates) documentation.
+  </Accordion>
+</AccordionGroup>

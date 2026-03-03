@@ -1,0 +1,750 @@
+---
+title: "Styling"
+description: "Style your InstantSearch.js interface with CSS themes and custom styles"
+---
+
+InstantSearch.js provides flexible styling options, from pre-built themes to complete customization with CSS.
+
+## CSS Themes
+
+InstantSearch.js comes with three built-in themes:
+
+### Satellite Theme
+
+A modern, clean theme with subtle colors:
+
+```javascript
+import 'instantsearch.css/themes/satellite.css';
+```
+
+### Algolia Theme
+
+The classic Algolia-branded theme:
+
+```javascript
+import 'instantsearch.css/themes/algolia.css';
+```
+
+### Reset Theme
+
+Minimal styling, perfect for complete customization:
+
+```javascript
+import 'instantsearch.css/themes/reset.css';
+```
+
+### CDN Usage
+
+Include themes via CDN:
+
+```html
+<!-- Satellite theme -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8/themes/satellite.min.css" />
+
+<!-- Algolia theme -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8/themes/algolia.min.css" />
+
+<!-- Reset theme -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8/themes/reset.min.css" />
+```
+
+## BEM Class Names
+
+All widgets follow the BEM (Block Element Modifier) naming convention:
+
+```
+.ais-WidgetName                   // Block
+.ais-WidgetName-element           // Element
+.ais-WidgetName-element--modifier // Modifier
+```
+
+### SearchBox Example
+
+```css
+/* Block */
+.ais-SearchBox {
+  margin-bottom: 2rem;
+}
+
+/* Elements */
+.ais-SearchBox-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ais-SearchBox-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.ais-SearchBox-input:focus {
+  outline: none;
+  border-color: #3a9fb5;
+}
+
+.ais-SearchBox-submit,
+.ais-SearchBox-reset {
+  padding: 0.75rem 1rem;
+  background: #3a9fb5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ais-SearchBox-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+```
+
+### Hits Example
+
+```css
+.ais-Hits {
+  margin-top: 2rem;
+}
+
+.ais-Hits-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ais-Hits-item {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ais-Hits-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* No results state */
+.ais-Hits--empty {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+```
+
+### RefinementList Example
+
+```css
+.ais-RefinementList {
+  margin-bottom: 2rem;
+}
+
+.ais-RefinementList-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ais-RefinementList-item {
+  padding: 0.5rem 0;
+}
+
+.ais-RefinementList-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.ais-RefinementList-label:hover {
+  color: #3a9fb5;
+}
+
+.ais-RefinementList-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.ais-RefinementList-labelText {
+  flex: 1;
+}
+
+.ais-RefinementList-count {
+  background: #f0f0f0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+/* Searchable refinement list */
+.ais-RefinementList-searchBox {
+  margin-bottom: 1rem;
+}
+
+/* Show more button */
+.ais-RefinementList-showMore {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.ais-RefinementList-showMore--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+```
+
+## Custom CSS Classes
+
+Add custom classes to widgets using `cssClasses`:
+
+```javascript
+import { searchBox, hits, refinementList } from 'instantsearch.js/es/widgets';
+
+searchBox({
+  container: '#searchbox',
+  cssClasses: {
+    root: 'my-searchbox',
+    form: 'my-searchbox__form',
+    input: 'my-searchbox__input',
+    submit: 'my-searchbox__submit',
+    reset: 'my-searchbox__reset',
+  },
+})
+
+hits({
+  container: '#hits',
+  cssClasses: {
+    root: 'my-hits',
+    list: 'my-hits__list',
+    item: 'my-hits__item',
+    emptyRoot: 'my-hits--empty',
+  },
+})
+
+refinementList({
+  container: '#brands',
+  attribute: 'brand',
+  cssClasses: {
+    root: 'my-facet',
+    list: 'my-facet__list',
+    item: 'my-facet__item',
+    label: 'my-facet__label',
+    checkbox: 'my-facet__checkbox',
+    labelText: 'my-facet__label-text',
+    count: 'my-facet__count',
+    showMore: 'my-facet__show-more',
+  },
+})
+```
+
+Custom classes are added alongside default BEM classes:
+
+```html
+<div class="ais-SearchBox my-searchbox">
+  <form class="ais-SearchBox-form my-searchbox__form">
+    <input class="ais-SearchBox-input my-searchbox__input" />
+  </form>
+</div>
+```
+
+## CSS Variables
+
+Customize theme colors using CSS variables:
+
+```css
+:root {
+  /* Primary color (used for highlights, active states) */
+  --ais-primary-color-rgb: 58, 159, 181;
+  
+  /* Text colors */
+  --ais-text-color: #21243d;
+  --ais-muted-text-color: #69707d;
+  
+  /* Background colors */
+  --ais-background-color: #ffffff;
+  --ais-hover-background-color: #f5f5f5;
+  
+  /* Border colors */
+  --ais-border-color: #e0e0e0;
+  
+  /* Font sizes */
+  --ais-font-size-base: 16px;
+  --ais-font-size-small: 14px;
+  
+  /* Spacing */
+  --ais-spacing-base: 1rem;
+}
+```
+
+### Dark Mode Example
+
+```css
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ais-text-color: #ffffff;
+    --ais-muted-text-color: #b0b0b0;
+    --ais-background-color: #1a1a1a;
+    --ais-hover-background-color: #2a2a2a;
+    --ais-border-color: #404040;
+  }
+  
+  .ais-SearchBox-input {
+    background: var(--ais-background-color);
+    color: var(--ais-text-color);
+  }
+  
+  .ais-Hits-item {
+    background: #2a2a2a;
+  }
+}
+```
+
+## Layout Examples
+
+### Sidebar Layout
+
+```css
+.search-container {
+  display: flex;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  gap: 2rem;
+}
+
+.search-sidebar {
+  flex: 0 0 260px;
+}
+
+.search-main {
+  flex: 1;
+  min-width: 0; /* Prevent flex item overflow */
+}
+
+@media (max-width: 768px) {
+  .search-container {
+    flex-direction: column;
+  }
+  
+  .search-sidebar {
+    flex: 1;
+  }
+}
+```
+
+### Grid Layout for Hits
+
+```css
+.ais-Hits-list {
+  display: grid;
+  gap: 1.5rem;
+  
+  /* Responsive grid */
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+/* Product card styling */
+.ais-Hits-item {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ais-Hits-item img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.ais-Hits-item .content {
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ais-Hits-item h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+}
+
+.ais-Hits-item .price {
+  margin-top: auto;
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #3a9fb5;
+}
+```
+
+### Horizontal Carousel for Recommendations
+
+```css
+.ais-Carousel {
+  position: relative;
+  overflow: hidden;
+}
+
+.ais-Carousel-list {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc(25% - 1rem);
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.ais-Carousel-list::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.ais-Carousel-item {
+  scroll-snap-align: start;
+}
+
+@media (max-width: 1024px) {
+  .ais-Carousel-list {
+    grid-auto-columns: calc(33.333% - 1rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .ais-Carousel-list {
+    grid-auto-columns: calc(50% - 0.5rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .ais-Carousel-list {
+    grid-auto-columns: calc(100% - 0.5rem);
+  }
+}
+```
+
+## Highlighting Styles
+
+Customize highlighted search terms:
+
+```css
+/* Default highlight */
+.ais-Highlight-highlighted,
+.ais-Snippet-highlighted {
+  background: rgba(58, 159, 181, 0.2);
+  color: inherit;
+  font-style: inherit;
+  font-weight: 600;
+}
+
+/* Alternative highlight style */
+.ais-Highlight-highlighted {
+  background: linear-gradient(to bottom, transparent 50%, #ffd700 50%);
+  padding: 0 0.25rem;
+}
+
+/* Reverse highlight (non-matching parts) */
+.ais-ReverseHighlight-highlighted,
+.ais-ReverseSnippet-highlighted {
+  background: rgba(200, 200, 200, 0.3);
+  font-style: italic;
+}
+```
+
+## Panel Styling
+
+Style panels wrapping widgets:
+
+```css
+.ais-Panel {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ais-Panel-header {
+  margin: 0 0 1rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ais-Panel-body {
+  /* Panel content */
+}
+
+.ais-Panel-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+/* Collapsible panel */
+.ais-Panel-collapseButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.ais-Panel--collapsed .ais-Panel-body {
+  display: none;
+}
+
+.ais-Panel--collapsed .ais-Panel-collapseIcon {
+  transform: rotate(180deg);
+}
+```
+
+## Pagination Styling
+
+```css
+.ais-Pagination {
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.ais-Pagination-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ais-Pagination-item {
+  /* Individual page items */
+}
+
+.ais-Pagination-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.ais-Pagination-link:hover {
+  background: #f5f5f5;
+  border-color: #3a9fb5;
+}
+
+.ais-Pagination-item--selected .ais-Pagination-link {
+  background: #3a9fb5;
+  color: white;
+  border-color: #3a9fb5;
+}
+
+.ais-Pagination-item--disabled .ais-Pagination-link {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+```
+
+## Loading States
+
+```css
+.ais-SearchBox-loadingIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Spinner animation */
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ais-SearchBox-loadingIndicator svg {
+  animation: spinner 0.6s linear infinite;
+}
+
+/* Skeleton loading for hits */
+.ais-Hits--loading .ais-Hits-item {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+```
+
+## Responsive Design
+
+```css
+/* Mobile-first approach */
+.search-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .search-panel {
+    flex-direction: row;
+  }
+  
+  .search-panel__filters {
+    flex: 0 0 260px;
+  }
+  
+  .search-panel__results {
+    flex: 1;
+  }
+}
+
+/* Mobile searchbox */
+@media (max-width: 767px) {
+  .ais-SearchBox-form {
+    flex-direction: column;
+  }
+  
+  .ais-SearchBox-submit,
+  .ais-SearchBox-reset {
+    width: 100%;
+  }
+}
+```
+
+## Complete Example
+
+A full custom theme:
+
+```css app.css
+:root {
+  --ais-primary-color-rgb: 200, 130, 10;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  min-height: 50px;
+  padding: 0.5rem 1rem;
+  background-image: linear-gradient(284deg, #fedd4e, #fcb43a);
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.search-panel {
+  display: flex;
+  gap: 2rem;
+}
+
+.search-panel__filters {
+  flex: 0 0 260px;
+}
+
+.search-panel__results {
+  flex: 1;
+}
+
+#searchbox {
+  margin-bottom: 2rem;
+}
+
+.ais-SearchBox-input {
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.ais-SearchBox-input:focus {
+  border-color: rgb(var(--ais-primary-color-rgb));
+  outline: none;
+}
+
+.ais-Hits-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.ais-Hits-item {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.ais-Hits-item:hover {
+  transform: translateY(-4px);
+}
+
+.ais-Highlight-highlighted {
+  background: rgba(var(--ais-primary-color-rgb), 0.2);
+  font-weight: 600;
+}
+
+#pagination {
+  margin: 2rem auto;
+  text-align: center;
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/vanilla/getting-started">
+    Build your first search interface
+  </Card>
+  <Card title="Basic Usage" icon="cube" href="/vanilla/basic-usage">
+    Learn about all available widgets
+  </Card>
+  <Card title="Customization" icon="palette" href="/vanilla/customization">
+    Customize templates and create custom widgets
+  </Card>
+  <Card title="Examples" icon="code" href="/examples/overview">
+    Explore complete examples
+  </Card>
+</CardGroup>

@@ -1,0 +1,495 @@
+---
+title: algoliasearch-helper
+description: Low-level search helper library for advanced use cases
+---
+
+algoliasearch-helper is the low-level library that powers InstantSearch. It provides a programmatic API for managing search state, performing searches, and handling results. Most developers use InstantSearch.js, but the helper is useful for advanced customization or building custom search UIs.
+
+## Installation
+
+```bash
+npm install algoliasearch-helper algoliasearch
+```
+
+## Basic Usage
+
+```javascript
+import algoliasearch from 'algoliasearch';
+import algoliasearchHelper from 'algoliasearch-helper';
+
+const client = algoliasearch('YourApplicationID', 'YourSearchOnlyAPIKey');
+
+const helper = algoliasearchHelper(client, 'products', {
+  facets: ['brand', 'category'],
+  disjunctiveFacets: ['color'],
+  hitsPerPage: 20,
+});
+
+helper.on('result', (event) => {
+  console.log('Results:', event.results);
+});
+
+helper.search();
+```
+
+## AlgoliaSearchHelper
+
+The main helper class for managing search.
+
+### Constructor
+
+```javascript
+algoliasearchHelper(client, indexName, options)
+```
+
+<ParamField path="client" type="SearchClient" required>
+  Algolia search client instance.
+  
+  ```javascript
+  import algoliasearch from 'algoliasearch';
+  const client = algoliasearch('APP_ID', 'API_KEY');
+  ```
+</ParamField>
+
+<ParamField path="indexName" type="string" required>
+  Name of the Algolia index to search.
+</ParamField>
+
+<ParamField path="options" type="PlainSearchParameters">
+  Initial search parameters.
+  
+  ```javascript
+  {
+    query: 'phone',
+    facets: ['brand'],
+    hitsPerPage: 20,
+  }
+  ```
+</ParamField>
+
+### Properties
+
+<ParamField path="state" type="SearchParameters">
+  Current search state (immutable).
+  
+  ```javascript
+  console.log(helper.state.query);
+  console.log(helper.state.facets);
+  ```
+</ParamField>
+
+<ParamField path="lastResults" type="SearchResults | null">
+  Results from the last search.
+  
+  ```javascript
+  if (helper.lastResults) {
+    console.log(helper.lastResults.hits);
+  }
+  ```
+</ParamField>
+
+<ParamField path="derivedHelpers" type="DerivedHelper[]">
+  Array of derived helpers (used internally by InstantSearch for multi-index).
+</ParamField>
+
+### Methods
+
+#### search()
+
+Trigger a search with current state.
+
+```javascript
+helper.search();
+```
+
+#### setQuery(query)
+
+Set the search query.
+
+```javascript
+helper.setQuery('laptop').search();
+```
+
+#### setPage(page)
+
+Set the current page (zero-based).
+
+```javascript
+helper.setPage(2).search();
+```
+
+#### addFacet(facetName)
+
+Add a facet to the search.
+
+```javascript
+helper.addFacet('brand').search();
+```
+
+#### removeFacet(facetName)
+
+Remove a facet from the search.
+
+```javascript
+helper.removeFacet('brand').search();
+```
+
+#### addFacetRefinement(facet, value)
+
+Add a facet filter.
+
+```javascript
+helper.addFacetRefinement('brand', 'Apple').search();
+```
+
+#### removeFacetRefinement(facet, value)
+
+Remove a facet filter.
+
+```javascript
+helper.removeFacetRefinement('brand', 'Apple').search();
+```
+
+#### toggleFacetRefinement(facet, value)
+
+Toggle a facet filter on/off.
+
+```javascript
+helper.toggleFacetRefinement('brand', 'Apple').search();
+```
+
+#### clearRefinements()
+
+Clear all refinements.
+
+```javascript
+helper.clearRefinements().search();
+```
+
+#### setState(newState)
+
+Set a new search state.
+
+```javascript
+const newState = helper.state.setQuery('phone').setPage(0);
+helper.setState(newState).search();
+```
+
+### Events
+
+The helper is an event emitter with these events:
+
+#### result
+
+Fired when search results are received.
+
+```javascript
+helper.on('result', (event) => {
+  console.log('Results:', event.results);
+  console.log('State:', event.state);
+});
+```
+
+#### error
+
+Fired when a search error occurs.
+
+```javascript
+helper.on('error', (event) => {
+  console.error('Search error:', event.error);
+});
+```
+
+#### search
+
+Fired when a search is triggered.
+
+```javascript
+helper.on('search', (event) => {
+  console.log('Searching with state:', event.state);
+});
+```
+
+#### change
+
+Fired when the search state changes.
+
+```javascript
+helper.on('change', (event) => {
+  console.log('State changed:', event.state);
+  console.log('Results:', event.results);
+  console.log('Page reset:', event.isPageReset);
+});
+```
+
+## SearchParameters
+
+Immutable search parameters object.
+
+### Common Parameters
+
+```javascript
+const params = helper.state
+  .setQuery('laptop')
+  .setPage(0)
+  .setHitsPerPage(20)
+  .addFacet('brand')
+  .addFacetRefinement('brand', 'Apple')
+  .addNumericRefinement('price', '>=', 100)
+  .addNumericRefinement('price', '<=', 1000);
+
+helper.setState(params).search();
+```
+
+### Methods
+
+<ParamField path="setQuery(query)" type="string">
+  Set search query.
+</ParamField>
+
+<ParamField path="setPage(page)" type="number">
+  Set page number (zero-based).
+</ParamField>
+
+<ParamField path="setHitsPerPage(n)" type="number">
+  Set number of hits per page.
+</ParamField>
+
+<ParamField path="addFacet(facet)" type="string">
+  Add a facet.
+</ParamField>
+
+<ParamField path="removeFacet(facet)" type="string">
+  Remove a facet.
+</ParamField>
+
+<ParamField path="addFacetRefinement(facet, value)" type="string, string">
+  Add facet refinement.
+</ParamField>
+
+<ParamField path="addNumericRefinement(attribute, operator, value)" type="string, string, number">
+  Add numeric refinement (operators: `<`, `<=`, `=`, `!=`, `>=`, `>`).
+</ParamField>
+
+## SearchResults
+
+Search results wrapper with helper methods.
+
+### Properties
+
+<ParamField path="hits" type="Array">
+  Array of search result hits.
+  
+  ```javascript
+  helper.lastResults.hits.forEach(hit => {
+    console.log(hit.objectID, hit.name);
+  });
+  ```
+</ParamField>
+
+<ParamField path="nbHits" type="number">
+  Total number of hits.
+</ParamField>
+
+<ParamField path="page" type="number">
+  Current page number.
+</ParamField>
+
+<ParamField path="nbPages" type="number">
+  Total number of pages.
+</ParamField>
+
+<ParamField path="hitsPerPage" type="number">
+  Number of hits per page.
+</ParamField>
+
+<ParamField path="query" type="string">
+  Current search query.
+</ParamField>
+
+<ParamField path="facets" type="Array">
+  Facet values and counts.
+  
+  ```javascript
+  helper.lastResults.facets.forEach(facet => {
+    console.log(facet.name, facet.data);
+  });
+  ```
+</ParamField>
+
+## Examples
+
+### Basic Search
+
+```javascript
+import algoliasearch from 'algoliasearch';
+import algoliasearchHelper from 'algoliasearch-helper';
+
+const client = algoliasearch('APP_ID', 'API_KEY');
+const helper = algoliasearchHelper(client, 'products');
+
+helper.on('result', ({ results }) => {
+  console.log(`Found ${results.nbHits} results`);
+  results.hits.forEach(hit => {
+    console.log(hit.name);
+  });
+});
+
+helper.setQuery('laptop').search();
+```
+
+### Faceted Search
+
+```javascript
+const helper = algoliasearchHelper(client, 'products', {
+  facets: ['brand', 'category'],
+  disjunctiveFacets: ['color'],
+});
+
+helper.on('result', ({ results }) => {
+  // Display facet counts
+  const brandFacet = results.getFacetByName('brand');
+  console.log('Brands:', brandFacet.data);
+});
+
+// Add refinements
+helper
+  .addFacetRefinement('brand', 'Apple')
+  .addFacetRefinement('category', 'Laptops')
+  .search();
+```
+
+### Numeric Filtering
+
+```javascript
+const helper = algoliasearchHelper(client, 'products');
+
+// Price range: $100 - $1000
+helper
+  .addNumericRefinement('price', '>=', 100)
+  .addNumericRefinement('price', '<=', 1000)
+  .search();
+```
+
+### Pagination
+
+```javascript
+const helper = algoliasearchHelper(client, 'products', {
+  hitsPerPage: 20,
+});
+
+helper.on('result', ({ results }) => {
+  console.log(`Page ${results.page + 1} of ${results.nbPages}`);
+  
+  // Next page
+  document.querySelector('#next').onclick = () => {
+    helper.setPage(results.page + 1).search();
+  };
+  
+  // Previous page
+  document.querySelector('#prev').onclick = () => {
+    helper.setPage(results.page - 1).search();
+  };
+});
+
+helper.search();
+```
+
+### Multiple Indices
+
+```javascript
+const productsHelper = algoliasearchHelper(client, 'products');
+const articlesHelper = algoliasearchHelper(client, 'articles');
+
+productsHelper.on('result', ({ results }) => {
+  console.log('Products:', results.hits);
+});
+
+articlesHelper.on('result', ({ results }) => {
+  console.log('Articles:', results.hits);
+});
+
+// Search both indices
+const query = 'phone';
+productsHelper.setQuery(query).search();
+articlesHelper.setQuery(query).search();
+```
+
+### Geo Search
+
+```javascript
+const helper = algoliasearchHelper(client, 'stores');
+
+// Search around a location (lat, lng, radius in meters)
+const params = helper.state
+  .setQueryParameter('aroundLatLng', '40.71,-74.01')
+  .setQueryParameter('aroundRadius', 5000);
+
+helper.setState(params).search();
+```
+
+### Custom Event Handling
+
+```javascript
+const helper = algoliasearchHelper(client, 'products');
+
+helper.on('search', ({ state }) => {
+  console.log('Searching...', state.query);
+  showLoadingIndicator();
+});
+
+helper.on('result', ({ results }) => {
+  hideLoadingIndicator();
+  renderResults(results.hits);
+});
+
+helper.on('error', ({ error }) => {
+  hideLoadingIndicator();
+  showError(error.message);
+});
+
+helper.setQuery('laptop').search();
+```
+
+## When to Use algoliasearch-helper
+
+<Note>
+  **Use InstantSearch.js for most cases**: InstantSearch.js provides a higher-level API with UI widgets. Use algoliasearch-helper only when you need direct control over search logic.
+</Note>
+
+Use algoliasearch-helper when:
+- Building a custom search UI without InstantSearch widgets
+- Implementing complex search logic not supported by InstantSearch
+- Integrating search into non-standard UI frameworks
+- Building a search SDK for another framework
+
+## TypeScript Support
+
+algoliasearch-helper includes TypeScript type definitions:
+
+```typescript
+import algoliasearchHelper, {
+  AlgoliaSearchHelper,
+  SearchParameters,
+  SearchResults,
+  PlainSearchParameters,
+} from 'algoliasearch-helper';
+
+const helper: AlgoliaSearchHelper = algoliasearchHelper(
+  client,
+  'products',
+  {
+    facets: ['brand'],
+  }
+);
+
+helper.on('result', ({ results }: { results: SearchResults }) => {
+  console.log(results.hits);
+});
+```
+
+## Related
+
+- [InstantSearch.js API](/api/instantsearch-js/overview)
+- [Connectors API](/api/connectors/overview)
+- [Search Parameters Reference](https://www.algolia.com/doc/api-reference/search-api-parameters/)

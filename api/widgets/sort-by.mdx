@@ -1,0 +1,217 @@
+---
+title: sortBy
+description: Switch between different sorting strategies or indices
+---
+
+The sortBy widget provides a dropdown selector to let users change the sorting of search results. It can switch between different indices or sorting strategies.
+
+## Usage
+
+```javascript
+const sortBy = instantsearch.widgets.sortBy({
+  container: '#sort-by',
+  items: [
+    { label: 'Relevance', value: 'products' },
+    { label: 'Price (asc)', value: 'products_price_asc' },
+    { label: 'Price (desc)', value: 'products_price_desc' },
+  ],
+});
+
+search.addWidget(sortBy);
+```
+
+## Examples
+
+### Basic Sort By
+
+```javascript
+instantsearch.widgets.sortBy({
+  container: '#sort-by',
+  items: [
+    { label: 'Featured', value: 'products' },
+    { label: 'Price: Low to High', value: 'products_price_asc' },
+    { label: 'Price: High to Low', value: 'products_price_desc' },
+    { label: 'Newest First', value: 'products_date_desc' },
+  ],
+});
+```
+
+### With Transform Items
+
+```javascript
+instantsearch.widgets.sortBy({
+  container: '#sort-by',
+  items: [
+    { label: 'Relevance', value: 'products' },
+    { label: 'Price Ascending', value: 'products_price_asc' },
+    { label: 'Price Descending', value: 'products_price_desc' },
+  ],
+  transformItems: (items) =>
+    items.map((item) => ({
+      ...item,
+      label: `Sort by: ${item.label}`,
+    })),
+});
+```
+
+### Using Sorting Strategies (Composition Mode)
+
+```javascript
+instantsearch.widgets.sortBy({
+  container: '#sort-by',
+  items: [
+    { label: 'Relevance', strategy: 'relevance' },
+    { label: 'Price: Low to High', strategy: 'price_asc' },
+    { label: 'Price: High to Low', strategy: 'price_desc' },
+  ],
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="items" type="array" required>
+  Array of objects defining the different sorting options.
+  
+  Each item can be:
+  
+  **Index-based** (traditional mode):
+  - `label` (string, required): Display label
+  - `value` (string, required): Name of the index to use
+  
+  **Strategy-based** (composition mode):
+  - `label` (string, required): Display label  
+  - `strategy` (string, required): Name of the sorting strategy
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="select" type="string | string[]">
+      CSS class for the select element.
+    </ParamField>
+    <ParamField path="option" type="string | string[]">
+      CSS class for each option element.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-SortBy">
+  <select class="ais-SortBy-select" aria-label="Sort results by">
+    <option class="ais-SortBy-option" value="products" selected>
+      Relevance
+    </option>
+    <option class="ais-SortBy-option" value="products_price_asc">
+      Price (asc)
+    </option>
+    <option class="ais-SortBy-option" value="products_price_desc">
+      Price (desc)
+    </option>
+  </select>
+</div>
+```
+
+## Index-Based Sorting
+
+Traditional approach using replica indices:
+
+```javascript
+instantsearch.widgets.sortBy({
+  container: '#sort-by',
+  items: [
+    { label: 'Relevance', value: 'products' },
+    { label: 'Price (Low)', value: 'products_price_asc' },
+    { label: 'Price (High)', value: 'products_price_desc' },
+  ],
+});
+```
+
+Requires creating replica indices in Algolia dashboard with different ranking formulas.
+
+## Strategy-Based Sorting
+
+Modern approach using composition mode (Algolia Composable UI):
+
+```javascript
+instantsearch.widgets.sortBy({
+  container: '#sort-by',
+  items: [
+    { label: 'Relevance', strategy: 'default' },
+    { label: 'Price: Low to High', strategy: 'price_asc' },
+    { label: 'Price: High to Low', strategy: 'price_desc' },
+    { label: 'Rating', strategy: 'rating_desc' },
+  ],
+});
+```
+
+<Note>
+  Strategy-based sorting is only available when using composition mode. Check your Algolia plan for availability.
+</Note>
+
+## Setting Up Replica Indices
+
+To use index-based sorting, create replica indices:
+
+1. Go to your Algolia dashboard
+2. Select your index
+3. Go to "Replicas" tab
+4. Create replicas with custom ranking:
+   - `products_price_asc`: Sort by `price` ascending
+   - `products_price_desc`: Sort by `price` descending
+   - `products_date_desc`: Sort by `date` descending
+
+## Default Selection
+
+The first item in the array is selected by default, or you can specify the initial index:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products_price_asc', // Start with price sorting
+  searchClient,
+});
+
+instantsearch.widgets.sortBy({
+  container: '#sort-by',
+  items: [
+    { label: 'Relevance', value: 'products' },
+    { label: 'Price (asc)', value: 'products_price_asc' },
+  ],
+});
+```
+
+## Custom Styling
+
+```css
+.ais-SortBy-select {
+  padding: 8px 32px 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-image: url('data:image/svg+xml;...');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.ais-SortBy-select:focus {
+  outline: none;
+  border-color: #3a96cf;
+}
+```

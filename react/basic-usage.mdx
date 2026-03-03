@@ -1,0 +1,459 @@
+---
+title: "Basic Usage"
+description: "Complete guide to React InstantSearch components and patterns"
+---
+
+React InstantSearch provides a comprehensive set of components to build search interfaces.
+
+## InstantSearch Wrapper
+
+The `<InstantSearch>` component is the root provider that manages search state:
+
+```tsx
+import { InstantSearch } from 'react-instantsearch';
+import type { UiState } from 'instantsearch.js';
+
+<InstantSearch<MyUiState>
+  searchClient={searchClient}
+  indexName="products"
+  insights={true}
+  routing={true}
+  stalledSearchDelay={300}
+  future={{
+    preserveSharedStateOnUnmount: true,
+  }}
+  onStateChange={({ uiState, setUiState }) => {
+    console.log('State changed:', uiState);
+    setUiState(uiState);
+  }}
+>
+  {/* Your components */}
+</InstantSearch>
+```
+
+### Props
+
+<ParamField path="searchClient" type="SearchClient" required>
+  Algolia search client created with `algoliasearch()`
+</ParamField>
+
+<ParamField path="indexName" type="string" required>
+  The name of the main index to search
+</ParamField>
+
+<ParamField path="insights" type="boolean" default="false">
+  Enable Algolia Insights for click and conversion tracking
+</ParamField>
+
+<ParamField path="routing" type="boolean | object" default="false">
+  Enable URL synchronization. Can be `true` for defaults or an object with custom router and state mapping
+</ParamField>
+
+<ParamField path="stalledSearchDelay" type="number" default="200">
+  Time in ms before a search is considered stalled
+</ParamField>
+
+<ParamField path="future" type="object">
+  Opt into future default behaviors
+</ParamField>
+
+<ParamField path="onStateChange" type="function">
+  Callback when search state changes
+</ParamField>
+
+## Search Components
+
+### SearchBox
+
+A search input with submit and reset buttons:
+
+```tsx
+import { SearchBox } from 'react-instantsearch';
+
+<SearchBox
+  placeholder="Search products..."
+  searchAsYouType={true}
+  autoFocus={true}
+  ignoreCompositionEvents={false}
+  translations={{
+    submitButtonTitle: 'Submit search',
+    resetButtonTitle: 'Clear search',
+  }}
+  classNames={{
+    root: 'my-SearchBox',
+    form: 'my-SearchBox-form',
+    input: 'my-SearchBox-input',
+  }}
+/>
+```
+
+**Key Props:**
+- `searchAsYouType` (default: `true`) - Search as user types vs. on submit only
+- `queryHook` - Modify query before search (e.g., for debouncing)
+- `ignoreCompositionEvents` - Useful for IME input
+
+### Hits
+
+Display search results:
+
+```tsx
+import { Hits } from 'react-instantsearch';
+import type { Hit } from 'instantsearch.js';
+
+type ProductHit = Hit<{
+  name: string;
+  price: number;
+  image: string;
+}>;
+
+function HitComponent({ hit, sendEvent }: { hit: ProductHit; sendEvent: Function }) {
+  return (
+    <article
+      onClick={() => {
+        sendEvent('click', hit, 'Product Clicked');
+      }}
+    >
+      <img src={hit.image} alt={hit.name} />
+      <h3>{hit.name}</h3>
+      <span>${hit.price}</span>
+    </article>
+  );
+}
+
+<Hits
+  hitComponent={HitComponent}
+  transformItems={(items) => 
+    items.map(item => ({
+      ...item,
+      price: item.price / 100, // Convert cents to dollars
+    }))
+  }
+  classNames={{
+    root: 'my-Hits',
+    list: 'my-Hits-list',
+    item: 'my-Hits-item',
+  }}
+/>
+```
+
+**sendEvent Parameter:**
+The `sendEvent` function enables Insights tracking:
+- `sendEvent('click', hit, eventName)` - Track clicks
+- `sendEvent('conversion', hit, eventName)` - Track conversions
+
+### Highlight
+
+Highlight matching parts of attributes:
+
+```tsx
+import { Highlight } from 'react-instantsearch';
+
+<Highlight
+  attribute="name"
+  hit={hit}
+  highlightedTagName="mark"
+  classNames={{
+    root: 'my-Highlight',
+    highlighted: 'my-Highlight-highlighted',
+  }}
+/>
+```
+
+### RefinementList
+
+Faceted search filters:
+
+```tsx
+import { RefinementList } from 'react-instantsearch';
+
+<RefinementList
+  attribute="brand"
+  searchable={true}
+  searchablePlaceholder="Search brands..."
+  showMore={true}
+  showMoreLimit={20}
+  limit={10}
+  operator="or"
+  sortBy={['name:asc']}
+  transformItems={(items) =>
+    items.map(item => ({
+      ...item,
+      label: item.label.toUpperCase(),
+    }))
+  }
+  translations={{
+    showMoreButtonText: ({ isShowingMore }) =>
+      isShowingMore ? 'Show less' : 'Show more',
+    noResultsText: 'No brands found',
+  }}
+/>
+```
+
+**Key Props:**
+- `attribute` - Index attribute to filter on
+- `operator` - `"or"` (default) or `"and"` for combining values
+- `searchable` - Add search within facets
+- `showMore` - Enable "Show more" button
+
+### Pagination
+
+Navigate between result pages:
+
+```tsx
+import { Pagination } from 'react-instantsearch';
+
+<Pagination
+  totalPages={10}
+  padding={2}
+  showFirst={true}
+  showPrevious={true}
+  showNext={true}
+  showLast={true}
+  translations={{
+    firstPageItemText: 'First',
+    previousPageItemText: 'Previous',
+    nextPageItemText: 'Next',
+    lastPageItemText: 'Last',
+    pageItemText: ({ currentPage, nbPages }) => `${currentPage} of ${nbPages}`,
+  }}
+/>
+```
+
+### Configure
+
+Set search parameters without UI:
+
+```tsx
+import { Configure } from 'react-instantsearch';
+
+<Configure
+  hitsPerPage={20}
+  attributesToSnippet={['description:50']}
+  snippetEllipsisText="..."
+  removeWordsIfNoResults="allOptional"
+  distinct={1}
+  enablePersonalization={true}
+/>
+```
+
+Accepts any [search parameter](https://www.algolia.com/doc/api-reference/search-api-parameters/) from the Algolia API.
+
+## Filtering Components
+
+### HierarchicalMenu
+
+Multi-level categorization:
+
+```tsx
+import { HierarchicalMenu } from 'react-instantsearch';
+
+<HierarchicalMenu
+  attributes={[
+    'categories.lvl0',
+    'categories.lvl1',
+    'categories.lvl2',
+  ]}
+  separator=" > "
+  showMore={true}
+  limit={10}
+/>
+```
+
+### Menu
+
+Single-select filter:
+
+```tsx
+import { Menu } from 'react-instantsearch';
+
+<Menu
+  attribute="category"
+  showMore={true}
+  limit={5}
+  showMoreLimit={15}
+  sortBy={['name:asc']}
+/>
+```
+
+### RangeInput
+
+Numeric range filter:
+
+```tsx
+import { RangeInput } from 'react-instantsearch';
+
+<RangeInput
+  attribute="price"
+  min={0}
+  max={1000}
+  precision={2}
+  translations={{
+    separatorElementText: 'to',
+    submitButtonText: 'Apply',
+  }}
+/>
+```
+
+### ToggleRefinement
+
+Boolean filter:
+
+```tsx
+import { ToggleRefinement } from 'react-instantsearch';
+
+<ToggleRefinement
+  attribute="free_shipping"
+  label="Free shipping"
+  on={true}
+  off={false}
+/>
+```
+
+### CurrentRefinements
+
+Display active filters:
+
+```tsx
+import { CurrentRefinements } from 'react-instantsearch';
+
+<CurrentRefinements
+  excludedAttributes={['query']}
+  transformItems={(items) =>
+    items.filter(item => item.attribute !== 'category')
+  }
+/>
+```
+
+### ClearRefinements
+
+Clear all filters:
+
+```tsx
+import { ClearRefinements } from 'react-instantsearch';
+
+<ClearRefinements
+  excludedAttributes={['category']}
+  translations={{
+    resetButtonText: 'Clear all filters',
+  }}
+/>
+```
+
+## Utility Components
+
+### Stats
+
+Display search statistics:
+
+```tsx
+import { Stats } from 'react-instantsearch';
+
+<Stats
+  translations={{
+    rootElementText({ nbHits, processingTimeMS }) {
+      return `${nbHits.toLocaleString()} results found in ${processingTimeMS}ms`;
+    },
+  }}
+/>
+```
+
+### SortBy
+
+Switch between index replicas:
+
+```tsx
+import { SortBy } from 'react-instantsearch';
+
+<SortBy
+  items={[
+    { label: 'Relevance', value: 'products' },
+    { label: 'Price (asc)', value: 'products_price_asc' },
+    { label: 'Price (desc)', value: 'products_price_desc' },
+  ]}
+/>
+```
+
+### Index
+
+Query multiple indices:
+
+```tsx
+import { Index, Hits } from 'react-instantsearch';
+
+<InstantSearch searchClient={searchClient} indexName="products">
+  <SearchBox />
+  
+  {/* Main index */}
+  <Hits />
+  
+  {/* Secondary index */}
+  <Index indexName="categories">
+    <Hits hitComponent={CategoryHit} />
+  </Index>
+</InstantSearch>
+```
+
+## Advanced Patterns
+
+### Conditional Rendering
+
+Show/hide components based on state:
+
+```tsx
+import { useInstantSearch } from 'react-instantsearch';
+
+function ConditionalWidget() {
+  const { results } = useInstantSearch();
+  
+  if (!results || results.nbHits === 0) {
+    return <p>No results found</p>;
+  }
+  
+  return <Hits />;
+}
+```
+
+### Transform Items
+
+Modify data before rendering:
+
+```tsx
+<Hits
+  transformItems={(items) =>
+    items.map((item, index) => ({
+      ...item,
+      position: index + 1,
+      discounted: item.price < item.originalPrice,
+    }))
+  }
+  hitComponent={HitComponent}
+/>
+```
+
+### Custom Class Names
+
+All components accept a `classNames` prop for styling:
+
+```tsx
+<SearchBox
+  classNames={{
+    root: 'search-box',
+    form: 'search-box__form',
+    input: 'search-box__input',
+    submit: 'search-box__submit',
+    reset: 'search-box__reset',
+    loadingIndicator: 'search-box__loading',
+  }}
+/>
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Hooks" icon="code" href="/react/hooks">
+    Build fully custom components with hooks
+  </Card>
+  <Card title="Next.js Integration" icon="js" href="/react/nextjs-integration">
+    Server-side rendering patterns
+  </Card>
+</CardGroup>

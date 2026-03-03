@@ -1,0 +1,285 @@
+---
+title: geoSearch
+---
+
+Displays search results on a Google Map and provides geographic search capabilities based on map interactions.
+
+## Usage
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { geoSearch } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient
+});
+
+search.addWidgets([
+  geoSearch({
+    container: '#geo-search',
+    googleReference: window.google
+  })
+]);
+
+search.start();
+```
+
+## Requirements
+
+- Your hits must have a `_geoloc` attribute with `lat` and `lng` properties.
+- You must load the Google Maps JavaScript API library separately.
+- Set explicit height on the map container (e.g., `.ais-GeoSearch-map`).
+
+## Parameters
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="googleReference" type="typeof window.google" required>
+  Reference to the global `window.google` object. See [Google Maps documentation](https://developers.google.com/maps/documentation/javascript/tutorial).
+</ParamField>
+
+<ParamField path="initialZoom" type="number" default="1">
+  Default zoom level when no markers are displayed.
+</ParamField>
+
+<ParamField path="initialPosition" type="object" default="{ lat: 0, lng: 0 }">
+  Default position when no markers are displayed.
+  
+  ```typescript
+  { lat: number; lng: number }
+  ```
+</ParamField>
+
+<ParamField path="enableRefine" type="boolean" default="true">
+  If true, the map is used to search. If false, it's for display purposes only.
+</ParamField>
+
+<ParamField path="enableClearMapRefinement" type="boolean" default="true">
+  If true, a button is displayed to remove map refinement.
+</ParamField>
+
+<ParamField path="enableRefineControl" type="boolean" default="true">
+  If true, users can toggle the `enableRefineOnMapMove` option directly from the map.
+</ParamField>
+
+<ParamField path="mapOptions" type="google.maps.MapOptions">
+  Options forwarded to the Google Maps constructor. See [MapOptions documentation](https://developers.google.com/maps/documentation/javascript/reference/3/#MapOptions).
+</ParamField>
+
+<ParamField path="builtInMarker" type="object">
+  Options to customize the built-in Google Maps marker.
+  
+  <Expandable title="properties">
+    <ParamField path="createOptions" type="function">
+      Function to create marker options.
+      
+      ```typescript
+      (item: GeoHit) => google.maps.MarkerOptions
+      ```
+    </ParamField>
+    
+    <ParamField path="events" type="object">
+      Object mapping event names to handlers. Each handler receives `{ event, item, marker, map }`.
+      
+      Example: `{ click: ({ item }) => console.log(item) }`
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="customHTMLMarker" type="object | boolean">
+  Options to customize HTML markers (alternative to built-in markers).
+  
+  <Expandable title="properties">
+    <ParamField path="createOptions" type="function">
+      Function to create HTML marker options.
+    </ParamField>
+    
+    <ParamField path="events" type="object">
+      Object mapping event names to handlers.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to use for the widget.
+  
+  <Expandable title="properties">
+    <ParamField path="HTMLMarker" type="string | function">
+      Template for custom HTML markers. Receives the hit data.
+    </ParamField>
+    
+    <ParamField path="reset" type="string | function">
+      Template for the reset button.
+    </ParamField>
+    
+    <ParamField path="toggle" type="string | function">
+      Template for the toggle label.
+    </ParamField>
+    
+    <ParamField path="redo" type="string | function">
+      Template for the redo button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+  
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class to add to the root element.
+    </ParamField>
+    
+    <ParamField path="map" type="string | string[]">
+      CSS class to add to the map container.
+    </ParamField>
+    
+    <ParamField path="control" type="string | string[]">
+      CSS class to add to the control element.
+    </ParamField>
+    
+    <ParamField path="label" type="string | string[]">
+      CSS class to add to the label.
+    </ParamField>
+    
+    <ParamField path="selectedLabel" type="string | string[]">
+      CSS class to add to the selected label.
+    </ParamField>
+    
+    <ParamField path="input" type="string | string[]">
+      CSS class to add to the input.
+    </ParamField>
+    
+    <ParamField path="redo" type="string | string[]">
+      CSS class to add to the redo button.
+    </ParamField>
+    
+    <ParamField path="disabledRedo" type="string | string[]">
+      CSS class to add to the disabled redo button.
+    </ParamField>
+    
+    <ParamField path="reset" type="string | string[]">
+      CSS class to add to the reset button.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Basic geo search
+
+```javascript
+geoSearch({
+  container: '#geo-search',
+  googleReference: window.google,
+  initialZoom: 12,
+  initialPosition: {
+    lat: 48.8566,
+    lng: 2.3522
+  }
+});
+```
+
+### Custom marker
+
+```javascript
+geoSearch({
+  container: '#geo-search',
+  googleReference: window.google,
+  builtInMarker: {
+    createOptions(item) {
+      return {
+        title: item.name,
+        label: item.price
+      };
+    },
+    events: {
+      click({ item, marker, map }) {
+        console.log('Clicked item:', item);
+      }
+    }
+  }
+});
+```
+
+### HTML marker with template
+
+```javascript
+geoSearch({
+  container: '#geo-search',
+  googleReference: window.google,
+  customHTMLMarker: true,
+  templates: {
+    HTMLMarker(item) {
+      return `
+        <div class="custom-marker">
+          <img src="${item.image}" />
+          <span>${item.name}</span>
+        </div>
+      `;
+    }
+  }
+});
+```
+
+### Display only (no search)
+
+```javascript
+geoSearch({
+  container: '#geo-search',
+  googleReference: window.google,
+  enableRefine: false,
+  enableClearMapRefinement: false,
+  enableRefineControl: false
+});
+```
+
+### Custom map options
+
+```javascript
+geoSearch({
+  container: '#geo-search',
+  googleReference: window.google,
+  mapOptions: {
+    streetViewControl: false,
+    mapTypeControl: false,
+    fullscreenControl: false,
+    styles: [
+      {
+        featureType: 'poi',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }]
+      }
+    ]
+  }
+});
+```
+
+## CSS setup
+
+```css
+.ais-GeoSearch-map {
+  height: 500px;
+}
+```
+
+## HTML output
+
+```html
+<div class="ais-GeoSearch">
+  <div class="ais-GeoSearch-map">
+    <!-- Google Map -->
+  </div>
+  <div class="ais-GeoSearch-control">
+    <label class="ais-GeoSearch-label">
+      <input class="ais-GeoSearch-input" type="checkbox" />
+      Search when moving the map
+    </label>
+    <button class="ais-GeoSearch-redo">Redo search here</button>
+    <button class="ais-GeoSearch-reset">Clear the map refinement</button>
+  </div>
+</div>
+```

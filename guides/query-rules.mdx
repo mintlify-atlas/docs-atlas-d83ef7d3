@@ -1,0 +1,542 @@
+---
+title: Query Rules
+description: Implement merchandising and dynamic results with Algolia Query Rules
+---
+
+Query Rules let you customize search results based on context, user behavior, and business logic. Use them to promote products, display banners, redirect users, or modify result ranking dynamically.
+
+## Overview
+
+Query Rules are configured in your Algolia dashboard and can be triggered based on:
+- Search query patterns
+- User context (filters, refinements)
+- Custom context sent from your application
+
+InstantSearch provides widgets to display rule-based content and manage rule contexts.
+
+## Basic Setup
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { searchBox, hits, queryRuleCustomData } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  hits({ container: '#hits' }),
+  
+  // Display custom data from query rules
+  queryRuleCustomData({
+    container: '#banner',
+    templates: {
+      default: ({ items }) => {
+        if (!items.length) return '';
+        
+        const { banner } = items[0];
+        if (!banner) return '';
+        
+        return `
+          <div class="banner" style="background: ${banner.color}">
+            <img src="${banner.image}" alt="${banner.title}" />
+            <h2>${banner.title}</h2>
+            <a href="${banner.link}">Shop now</a>
+          </div>
+        `;
+      },
+    },
+  }),
+]);
+
+search.start();
+```
+
+## Query Rule Custom Data Widget
+
+Display custom data returned by query rules:
+
+```javascript
+queryRuleCustomData({
+  container: '#custom-data',
+  templates: {
+    default({ items }, { html }) {
+      const data = items[0];
+      
+      if (!data) return '';
+      
+      // Access custom data from your rule
+      if (data.redirect) {
+        window.location.href = data.redirect.url;
+        return '';
+      }
+      
+      if (data.banner) {
+        return html`
+          <div class="promotion">
+            <h2>${data.banner.title}</h2>
+            <p>${data.banner.description}</p>
+          </div>
+        `;
+      }
+      
+      return '';
+    },
+  },
+  transformItems(items) {
+    return items.map(item => ({
+      ...item,
+      // Transform data if needed
+    }));
+  },
+})
+```
+
+## Tracked Filters
+
+Send filter values as rule contexts to trigger context-based rules:
+
+```javascript
+import { connectQueryRules } from 'instantsearch.js/es/connectors';
+
+const renderQueryRules = (renderOptions, isFirstRender) => {
+  const { items } = renderOptions;
+  // Custom rendering of rule data
+};
+
+const queryRulesWidget = connectQueryRules(renderQueryRules);
+
+search.addWidgets([
+  queryRulesWidget({
+    trackedFilters: {
+      brand: (facetValues) => facetValues,
+      category: (facetValues) => facetValues.slice(0, 1), // Only track first value
+    },
+  }),
+]);
+```
+
+### How Tracked Filters Work
+
+From `src/connectors/query-rules/connectQueryRules.ts`:
+
+```typescript
+function getRuleContextsFromTrackedFilters({
+  helper,
+  sharedHelperState,
+  trackedFilters,
+}) {
+  const ruleContexts = Object.keys(trackedFilters).reduce(
+    (facets, facetName) => {
+      const facetRefinements = getRefinements(
+        helper.lastResults || {},
+        sharedHelperState,
+        true
+      )
+        .filter((refinement) => refinement.attribute === facetName)
+        .map((refinement) => refinement.name);
+
+      const getTrackedFacetValues = trackedFilters[facetName];
+      const trackedFacetValues = getTrackedFacetValues(facetRefinements);
+
+      return [
+        ...facets,
+        ...facetRefinements
+          .filter((facetRefinement) =>
+            trackedFacetValues.includes(facetRefinement)
+          )
+          .map((facetValue) =>
+            escapeRuleContext(`ais-${facetName}-${facetValue}`)
+          ),
+      ];
+    },
+    []
+  );
+
+  return ruleContexts;
+}
+```
+
+This automatically generates contexts like `ais-brand-apple` when users refine by "apple".
+
+## Transform Rule Contexts
+
+Modify or limit rule contexts before sending:
+
+```javascript
+import { connectQueryRules } from 'instantsearch.js/es/connectors';
+
+const queryRulesWidget = connectQueryRules(() => {});
+
+search.addWidgets([
+  queryRulesWidget({
+    trackedFilters: {
+      brand: (values) => values,
+      category: (values) => values,
+    },
+    transformRuleContexts(ruleContexts) {
+      // Add custom contexts
+      const customContexts = ['premium-user', 'mobile-device'];
+      
+      // Limit to 10 contexts (Algolia's max)
+      return [...customContexts, ...ruleContexts].slice(0, 10);
+    },
+  }),
+]);
+```
+
+<Warning>
+Algolia limits rule contexts to 10 per query. Use `transformRuleContexts` to prioritize important contexts.
+</Warning>
+
+## Static Rule Contexts
+
+Set static contexts for all queries:
+
+```javascript
+import { configure } from 'instantsearch.js/es/widgets';
+
+search.addWidgets([
+  configure({
+    ruleContexts: ['web', 'desktop', 'logged-in'],
+  }),
+]);
+```
+
+## Combining Static and Dynamic Contexts
+
+```javascript
+import { connectQueryRules } from 'instantsearch.js/es/connectors';
+import { configure } from 'instantsearch.js/es/widgets';
+
+// Static contexts
+search.addWidgets([
+  configure({
+    ruleContexts: ['web-app'],
+  }),
+]);
+
+// Dynamic contexts from filters
+const queryRulesWidget = connectQueryRules(() => {});
+
+search.addWidgets([
+  queryRulesWidget({
+    trackedFilters: {
+      brand: (values) => values,
+    },
+    transformRuleContexts(dynamicContexts) {
+      // dynamicContexts already includes static contexts from configure
+      return dynamicContexts;
+    },
+  }),
+]);
+```
+
+## Use Cases
+
+### Promotional Banners
+
+Show banners for specific queries:
+
+```javascript
+// In Algolia Dashboard, create a rule:
+// Query: contains "iphone"
+// Custom Data: { banner: { title: "iPhone Sale", ... } }
+
+queryRuleCustomData({
+  container: '#banner',
+  templates: {
+    default: ({ items }) => {
+      const banner = items[0]?.banner;
+      if (!banner) return '';
+      
+      return `
+        <div class="sale-banner">
+          <h2>${banner.title}</h2>
+          <p>${banner.description}</p>
+          <a href="${banner.link}">Shop Now →</a>
+        </div>
+      `;
+    },
+  },
+})
+```
+
+### Redirect Rules
+
+Redirect users based on queries:
+
+```javascript
+queryRuleCustomData({
+  container: '#redirect',
+  templates: {
+    default: ({ items }) => {
+      const redirect = items[0]?.redirect;
+      
+      if (redirect) {
+        // Redirect immediately
+        window.location.href = redirect.url;
+      }
+      
+      return '';
+    },
+  },
+})
+```
+
+### Seasonal Merchandising
+
+Boost products based on context:
+
+```javascript
+// Rule context based on current season
+const getCurrentSeason = () => {
+  const month = new Date().getMonth();
+  if (month >= 11 || month <= 1) return 'winter';
+  if (month >= 2 && month <= 4) return 'spring';
+  if (month >= 5 && month <= 7) return 'summer';
+  return 'fall';
+};
+
+search.addWidgets([
+  configure({
+    ruleContexts: [getCurrentSeason()],
+  }),
+]);
+
+// In Algolia: Create rules to boost seasonal products
+// Context: winter → Boost winter coats, snow boots
+// Context: summer → Boost swimwear, sandals
+```
+
+### Filter-Based Merchandising
+
+Show content when users refine by specific brands:
+
+```javascript
+const queryRulesWidget = connectQueryRules(
+  ({ items }) => {
+    const container = document.querySelector('#brand-content');
+    const brandContent = items[0]?.brandContent;
+    
+    if (brandContent) {
+      container.innerHTML = `
+        <div class="brand-spotlight">
+          <img src="${brandContent.logo}" alt="${brandContent.name}" />
+          <p>${brandContent.description}</p>
+        </div>
+      `;
+    } else {
+      container.innerHTML = '';
+    }
+  }
+);
+
+search.addWidgets([
+  queryRulesWidget({
+    trackedFilters: {
+      brand: (values) => values,
+    },
+  }),
+]);
+
+// In Algolia Dashboard:
+// Context: ais-brand-apple
+// Custom Data: { brandContent: { name: "Apple", logo: "...", ... } }
+```
+
+## Transform Items
+
+Filter or modify items returned by rules:
+
+```javascript
+queryRuleCustomData({
+  container: '#custom-data',
+  transformItems(items) {
+    return items
+      .filter(item => item.enabled !== false)
+      .map(item => ({
+        ...item,
+        // Add timestamp
+        displayedAt: Date.now(),
+      }));
+  },
+  templates: {
+    default: ({ items }) => {
+      // Render transformed items
+    },
+  },
+})
+```
+
+## Accessing Rule Data
+
+Query rule data is available in search results:
+
+```javascript
+import { connectHits } from 'instantsearch.js/es/connectors';
+
+const renderHits = ({ results, hits }) => {
+  // Access rule metadata
+  const appliedRules = results.appliedRules || [];
+  const userData = results.userData || [];
+  
+  console.log('Applied rules:', appliedRules);
+  console.log('Custom data:', userData);
+  
+  // Render hits...
+};
+
+const customHits = connectHits(renderHits);
+search.addWidgets([customHits({})]);
+```
+
+## Implementation Details
+
+The connector applies rule contexts automatically:
+
+```typescript
+// From src/connectors/query-rules/connectQueryRules.ts
+function applyRuleContexts({ helper, initialRuleContexts, trackedFilters, transformRuleContexts }, event) {
+  const sharedHelperState = event.state;
+  const previousRuleContexts = sharedHelperState.ruleContexts || [];
+  
+  const newRuleContexts = getRuleContextsFromTrackedFilters({
+    helper,
+    sharedHelperState,
+    trackedFilters,
+  });
+  
+  const nextRuleContexts = [...initialRuleContexts, ...newRuleContexts];
+  const ruleContexts = transformRuleContexts(nextRuleContexts).slice(0, 10);
+
+  if (!isEqual(previousRuleContexts, ruleContexts)) {
+    helper.overrideStateWithoutTriggeringChangeEvent({
+      ...sharedHelperState,
+      ruleContexts,
+    });
+  }
+}
+```
+
+## Complete Example
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import {
+  searchBox,
+  hits,
+  refinementList,
+  queryRuleCustomData,
+  configure,
+} from 'instantsearch.js/es/widgets';
+import { connectQueryRules } from 'instantsearch.js/es/connectors';
+
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+});
+
+// Determine user context
+const userContext = [];
+if (window.matchMedia('(max-width: 768px)').matches) {
+  userContext.push('mobile');
+} else {
+  userContext.push('desktop');
+}
+
+// Add static contexts
+search.addWidgets([
+  configure({
+    ruleContexts: userContext,
+  }),
+  
+  searchBox({ container: '#searchbox' }),
+  
+  // Display promotional banners
+  queryRuleCustomData({
+    container: '#banner',
+    templates: {
+      default: ({ items }, { html }) => {
+        const banner = items[0]?.banner;
+        if (!banner) return '';
+        
+        return html`
+          <div class="promo-banner" style="background-color: ${banner.backgroundColor}">
+            <img src="${banner.imageUrl}" alt="${banner.title}" />
+            <div class="content">
+              <h2>${banner.title}</h2>
+              <p>${banner.subtitle}</p>
+              <a href="${banner.ctaUrl}" class="cta">${banner.ctaText}</a>
+            </div>
+          </div>
+        `;
+      },
+    },
+  }),
+  
+  hits({
+    container: '#hits',
+    templates: {
+      item: (hit, { html, components }) => html`
+        <article>
+          <img src="${hit.image}" alt="${hit.name}" />
+          <h3>${components.Highlight({ hit, attribute: 'name' })}</h3>
+          <p>$${hit.price}</p>
+          ${hit._rankingInfo?.promoted ? '<span class="badge">Featured</span>' : ''}
+        </article>
+      `,
+    },
+  }),
+  
+  refinementList({
+    container: '#brand',
+    attribute: 'brand',
+  }),
+]);
+
+// Track filter refinements as contexts
+const queryRules = connectQueryRules(() => {});
+
+search.addWidgets([
+  queryRules({
+    trackedFilters: {
+      brand: (values) => values,
+      category: (values) => values.slice(0, 1),
+    },
+    transformRuleContexts(contexts) {
+      // Prioritize: user context > filter context
+      // Limit to 10 total
+      return contexts.slice(0, 10);
+    },
+  }),
+]);
+
+search.start();
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Limit Contexts" icon="list">
+    Keep rule contexts under 10 for optimal performance.
+  </Card>
+  <Card title="Test Rules" icon="vial">
+    Use Algolia's Query Rules Playground to test before deploying.
+  </Card>
+  <Card title="Track Important Filters" icon="filter">
+    Only track filters that have associated merchandising rules.
+  </Card>
+  <Card title="Cache Custom Data" icon="database">
+    Cache static custom data (like banners) to reduce re-renders.
+  </Card>
+</CardGroup>
+
+## Related Resources
+
+- [Query Rule Custom Data widget](/widgets/query-rule-custom-data)
+- [Query Rules Connector](/connectors/query-rules)
+- [Algolia Query Rules](https://www.algolia.com/doc/guides/managing-results/rules/rules-overview/)
+- [Configure widget](/widgets/configure)

@@ -1,0 +1,260 @@
+---
+title: pagination
+description: Navigate through search result pages
+---
+
+The pagination widget displays page navigation controls, allowing users to browse through search results across multiple pages.
+
+## Usage
+
+```javascript
+const pagination = instantsearch.widgets.pagination({
+  container: '#pagination',
+});
+
+search.addWidget(pagination);
+```
+
+## Examples
+
+### Basic Pagination
+
+```javascript
+instantsearch.widgets.pagination({
+  container: '#pagination',
+});
+```
+
+### With Custom Padding
+
+```javascript
+instantsearch.widgets.pagination({
+  container: '#pagination',
+  padding: 2, // Show 2 pages on each side of current page
+});
+```
+
+### With Max Pages
+
+```javascript
+instantsearch.widgets.pagination({
+  container: '#pagination',
+  totalPages: 20, // Limit to 20 pages maximum
+});
+```
+
+### Without First/Last Buttons
+
+```javascript
+instantsearch.widgets.pagination({
+  container: '#pagination',
+  showFirst: false,
+  showLast: false,
+});
+```
+
+### With Custom Templates
+
+```javascript
+instantsearch.widgets.pagination({
+  container: '#pagination',
+  templates: {
+    previous: '← Prev',
+    next: 'Next →',
+    first: '« First',
+    last: 'Last »',
+    page: ({ page }) => `Page ${page}`,
+  },
+});
+```
+
+### Disable Auto-Scroll
+
+```javascript
+instantsearch.widgets.pagination({
+  container: '#pagination',
+  scrollTo: false, // Don't scroll after page change
+});
+```
+
+### Custom Scroll Target
+
+```javascript
+instantsearch.widgets.pagination({
+  container: '#pagination',
+  scrollTo: '#results-container',
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="totalPages" type="number">
+  Maximum number of pages to display. Useful for limiting pagination on large result sets.
+</ParamField>
+
+<ParamField path="padding" type="number" default="3">
+  Number of pages to display on each side of the current page.
+</ParamField>
+
+<ParamField path="showFirst" type="boolean" default="true">
+  Whether to show the "First page" button.
+</ParamField>
+
+<ParamField path="showLast" type="boolean" default="true">
+  Whether to show the "Last page" button.
+</ParamField>
+
+<ParamField path="showPrevious" type="boolean" default="true">
+  Whether to show the "Previous page" button.
+</ParamField>
+
+<ParamField path="showNext" type="boolean" default="true">
+  Whether to show the "Next page" button.
+</ParamField>
+
+<ParamField path="scrollTo" type="string | HTMLElement | boolean" default="'body'">
+  Where to scroll after clicking a page:
+  - `'body'`: Scroll to top of page
+  - CSS selector or HTMLElement: Scroll to specific element
+  - `false`: Disable auto-scrolling
+  - `true`: Same as `'body'`
+</ParamField>
+
+<ParamField path="templates" type="object">
+  Templates to customize the widget rendering.
+
+  <Expandable title="properties">
+    <ParamField path="previous" type="Template" default="'‹'">
+      Template for the "Previous" button label.
+    </ParamField>
+    <ParamField path="next" type="Template" default="'›'">
+      Template for the "Next" button label.
+    </ParamField>
+    <ParamField path="first" type="Template" default="'«'">
+      Template for the "First" button label.
+    </ParamField>
+    <ParamField path="last" type="Template" default="'»'">
+      Template for the "Last" button label.
+    </ParamField>
+    <ParamField path="page" type="Template">
+      Template for page number labels. Receives `page` (1-based index).
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="noRefinementRoot" type="string | string[]">
+      CSS class when there are no refinements.
+    </ParamField>
+    <ParamField path="list" type="string | string[]">
+      CSS class for the list element.
+    </ParamField>
+    <ParamField path="item" type="string | string[]">
+      CSS class for each item.
+    </ParamField>
+    <ParamField path="firstPageItem" type="string | string[]">
+      CSS class for the first page item.
+    </ParamField>
+    <ParamField path="lastPageItem" type="string | string[]">
+      CSS class for the last page item.
+    </ParamField>
+    <ParamField path="previousPageItem" type="string | string[]">
+      CSS class for the previous page item.
+    </ParamField>
+    <ParamField path="nextPageItem" type="string | string[]">
+      CSS class for the next page item.
+    </ParamField>
+    <ParamField path="pageItem" type="string | string[]">
+      CSS class for page number items.
+    </ParamField>
+    <ParamField path="selectedItem" type="string | string[]">
+      CSS class for the selected page item.
+    </ParamField>
+    <ParamField path="disabledItem" type="string | string[]">
+      CSS class for disabled items.
+    </ParamField>
+    <ParamField path="link" type="string | string[]">
+      CSS class for all links.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-Pagination">
+  <ul class="ais-Pagination-list">
+    <li class="ais-Pagination-item ais-Pagination-item--firstPage">
+      <a class="ais-Pagination-link" href="#">«</a>
+    </li>
+    <li class="ais-Pagination-item ais-Pagination-item--previousPage">
+      <a class="ais-Pagination-link" href="#">‹</a>
+    </li>
+    <li class="ais-Pagination-item ais-Pagination-item--page">
+      <a class="ais-Pagination-link" href="#">1</a>
+    </li>
+    <li class="ais-Pagination-item ais-Pagination-item--selected ais-Pagination-item--page">
+      <a class="ais-Pagination-link" href="#">2</a>
+    </li>
+    <li class="ais-Pagination-item ais-Pagination-item--page">
+      <a class="ais-Pagination-link" href="#">3</a>
+    </li>
+    <li class="ais-Pagination-item ais-Pagination-item--nextPage">
+      <a class="ais-Pagination-link" href="#">›</a>
+    </li>
+    <li class="ais-Pagination-item ais-Pagination-item--lastPage">
+      <a class="ais-Pagination-link" href="#">»</a>
+    </li>
+  </ul>
+</div>
+```
+
+## Pagination Logic
+
+With `padding: 3` (default):
+
+- Current page: **5**
+- Displays: 1 ... 2 3 4 **5** 6 7 8 ... 20
+
+With `padding: 1`:
+
+- Current page: **5**  
+- Displays: 1 ... 4 **5** 6 ... 20
+
+## Controlling Results Per Page
+
+Pagination works with the number of results set via:
+
+1. The hitsPerPage widget
+2. The configure widget
+3. The InstantSearch configuration
+
+```javascript
+// Set default hits per page
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  searchParameters: {
+    hitsPerPage: 20,
+  },
+});
+
+// Or use hitsPerPage widget
+instantsearch.widgets.hitsPerPage({
+  container: '#hits-per-page',
+  items: [
+    { label: '20 per page', value: 20, default: true },
+    { label: '40 per page', value: 40 },
+  ],
+});
+```

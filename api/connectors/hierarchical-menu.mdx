@@ -1,0 +1,137 @@
+---
+title: "connectHierarchicalMenu"
+description: "Build a custom widget for hierarchical faceted filtering"
+---
+
+The **HierarchicalMenu** connector provides the logic to build a custom widget that lets users explore facets in a tree-like structure.
+
+This is commonly used for multi-level categorization of products on e-commerce websites. From a UX perspective, we suggest not displaying more than two levels deep.
+
+## Usage
+
+```javascript
+import { connectHierarchicalMenu } from 'instantsearch.js/es/connectors';
+
+const customHierarchicalMenu = connectHierarchicalMenu(
+  (renderOptions, isFirstRender) => {
+    const { items, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    const renderItems = (items) => `
+      <ul>
+        ${items.map(item => `
+          <li>
+            <a 
+              href="#" 
+              data-value="${item.value}"
+              style="${item.isRefined ? 'font-weight: bold' : ''}"
+            >
+              ${item.label} (${item.count})
+            </a>
+            ${item.data ? renderItems(item.data) : ''}
+          </li>
+        `).join('')}
+      </ul>
+    `;
+    
+    container.innerHTML = renderItems(items);
+    
+    container.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        refine(e.target.dataset.value);
+      });
+    });
+  }
+);
+
+search.addWidgets([
+  customHierarchicalMenu({
+    container: document.querySelector('#hierarchical-menu'),
+    attributes: ['categories.lvl0', 'categories.lvl1', 'categories.lvl2'],
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="attributes" type="string[]" required>
+  Attributes to use to generate the hierarchy of the menu.
+</ParamField>
+
+<ParamField path="separator" type="string" default="' > '">
+  Separator used in the attributes to separate level values.
+</ParamField>
+
+<ParamField path="rootPath" type="string">
+  Prefix path to use if the first level is not the root level.
+</ParamField>
+
+<ParamField path="showParentLevel" type="boolean" default="true">
+  Show the siblings of the selected parent levels of the current refined value. This does not impact the root level.
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Max number of values to display.
+</ParamField>
+
+<ParamField path="showMore" type="boolean" default="false">
+  Whether to display the "show more" button.
+</ParamField>
+
+<ParamField path="showMoreLimit" type="number" default="20">
+  Max number of values to display when showing more.
+</ParamField>
+
+<ParamField path="sortBy" type="string[] | function" default="['name:asc']">
+  How to sort refinements. Possible values: `count`, `isRefined`, `name:asc`, `name:desc`.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<HierarchicalMenuItem>">
+  The values to be rendered.
+  
+  Each item has:
+  - `value`: Value of the menu item
+  - `label`: Human-readable value of the item
+  - `count`: Number of matched results after refinement
+  - `isRefined`: Indicates if the refinement is applied
+  - `data`: n+1 level of items (same structure)
+</ParamField>
+
+<ParamField path="refine" type="(value: string) => void">
+  Sets the path of the hierarchical filter and triggers a new search.
+</ParamField>
+
+<ParamField path="createURL" type="(value: string) => string">
+  Creates a URL for the next state for a clicked item.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  Indicates if search state can be refined.
+</ParamField>
+
+<ParamField path="isShowingMore" type="boolean">
+  `true` if the menu is displaying all items.
+</ParamField>
+
+<ParamField path="toggleShowMore" type="() => void">
+  Toggles the number of values displayed between `limit` and `showMoreLimit`.
+</ParamField>
+
+<ParamField path="canToggleShowMore" type="boolean">
+  `true` if the toggleShowMore button can be activated.
+</ParamField>
+
+<ParamField path="sendEvent" type="function">
+  Sends an event to the Insights middleware.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

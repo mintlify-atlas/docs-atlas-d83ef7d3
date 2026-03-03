@@ -1,0 +1,85 @@
+---
+title: "connectConfigure"
+description: "Build a custom widget to set search parameters programmatically"
+---
+
+The **Configure** connector provides the logic to configure search parameters programmatically.
+
+## Usage
+
+```javascript
+import { connectConfigure } from 'instantsearch.js/es/connectors';
+
+const customConfigure = connectConfigure(
+  () => {}
+);
+
+search.addWidgets([
+  customConfigure({
+    searchParameters: {
+      hitsPerPage: 20,
+      distinct: true,
+      clickAnalytics: true,
+    },
+  }),
+]);
+```
+
+## Dynamic Configuration
+
+You can dynamically update search parameters:
+
+```javascript
+const customConfigure = connectConfigure(
+  (renderOptions, isFirstRender) => {
+    const { refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    if (isFirstRender) {
+      container.innerHTML = `
+        <button id="toggle-distinct">Toggle Distinct</button>
+      `;
+      
+      container.querySelector('#toggle-distinct').addEventListener('click', () => {
+        refine({
+          distinct: Math.random() > 0.5,
+        });
+      });
+    }
+  }
+);
+
+search.addWidgets([
+  customConfigure({
+    container: document.querySelector('#configure'),
+    searchParameters: {
+      hitsPerPage: 20,
+    },
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="searchParameters" type="object" required>
+  A list of [search parameters](https://www.algolia.com/doc/api-reference/search-api-parameters/) to enable when the widget mounts.
+  
+  You can pass any valid Algolia search parameter, such as:
+  - `hitsPerPage`
+  - `distinct`
+  - `clickAnalytics`
+  - `analytics`
+  - `getRankingInfo`
+  - `facets`
+  - And many more...
+</ParamField>
+
+## Render Options
+
+<ParamField path="refine" type="(searchParameters: object) => void">
+  Refines the given search parameters. The new parameters will be merged with the ones set from other widgets.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

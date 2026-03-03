@@ -1,0 +1,107 @@
+---
+title: "connectCurrentRefinements"
+description: "Build a custom widget to display and remove active filters"
+---
+
+The **CurrentRefinements** connector provides the logic to build a custom widget that displays all currently applied refinements and allows users to remove them.
+
+## Usage
+
+```javascript
+import { connectCurrentRefinements } from 'instantsearch.js/es/connectors';
+
+const customCurrentRefinements = connectCurrentRefinements(
+  (renderOptions, isFirstRender) => {
+    const { items, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <ul>
+        ${items.map(item => `
+          <li>
+            <strong>${item.label}:</strong>
+            ${item.refinements.map(refinement => `
+              <span>
+                ${refinement.label}
+                <button data-attribute="${refinement.attribute}" data-value="${refinement.value}">
+                  ✕
+                </button>
+              </span>
+            `).join('')}
+          </li>
+        `).join('')}
+      </ul>
+    `;
+    
+    container.querySelectorAll('button').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const refinement = items
+          .flatMap(item => item.refinements)
+          .find(r => r.value === e.target.dataset.value);
+        if (refinement) {
+          refine(refinement);
+        }
+      });
+    });
+  }
+);
+
+search.addWidgets([
+  customCurrentRefinements({
+    container: document.querySelector('#current-refinements'),
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="includedAttributes" type="string[]" default="[]">
+  The attributes to include in the widget (all by default). Cannot be used with `excludedAttributes`.
+</ParamField>
+
+<ParamField path="excludedAttributes" type="string[]" default="['query']">
+  The attributes to exclude from the widget. Cannot be used with `includedAttributes`.
+</ParamField>
+
+<ParamField path="transformItems" type="(items: object[]) => object[]">
+  Function to transform the items passed to the templates.
+</ParamField>
+
+## Render Options
+
+<ParamField path="items" type="Array<CurrentRefinementItem>">
+  All currently refined items, grouped by attribute.
+  
+  Each item has:
+  - `indexName`: The index name
+  - `indexId`: The index id as provided to the index widget
+  - `attribute`: The attribute on which the refinement is applied
+  - `label`: The textual representation of this attribute
+  - `refinements`: Currently applied refinements (array of refinement objects)
+  - `refine`: Function to remove the given refinement
+  
+  Each refinement has:
+  - `attribute`: The attribute on which the refinement is applied
+  - `type`: The type of the refinement (facet, exclude, disjunctive, hierarchical, numeric, query, tag)
+  - `value`: The raw value of the refinement
+  - `label`: The label of the refinement to display
+  - `operator`: The value of the operator (only if applicable)
+  - `count`: The number of found items (only if applicable)
+  - `exhaustive`: Whether the count is exhaustive (only if applicable)
+</ParamField>
+
+<ParamField path="refine" type="(refinement: object) => void">
+  Removes the given refinement and triggers a new search.
+</ParamField>
+
+<ParamField path="createURL" type="(refinement: object) => string">
+  Generates a URL for the next state.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  Indicates if search state can be refined.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

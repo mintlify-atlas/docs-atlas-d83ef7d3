@@ -1,0 +1,181 @@
+---
+title: hitsPerPage
+description: Control the number of results displayed per page
+---
+
+The hitsPerPage widget provides a dropdown selector to let users choose how many results to display per page.
+
+## Usage
+
+```javascript
+const hitsPerPage = instantsearch.widgets.hitsPerPage({
+  container: '#hits-per-page',
+  items: [
+    { label: '10 per page', value: 10 },
+    { label: '20 per page', value: 20, default: true },
+    { label: '50 per page', value: 50 },
+  ],
+});
+
+search.addWidget(hitsPerPage);
+```
+
+## Examples
+
+### Basic Hits Per Page
+
+```javascript
+instantsearch.widgets.hitsPerPage({
+  container: '#hits-per-page',
+  items: [
+    { label: '12 hits per page', value: 12, default: true },
+    { label: '24 hits per page', value: 24 },
+    { label: '48 hits per page', value: 48 },
+  ],
+});
+```
+
+### With Transform Items
+
+```javascript
+instantsearch.widgets.hitsPerPage({
+  container: '#hits-per-page',
+  items: [
+    { label: '10', value: 10, default: true },
+    { label: '25', value: 25 },
+    { label: '50', value: 50 },
+  ],
+  transformItems: (items) =>
+    items.map((item) => ({
+      ...item,
+      label: `Show ${item.value}`,
+    })),
+});
+```
+
+## Options
+
+<ParamField path="container" type="string | HTMLElement" required>
+  CSS Selector or HTMLElement to insert the widget.
+</ParamField>
+
+<ParamField path="items" type="array" required>
+  Array of objects defining the different hits per page options.
+  
+  Each item must have:
+  - `label` (string, required): Display label
+  - `value` (number, required): Number of hits per page
+  - `default` (boolean, optional): Whether this is the default value
+  
+  <Warning>
+    One item must have `default: true`.
+  </Warning>
+</ParamField>
+
+<ParamField path="transformItems" type="function">
+  Function to transform the items before rendering.
+  
+  ```javascript
+  (items: object[]) => object[]
+  ```
+</ParamField>
+
+<ParamField path="cssClasses" type="object">
+  CSS classes to add to the widget elements.
+
+  <Expandable title="properties">
+    <ParamField path="root" type="string | string[]">
+      CSS class for the root element.
+    </ParamField>
+    <ParamField path="select" type="string | string[]">
+      CSS class for the select element.
+    </ParamField>
+    <ParamField path="option" type="string | string[]">
+      CSS class for each option element.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## HTML Output
+
+```html
+<div class="ais-HitsPerPage">
+  <select class="ais-HitsPerPage-select">
+    <option class="ais-HitsPerPage-option" value="10">10 per page</option>
+    <option class="ais-HitsPerPage-option" value="20" selected>20 per page</option>
+    <option class="ais-HitsPerPage-option" value="50">50 per page</option>
+  </select>
+</div>
+```
+
+## Item Definition
+
+```javascript
+[
+  {
+    label: '10 per page',  // Display text
+    value: 10,             // Number of hits
+    default: true          // Default selection (required on one item)
+  },
+  {
+    label: '20 per page',
+    value: 20
+  },
+  {
+    label: '50 per page',
+    value: 50
+  }
+]
+```
+
+## Default Value
+
+One item must be marked as default:
+
+```javascript
+items: [
+  { label: '10', value: 10 },
+  { label: '20', value: 20, default: true }, // This will be selected initially
+  { label: '50', value: 50 },
+]
+```
+
+<Warning>
+  If no item is marked as default, or multiple items are marked as default, an error will be thrown.
+</Warning>
+
+## Works With
+
+The hitsPerPage widget works seamlessly with:
+
+- **hits** widget - Updates the number of displayed results
+- **infiniteHits** widget - Updates the number of results loaded per page
+- **pagination** widget - Recalculates total pages when hits per page changes
+
+## Persistence
+
+The selected value is saved in the URL and persists across page loads when using routing:
+
+```javascript
+const search = instantsearch({
+  indexName: 'products',
+  searchClient,
+  routing: true, // Enable URL sync
+});
+```
+
+## Custom Styling
+
+```css
+.ais-HitsPerPage-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.ais-HitsPerPage-select:focus {
+  outline: none;
+  border-color: #3a96cf;
+}
+```

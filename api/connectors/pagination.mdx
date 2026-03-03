@@ -1,0 +1,109 @@
+---
+title: "connectPagination"
+description: "Build a custom widget for navigating between result pages"
+---
+
+The **Pagination** connector provides the logic to build a custom widget that lets users choose the current page of the results.
+
+<Note>
+  When using pagination with Algolia, you should be aware that the engine won't provide pages beyond the 1000th hit by default. You can find more information in the [Algolia documentation](https://www.algolia.com/doc/guides/searching/pagination/#pagination-limitations).
+</Note>
+
+## Usage
+
+```javascript
+import { connectPagination } from 'instantsearch.js/es/connectors';
+
+const customPagination = connectPagination(
+  (renderOptions, isFirstRender) => {
+    const { pages, currentRefinement, nbPages, isFirstPage, isLastPage, refine, widgetParams } = renderOptions;
+    const { container } = widgetParams;
+    
+    container.innerHTML = `
+      <div>
+        <button ${isFirstPage ? 'disabled' : ''} data-page="${currentRefinement - 1}">
+          Previous
+        </button>
+        ${pages.map(page => `
+          <button 
+            data-page="${page}"
+            style="${page === currentRefinement ? 'font-weight: bold' : ''}"
+          >
+            ${page + 1}
+          </button>
+        `).join('')}
+        <button ${isLastPage ? 'disabled' : ''} data-page="${currentRefinement + 1}">
+          Next
+        </button>
+      </div>
+    `;
+    
+    container.querySelectorAll('button').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const page = parseInt(e.target.dataset.page);
+        if (!isNaN(page)) {
+          refine(page);
+        }
+      });
+    });
+  }
+);
+
+search.addWidgets([
+  customPagination({
+    container: document.querySelector('#pagination'),
+  }),
+]);
+```
+
+## Connector Options
+
+<ParamField path="totalPages" type="number">
+  The total number of pages to browse.
+</ParamField>
+
+<ParamField path="padding" type="number" default="3">
+  The padding of pages to show around the current page.
+</ParamField>
+
+## Render Options
+
+<ParamField path="currentRefinement" type="number">
+  The number of the page currently displayed.
+</ParamField>
+
+<ParamField path="nbPages" type="number">
+  The number of pages for the result set.
+</ParamField>
+
+<ParamField path="nbHits" type="number">
+  The number of hits computed for the last query (can be approximated).
+</ParamField>
+
+<ParamField path="pages" type="number[]">
+  The actual pages relevant to the current situation and padding.
+</ParamField>
+
+<ParamField path="isFirstPage" type="boolean">
+  `true` if the current page is also the first page.
+</ParamField>
+
+<ParamField path="isLastPage" type="boolean">
+  `true` if the current page is also the last page.
+</ParamField>
+
+<ParamField path="canRefine" type="boolean">
+  `true` if this search returned more than one page.
+</ParamField>
+
+<ParamField path="refine" type="(page: number) => void">
+  Sets the current page and triggers a search.
+</ParamField>
+
+<ParamField path="createURL" type="(page: number) => string">
+  Creates URLs for the next state. The number is the page to generate the URL for.
+</ParamField>
+
+<ParamField path="widgetParams" type="object">
+  The options passed to the connector.
+</ParamField>

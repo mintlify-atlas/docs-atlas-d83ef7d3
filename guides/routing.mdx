@@ -1,0 +1,390 @@
+---
+title: Routing
+description: Synchronize search state with the browser URL for shareable searches
+---
+
+Routing enables you to synchronize the search state with the browser URL, making searches shareable and bookmarkable. InstantSearch provides a built-in routing system with customization options.
+
+## Overview
+
+Routing middleware keeps your UI state in sync with the URL. When users refine their search, the URL updates. When users navigate back or share a URL, the search state restores.
+
+## Basic Setup
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { history } from 'instantsearch.js/es/lib/routers';
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient,
+  routing: true, // Use default routing
+});
+```
+
+With `routing: true`, InstantSearch uses:
+- **History router**: Syncs with browser URL using `pushState`
+- **Simple state mapping**: Maps all UI state to URL parameters
+
+## Custom Router Configuration
+
+```javascript
+import { history } from 'instantsearch.js/es/lib/routers';
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient,
+  routing: {
+    router: history({
+      windowTitle(routeState) {
+        const query = routeState.instant_search?.query;
+        return query ? `Results for "${query}"` : 'Search';
+      },
+      createURL({ qsModule, routeState, location }) {
+        const { protocol, hostname, port, pathname, hash } = location;
+        const queryString = qsModule.stringify(routeState);
+        const portWithPrefix = port ? `:${port}` : '';
+        
+        if (!queryString) {
+          return `${protocol}//${hostname}${portWithPrefix}${pathname}${hash}`;
+        }
+        
+        return `${protocol}//${hostname}${portWithPrefix}${pathname}?${queryString}${hash}`;
+      },
+      parseURL({ qsModule, location }) {
+        return qsModule.parse(location.search.slice(1), {
+          arrayLimit: 99,
+        });
+      },
+      writeDelay: 400,
+      cleanUrlOnDispose: false,
+    }),
+    stateMapping: simple(),
+  },
+});
+```
+
+## Router Options
+
+### Window Title
+
+Update the page title based on search state:
+
+```javascript
+history({
+  windowTitle(routeState) {
+    const indexState = routeState.instant_search || {};
+    const query = indexState.query || '';
+    const refinements = Object.keys(indexState.refinementList || {}).length;
+    
+    if (!query && !refinements) {
+      return 'Products - My Store';
+    }
+    
+    return `${query || 'Products'}${refinements ? ` (${refinements} filters)` : ''} - My Store`;
+  },
+})
+```
+
+### Write Delay
+
+Control how frequently the URL updates:
+
+```javascript
+history({
+  writeDelay: 800, // Wait 800ms before updating URL
+})
+```
+
+<Note>
+A longer `writeDelay` reduces history entries but makes the URL feel less responsive.
+</Note>
+
+### Clean URL on Dispose
+
+Control whether to clear refinements from URL when InstantSearch unmounts:
+
+```javascript
+history({
+  cleanUrlOnDispose: false, // Keep filters in URL after unmount
+})
+```
+
+## State Mappings
+
+State mappings transform the UI state before writing to the URL and vice versa.
+
+### Simple Mapping
+
+The default mapping that excludes `configure` from the URL:
+
+```javascript
+import { simple } from 'instantsearch.js/es/lib/stateMappings';
+
+const search = instantsearch({
+  routing: {
+    stateMapping: simple(),
+  },
+});
+```
+
+### Custom State Mapping
+
+Create a custom mapping to control what goes in the URL:
+
+```javascript
+const customStateMapping = {
+  stateToRoute(uiState) {
+    const indexUiState = uiState.instant_search || {};
+    
+    return {
+      q: indexUiState.query,
+      brands: indexUiState.refinementList?.brand,
+      categories: indexUiState.menu?.categories,
+      page: indexUiState.page,
+    };
+  },
+  
+  routeToState(routeState) {
+    return {
+      instant_search: {
+        query: routeState.q,
+        refinementList: {
+          brand: routeState.brands || [],
+        },
+        menu: {
+          categories: routeState.categories,
+        },
+        page: routeState.page,
+      },
+    };
+  },
+};
+
+const search = instantsearch({
+  routing: {
+    stateMapping: customStateMapping,
+  },
+});
+```
+
+## Single Index Mapping
+
+For cleaner URLs when using only one index:
+
+```javascript
+import { singleIndex } from 'instantsearch.js/es/lib/stateMappings';
+
+const search = instantsearch({
+  routing: {
+    stateMapping: singleIndex({
+      indexName: 'instant_search',
+      routeToState(routeState) {
+        return {
+          instant_search: {
+            query: routeState.query,
+            page: routeState.page,
+            refinementList: {
+              brand: routeState.brand || [],
+            },
+          },
+        };
+      },
+      stateToRoute(uiState) {
+        return {
+          query: uiState.query,
+          page: uiState.page,
+          brand: uiState.refinementList?.brand,
+        };
+      },
+    }),
+  },
+});
+```
+
+This transforms URLs from:
+```
+?instant_search[query]=phone&instant_search[page]=2
+```
+
+To:
+```
+?query=phone&page=2
+```
+
+## Custom Router
+
+Implement your own router for advanced use cases (e.g., React Router, Next.js):
+
+```javascript
+const customRouter = {
+  $$type: 'custom',
+  
+  read() {
+    // Read state from URL/Router
+    return JSON.parse(sessionStorage.getItem('searchState') || '{}');
+  },
+  
+  write(routeState) {
+    // Write state to URL/Router
+    sessionStorage.setItem('searchState', JSON.stringify(routeState));
+  },
+  
+  createURL(routeState) {
+    // Generate URL from state
+    const queryString = qs.stringify(routeState);
+    return `${window.location.pathname}?${queryString}`;
+  },
+  
+  onUpdate(callback) {
+    // Subscribe to external changes
+    this._onUpdate = callback;
+  },
+  
+  dispose() {
+    // Cleanup
+    this._onUpdate = undefined;
+  },
+};
+
+const search = instantsearch({
+  routing: {
+    router: customRouter,
+  },
+});
+```
+
+## Implementation Details
+
+The router implementation from `src/lib/routers/history.ts` uses:
+
+```typescript
+class BrowserHistory<TRouteState> implements Router<TRouteState> {
+  public write(routeState: TRouteState): void {
+    const url = this.createURL(routeState);
+    const title = this.windowTitle && this.windowTitle(routeState);
+
+    if (this.writeTimer) {
+      clearTimeout(this.writeTimer);
+    }
+
+    this.writeTimer = setTimeout(() => {
+      setWindowTitle(title);
+      
+      if (this.shouldWrite(url)) {
+        window.history.pushState(routeState, title || '', url);
+        this.latestAcknowledgedHistory = window.history.length;
+      }
+      
+      this.inPopState = false;
+      this.writeTimer = undefined;
+    }, this.writeDelay);
+  }
+}
+```
+
+## SEO Considerations
+
+<Warning>
+Search engines may not execute JavaScript to read your search state. For SEO-critical pages, implement server-side rendering.
+</Warning>
+
+### Pre-rendering URLs
+
+```javascript
+// Generate static URLs for crawlers
+const urls = [
+  '/?query=laptop&brand=apple',
+  '/?query=phone&brand=samsung',
+  '/?categories=electronics',
+];
+```
+
+## Multiple Indices
+
+Route state for multiple indices:
+
+```javascript
+const stateMapping = {
+  stateToRoute(uiState) {
+    return {
+      products: uiState.products,
+      articles: uiState.articles,
+    };
+  },
+  
+  routeToState(routeState) {
+    return {
+      products: routeState.products || {},
+      articles: routeState.articles || {},
+    };
+  },
+};
+```
+
+## Complete Example
+
+```javascript
+import instantsearch from 'instantsearch.js';
+import { history } from 'instantsearch.js/es/lib/routers';
+import { searchBox, hits, refinementList } from 'instantsearch.js/es/widgets';
+
+const search = instantsearch({
+  indexName: 'instant_search',
+  searchClient,
+  routing: {
+    router: history({
+      windowTitle(routeState) {
+        const state = routeState.instant_search || {};
+        return state.query ? `${state.query} - Search` : 'Search Products';
+      },
+      createURL({ qsModule, routeState, location }) {
+        const queryString = qsModule.stringify(routeState);
+        return `${location.pathname}${queryString ? `?${queryString}` : ''}`;
+      },
+      parseURL({ qsModule, location }) {
+        return qsModule.parse(location.search.slice(1));
+      },
+      writeDelay: 400,
+      cleanUrlOnDispose: false,
+    }),
+    stateMapping: {
+      stateToRoute(uiState) {
+        const indexState = uiState.instant_search || {};
+        return {
+          query: indexState.query,
+          page: indexState.page,
+          brands: indexState.refinementList?.brand,
+        };
+      },
+      routeToState(routeState) {
+        return {
+          instant_search: {
+            query: routeState.query,
+            page: routeState.page,
+            refinementList: {
+              brand: routeState.brands || [],
+            },
+          },
+        };
+      },
+    },
+  },
+});
+
+search.addWidgets([
+  searchBox({ container: '#searchbox' }),
+  hits({ container: '#hits' }),
+  refinementList({ container: '#brand', attribute: 'brand' }),
+]);
+
+search.start();
+```
+
+## Related Resources
+
+- [State Mapping API](/api-reference/state-mapping)
+- [Router API](/api-reference/router)
+- [Server-Side Rendering guide](/guides/server-side-rendering)

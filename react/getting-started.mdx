@@ -1,0 +1,235 @@
+---
+title: "Getting Started with React InstantSearch"
+description: "Build a search interface with React InstantSearch in minutes"
+---
+
+React InstantSearch is an open-source React library that lets you create instant search experiences using Algolia's search API.
+
+## Installation
+
+Install React InstantSearch and the Algolia search client:
+
+```bash
+npm install react-instantsearch algoliasearch
+# or
+yarn add react-instantsearch algoliasearch
+```
+
+## Quick Start
+
+Create a basic search interface with just a few components:
+
+```tsx App.tsx
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import { InstantSearch, SearchBox, Hits } from 'react-instantsearch';
+
+const searchClient = algoliasearch(
+  'YourApplicationID',
+  'YourSearchOnlyAPIKey'
+);
+
+function App() {
+  return (
+    <InstantSearch
+      searchClient={searchClient}
+      indexName="your_index_name"
+    >
+      <SearchBox />
+      <Hits />
+    </InstantSearch>
+  );
+}
+```
+
+<Note>
+Use the `liteClient` from `algoliasearch/lite` for smaller bundle sizes. It includes only the search functionality.
+</Note>
+
+## Core Concepts
+
+### InstantSearch Component
+
+The `<InstantSearch>` component is the root that connects your UI to Algolia:
+
+```tsx
+<InstantSearch
+  searchClient={searchClient}
+  indexName="products"
+  insights={true}
+  routing={true}
+>
+  {/* Your search UI */}
+</InstantSearch>
+```
+
+**Key Props:**
+- `searchClient` - Algolia client instance (required)
+- `indexName` - The index to search (required)
+- `insights` - Enable click and conversion tracking
+- `routing` - Enable URL synchronization
+- `future` - Opt into future defaults
+
+### Search Components
+
+React InstantSearch provides pre-built components for common search patterns:
+
+```tsx
+import {
+  SearchBox,      // Search input
+  Hits,          // Results list
+  RefinementList, // Facet filters
+  Pagination,    // Page navigation
+  Configure,     // Search parameters
+} from 'react-instantsearch';
+```
+
+## Complete Example
+
+Here's a full search interface with filters and pagination:
+
+```tsx
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
+import {
+  InstantSearch,
+  SearchBox,
+  Hits,
+  RefinementList,
+  Pagination,
+  Configure,
+  Highlight,
+} from 'react-instantsearch';
+import type { Hit } from 'instantsearch.js';
+
+const searchClient = algoliasearch(
+  'latency',
+  '6be0576ff61c053d5f9a3225e2a90f76'
+);
+
+type ProductHit = Hit<{
+  name: string;
+  description: string;
+  brand: string;
+}>;
+
+function HitComponent({ hit }: { hit: ProductHit }) {
+  return (
+    <article>
+      <h2>
+        <Highlight attribute="name" hit={hit} />
+      </h2>
+      <p>
+        <Highlight attribute="description" hit={hit} />
+      </p>
+    </article>
+  );
+}
+
+function App() {
+  return (
+    <div className="container">
+      <InstantSearch
+        searchClient={searchClient}
+        indexName="instant_search"
+        insights={true}
+      >
+        <Configure hitsPerPage={12} />
+        
+        <div className="search-panel">
+          <aside className="filters">
+            <RefinementList attribute="brand" />
+            <RefinementList attribute="categories" />
+          </aside>
+
+          <main className="results">
+            <SearchBox placeholder="Search products..." />
+            <Hits hitComponent={HitComponent} />
+            <Pagination />
+          </main>
+        </div>
+      </InstantSearch>
+    </div>
+  );
+}
+```
+
+## Styling
+
+React InstantSearch provides default CSS themes:
+
+```tsx
+import 'instantsearch.css/themes/satellite.css';
+// or
+import 'instantsearch.css/themes/algolia.css';
+// or
+import 'instantsearch.css/themes/reset.css'; // Minimal styles
+```
+
+All components use BEM class names for easy customization:
+
+```css
+.ais-SearchBox-input {
+  border: 2px solid #3a9fb5;
+  border-radius: 8px;
+}
+
+.ais-Hits-item {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+```
+
+## TypeScript Support
+
+React InstantSearch has full TypeScript support. Type your hits for better autocomplete:
+
+```tsx
+import type { Hit, BaseHit } from 'instantsearch.js';
+
+interface ProductRecord extends BaseHit {
+  name: string;
+  price: number;
+  image: string;
+  brand: string;
+}
+
+type ProductHit = Hit<ProductRecord>;
+
+function HitComponent({ hit }: { hit: ProductHit }) {
+  // `hit` is fully typed with autocomplete
+  return (
+    <div>
+      <img src={hit.image} alt={hit.name} />
+      <h3>{hit.name}</h3>
+      <p>{hit.brand}</p>
+      <span>${hit.price}</span>
+    </div>
+  );
+}
+
+<Hits<ProductRecord> hitComponent={HitComponent} />
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Basic Usage" icon="cube" href="/react/basic-usage">
+    Learn about all available components and their props
+  </Card>
+  <Card title="Custom Hooks" icon="code" href="/react/hooks">
+    Build custom components with hooks
+  </Card>
+  <Card title="Next.js Integration" icon="js" href="/react/nextjs-integration">
+    Server-side rendering and App Router support
+  </Card>
+  <Card title="Server Components" icon="server" href="/react/server-components">
+    Use React Server Components with InstantSearch
+  </Card>
+</CardGroup>
+
+## Examples
+
+Explore complete examples in the repository:
+
+- [Getting Started](https://github.com/algolia/instantsearch/tree/master/examples/react/getting-started) - Basic setup
+- [E-commerce](https://github.com/algolia/instantsearch/tree/master/examples/react/e-commerce) - Full product search
+- [Next.js](https://github.com/algolia/instantsearch/tree/master/examples/react/next) - Next.js Pages Router
+- [Next.js App Router](https://github.com/algolia/instantsearch/tree/master/examples/react/next-app-router) - Next.js App Router with RSC
